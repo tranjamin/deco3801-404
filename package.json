@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/tranjamin/deco3801-404#readme",
   "devDependencies": {
+    "@types/chrome": "^0.1.39",
     "typescript": "^6.0.2"
   }
 }
