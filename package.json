@@ -1,0 +1,24 @@
+{
+  "name": "deco3801-404",
+  "version": "1.0.0",
+  "description": "DECO3801 Repository for Team 404",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tranjamin/deco3801-404.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tranjamin/deco3801-404/issues"
+  },
+  "homepage": "https://github.com/tranjamin/deco3801-404#readme",
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}
