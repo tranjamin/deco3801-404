@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "TLS Retrieval Engine",
+  "version": "1.0.0",
+  "background": {
+    "service_worker": "tls_retrieval_engine.js"
+  }
+}
