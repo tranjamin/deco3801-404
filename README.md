@@ -31,13 +31,13 @@ source venv/bin/activate # mac and linux
 ### Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r api/requirements.txt
 ```
 
 ### Run
 ```bash
-python -m flask --app app run # windows
-python3 -m flask --app app run # mac and linux
+python -m flask --app api/app.py run # windows
+python3 -m flask --app api/app.py run # mac and linux
 ```
 
 ### Deactivate Virtual Environment
