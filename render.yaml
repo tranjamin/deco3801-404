@@ -1,0 +1,21 @@
+databases:
+  - name: project_db
+    plan: free
+    region: singapore
+
+
+services:
+  - type: web
+    name: project_api
+    env: python
+    plan: free
+    region: singapore
+    buildCommand: "pip install -r api/requirements.txt"
+    startCommand: "gunicorn --chdir api app:app"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: project_db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
