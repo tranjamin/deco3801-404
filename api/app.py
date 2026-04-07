@@ -40,6 +40,14 @@ class Certificate(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# Test endpoint
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    return jsonify({
+        "status": "ok", 
+        "message": "ready"
+    }), 200
+
 # Not finalised endpoints, just a starting point for development. Adjust as needed.
 @app.route("/api/register", methods=["POST"])
 def register():
