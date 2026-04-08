@@ -37,8 +37,8 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
 }
 
 /**
- * Writes the CDP Network events return to the debugger, for the target tab,
- * to the console.
+ * Writes the Security Details to the console when the event, Network.responseReceived, 
+ * is received through the debugger API to the debugger.
  * 
  * @param source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
  * for this use case
@@ -50,12 +50,29 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
 function handleDebuggerEvent(
   source: chrome.debugger.Debuggee,
   method: string,
-  params?: object
+  params?: any
 ): void {
-  console.log("Debugger event received:", method, params);
+  //console.log("Debugger event received:", method, params);
 
   if (method === "Network.responseReceived") {
-    console.log("A response was received.");
+    console.log("An HTTPS response was received.");
+
+    const response = params?.response;
+
+    if (!response) {
+        console.log("No response received.");
+        return;
+    }
+
+    const securityDetails = response.securityDetails;
+
+    if (!securityDetails) {
+        console.log("No security details for this response.");
+        return;
+    }
+
+    console.log("TLS security details received.")
+    console.log(securityDetails);
   }
 }
 
