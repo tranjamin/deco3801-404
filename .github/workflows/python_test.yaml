@@ -1,6 +1,6 @@
 # This automatically runs pytest whenever the `backend` directory is modified, on any pushes and pulls to main or dev/backend
 
-name: Python application
+name: Backend Testing Pipeline
 
 defaults:
   run:
