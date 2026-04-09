@@ -1,5 +1,7 @@
 console.log("TLS Retrieval Engine service worker loaded.");
 
+let selectedTab: chrome.tabs.Tab | null = null;
+
 /**
  * Attaches the chrome.debugger to the target tab. It assigns the target to the
  * chrome tab. It must wait for asynchronous methods such as
@@ -37,8 +39,9 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
 }
 
 /**
- * Writes the Security Details to the console when the event, Network.responseReceived, 
- * is received through the debugger API to the debugger.
+ * Writes the TLS Security Details to the console when the event, Network.responseReceived, 
+ * is received through chrome.debugger.onEvent, and the hostname of the selected
+ * tab is identical to the hostname of the response URL.
  * 
  * @param source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
  * for this use case
@@ -54,8 +57,11 @@ function handleDebuggerEvent(
 ): void {
   //console.log("Debugger event received:", method, params);
 
-  if (method === "Network.responseReceived") {
-    console.log("An HTTPS response was received.");
+    if (method !== "Network.responseReceived") {
+        return;
+    }
+
+    console.log("A Network.responseReceived event was received.");
 
     const response = params?.response;
 
@@ -71,17 +77,50 @@ function handleDebuggerEvent(
         return;
     }
 
-    console.log("TLS security details received.")
-    console.log(securityDetails);
-  }
+    if (!selectedTab?.url) {
+        console.log("No selected tab stored.");
+        return;
+    }
+
+    const responseHostname = new URL(response.url).hostname;
+    const selectedHostname = new URL(selectedTab.url).hostname;
+
+    if (responseHostname == selectedHostname) {
+        const payload = {
+            url: response.url,
+            protocol: securityDetails.protocol,
+            cipher: securityDetails.cipher,
+            issuer: securityDetails.issuer,
+            subjectName: securityDetails.subjectName,
+            sanList: securityDetails.sanList,
+            validFrom: securityDetails.validFrom,
+            validTo: securityDetails.validTo,
+            certificateTransparencyCompliance:
+            securityDetails.certificateTransparencyCompliance,
+            encryptedClientHello: securityDetails.encryptedClientHello
+        };
+
+        console.log("TLS metadata for matching secured.");
+        console.log(JSON.stringify(payload, null, 2));
+
+        return;
+    }
+
+    console.log("TLS security details received, but hostname did not match.")
+
+    //console.log(securityDetails);
+  
 }
 
 /**
  * Writes to console that the extension has been clicked, and runs the attachToTab method.
+ * It also selects the tab, which will determine the selectedHostname to be compared 
+ * with when recording TLS metadata.
  * @param tab (chrome.tabs.Tab object)
  */
 function handleActionClick(tab: chrome.tabs.Tab): void {
   console.log("Extension icon clicked.");
+  selectedTab = tab;
   attachToTab(tab);
 }
 
@@ -92,5 +131,5 @@ chrome.debugger.onEvent.addListener(handleDebuggerEvent);
 // Once the extension is clicked, the handleActionClick function is ran, which in turn,
 // runs the attachToTab function, requesting the Network to send events through the debugger
 // API. These events then fire the handleDebuggerEvent function, which then records the 
-// events in console.
+// securityDetails from specific events in console.
 chrome.action.onClicked.addListener(handleActionClick);
