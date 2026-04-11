@@ -8,7 +8,8 @@ export default defineConfig({
       input: {
         popup: "popup.html",
         report: "report.html",
-        settings: "settings.html"
+        settings: "settings.html",
+        policies: "policies.html"
       }
     }
   }
