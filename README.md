@@ -1,3 +1,4 @@
+=======
 # DECO3801 Team 404
 
 ## Contributing
@@ -22,3 +23,19 @@ pip install -r requirements.txt
 python -m flask --app backend run # to deploy with flask
 python -m gunicorn backend:app # to deploy with gunicorn (linux only)
 ```
+>>>>>>> origin/main
+
+
+
+Policy Import/Export Format;
+{
+    "description": "My Example Policy",
+    "protocols": ["TLS 1.2", "QUIC"],
+    "subjects": ["UQ", "The University of Queensland", "Blackboard"],
+    "SANs": ["https://portal.my.uq.edu.au/#/dashboard", "https://my.uq.edu.au/#/dashboard", "1.2.3.4"],
+    "issuers": ["Amazon RSA 2048 M04", "Let's Encrypt", "DigiCert"],
+    "issuedAfter": 50,
+    "validFor": 10,
+    "hasSCT": True,
+    "transparencyCompliance": True,
+}
