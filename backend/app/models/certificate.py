@@ -147,7 +147,7 @@ class TLSCertificate(db.Model):
             )
 
         return cert
-
+    
     def _evaluate_cert(self) -> dict:
         """
         Evaluate a TLS certificate against the default policy.
