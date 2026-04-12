@@ -2,10 +2,11 @@
 import { useState } from "react";
 
 export default function Popup() {
+    // temporary data
     const [data] = useState({
         domain: "example.com",
-        issuer: "Let's Encrypt",
-        protocol: "TLS 1.3",
+        issuer: "example issuer",
+        protocol: "TLS example",
         daysRemaining: 120
     });
 
