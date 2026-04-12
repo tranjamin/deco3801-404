@@ -3,11 +3,11 @@ console.log("TLS Retrieval Engine service worker loaded.");
 let selectedTab: chrome.tabs.Tab | null = null;
 
 /**
- * Attaches the chrome.debugger to the target tab. It assigns the target to the
- * chrome tab. It must wait for asynchronous methods such as
- * chrome.debugger.attach() and chrome.debugger.sendCommand(), hence attachToTab
- * is also asynchronous. It then enables the network to send events to the
- * debugger.
+ * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the 
+ * debugger to the constructed target. It must wait for asynchronous methods 
+ * such as chrome.debugger.attach() and chrome.debugger.sendCommand(), hence
+ * attachToTab is also asynchronous. It then enables the network to send 
+ * events to the debugger.
  * 
  * @param tab (chrome.tabs.Tab object)
  * @returns N/A
@@ -55,7 +55,6 @@ function handleDebuggerEvent(
   method: string,
   params?: any
 ): void {
-  //console.log("Debugger event received:", method, params);
 
     if (method !== "Network.responseReceived") {
         return;
@@ -85,7 +84,7 @@ function handleDebuggerEvent(
     const responseHostname = new URL(response.url).hostname;
     const selectedHostname = new URL(selectedTab.url).hostname;
 
-    if (responseHostname == selectedHostname) {
+    if (responseHostname === selectedHostname) {
         const payload = {
             url: response.url,
             protocol: securityDetails.protocol,
@@ -100,7 +99,7 @@ function handleDebuggerEvent(
             encryptedClientHello: securityDetails.encryptedClientHello
         };
 
-        console.log("TLS metadata for matching secured.");
+        console.log("TLS metadata for matching response hostname secured.");
         console.log(JSON.stringify(payload, null, 2));
 
         return;
