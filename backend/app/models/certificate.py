@@ -1,16 +1,56 @@
+from __future__ import annotations
 import enum
 from app import db
+from typing import *
+import time
 
+class CertificateConfig():
+    WEAK_CIPHERS: set[str] = {"RC4", "DES", "3DES", "NULL", "EXPORT", "MD5"}
+    WEAK_PROTOCOLS: set[str] = {"SSL 2.0", "SSL 3.0", "TLS 1.0", "TLS 1.1"}
+    DAYS_TIL_EXPIRY_WARN: int = 30
 
 class CertificateTransparencyCompliance(enum.Enum):
-    unknown = "unknown"
-    not_compliant = "not-compliant"
-    compliant = "compliant"
+    """
+    An enumerated class to define whether a certificate has been evaluated as compliant or noncompliant. Defined by strings.
 
+    Values --> string:
+        UNKNOWN --> unknown
+        NON_COMPLIANT --> not-compliant
+        COMPLIANT --> compliant
+    """
+    UNKNOWN = "unknown"
+    NON_COMPLIANT = "not-compliant"
+    COMPLIANT = "compliant"
 
 class TLSCertificate(db.Model):
+    """
+    The SQLAlchemy database model corresponding to the SQL table storing TLS Certificate Data.
+    Each instance of this class represents one row of data.
+
+    Database columns:
+        id (integer): the primary key for the certificate, set to autoincrement
+        protocol (string[50]): ?
+        key_exchange (string[50]): ?
+        key_exchange_group (string[50]): [optional] ?
+        cipher (string[50]): ?
+        mac (string[100]): [optional] ?
+        certificate_id (integer): ?
+        subject_name (string[255]): ?
+        issuer (string[255]): the issuer of the certificate
+        valid_from (float): the timestamp that the certificate was issued
+        valid_to (float): the timestamp that the certificate expires at
+        certificate_transparency_compliance (enum): whether the certificate was marked as compliant or not
+        server_signature_algorithm (integer): [optional] ?
+        encrypted_client_hello (bool): [default False] ?
+
+    Inherits from:
+        flask_sqlalchemy.extension.SQLAlchemy
+    """
+
+    # defines the table name
     __tablename__ = "tls_certificates"
 
+    # defines the column tables, refer to docstring for details
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     protocol = db.Column(db.String(50), nullable=False)
     key_exchange = db.Column(db.String(100), nullable=False)
@@ -29,14 +69,20 @@ class TLSCertificate(db.Model):
     server_signature_algorithm = db.Column(db.Integer, nullable=True)
     encrypted_client_hello = db.Column(db.Boolean, nullable=False, default=False)
 
+    # links this table with the SAN entries table
+    # san_entries is a list of SANEntry instances, cascading all changes and deleting unowned entries
     san_entries = db.relationship(
         "SANEntry", back_populates="certificate", cascade="all, delete-orphan"
     )
+
+    # links this table with the SAN entries table
+    # san_entries is a list of SANEntry instances, cascading all changes and deleting unowned entries
     sct_list = db.relationship(
         "SignedCertificateTimestamp", back_populates="certificate", cascade="all, delete-orphan"
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the data from an SQL table to a dictionary"""
         return {
             "id": self.id,
             "protocol": self.protocol,
@@ -55,27 +101,151 @@ class TLSCertificate(db.Model):
             "serverSignatureAlgorithm": self.server_signature_algorithm,
             "encryptedClientHello": self.encrypted_client_hello,
         }
+        
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> TLSCertificate | None:
+        """Creates a TLSCertificate instance from a dictionary. Returns None if dictionary is invalid"""
 
+        # TODO: perform data cleaning and checking first. return None if invalid
+
+        # calculate 
+        cert = TLSCertificate(
+            protocol=data["protocol"],
+            key_exchange=data["keyExchange"],
+            key_exchange_group=data.get("keyExchangeGroup"),
+            cipher=data["cipher"],
+            mac=data.get("mac"),
+            certificate_id=data["certificateId"],
+            subject_name=data["subjectName"],
+            issuer=data["issuer"],
+            valid_from=data["validFrom"],
+            valid_to=data["validTo"],
+            certificate_transparency_compliance=CertificateTransparencyCompliance(
+                data["certificateTransparencyCompliance"]
+            ),
+            server_signature_algorithm=data.get("serverSignatureAlgorithm"),
+            encrypted_client_hello=data.get("encryptedClientHello", False),
+        )
+
+        # register any SANs
+        for san in data.get("sanList", []):
+            cert.san_entries.append(SANEntry(name=san))
+
+        # register any timestampes
+        for sct_data in data.get("signedCertificateTimestampList", []):
+            cert.sct_list.append(
+                SignedCertificateTimestamp(
+                    status=sct_data["status"],
+                    origin=sct_data["origin"],
+                    log_description=sct_data.get("logDescription"),
+                    log_id=sct_data.get("logId"),
+                    timestamp=sct_data["timestamp"],
+                    hash_algorithm=sct_data.get("hashAlgorithm"),
+                    signature_algorithm=sct_data.get("signatureAlgorithm"),
+                    signature_data=sct_data.get("signatureData"),
+                )
+            )
+
+        return cert
+
+    def _evaluate_cert(self) -> dict:
+        """
+        Evaluate a TLS certificate against the default policy.
+
+        Returns a dictionary with the following keys:
+            is_expired (bool)
+            days_until_expiry (int)
+            issues (list[str])
+            pass (bool)
+        """
+
+        # stores any issues with the certificate we have detected
+        issues = []
+        
+        # calculate time
+        now = time.time()
+        days_until_expiry = (self.valid_to - now) // 86400 # seconds to days
+
+        # check expiry date
+        if self.valid_to < now:
+            issues.append("expired")
+        elif days_until_expiry < CertificateConfig.DAYS_TIL_EXPIRY_WARN:
+            issues.append("expiring_soon")
+
+        # check if protocols are weak
+        if self.protocol in CertificateConfig.WEAK_PROTOCOLS:
+            issues.append("weak_protocol")
+
+        # check if ciphers are weak
+        if any(w in self.cipher.upper() for w in CertificateConfig.WEAK_CIPHERS):
+            issues.append("weak_cipher")
+
+        # check if certificate transparency is compliant
+        if self.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
+            issues.append("not_ct_compliant")
+
+        return {
+            "is_expired": self.valid_to < now,
+            "days_until_expiry": days_until_expiry,
+            "issues": issues,
+            "pass": len(issues) == 0,
+        }
 
 class SANEntry(db.Model):
+    """
+    The SQLAlchemy database model corresponding to the SQL table storing SAN Entries.
+    Each SAN (Subject Alternative Name) specifies additional host names that this TLS certificate certifies 
+    Each instance of this class represents one row of data.
+
+    Database columns:
+        id (integer): the primary key for the SAN Entry, set to autoincrement
+        certificate_fk (integer): the foreign key for the ::class::`TLSCertificate` entry this SAN belongs to
+        name (string[255]): the subject alternative name registered for a TLS certificate
+
+    Inherits from:
+        flask_sqlalchemy.extension.SQLAlchemy
+    """
+
+    # defines the table name
     __tablename__ = "san_entries"
 
+    # defines the table columns, see docstring for details
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    certificate_fk = db.Column(
-        db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False
-    )
+    certificate_fk = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
     name = db.Column(db.String(255), nullable=False)
 
+    # links this table with the TLS certificate table
+    # the certificate attribute here is the instance of TLSCertificate
     certificate = db.relationship("TLSCertificate", back_populates="san_entries")
 
 
 class SignedCertificateTimestamp(db.Model):
+    """
+    The SQLAlchemy database model corresponding to the SQL table storing Signed Certificate Timestamps.
+    Each instance of this class represents one row of data.
+
+    Database columns:
+        id (integer): the primary key for the timestamp, set to autoincrement
+        certificate_fk (integer): the foreign key for the ::class::`TLSCertificate` entry this timestamp belongs to
+        status (string[50]): ?
+        origin (string[50]): ?
+        log_description (string[255]): [optional] ?
+        log_id (string[255]): [optional] ?
+        timestamp (float): ?
+        hash_algorithm (string[50]): [optional] ?
+        signature_algorithm (string[50]): [optional] ?
+        signature_data (text): [optional] ? 
+
+    Inherits from:
+        flask_sqlalchemy.extension.SQLAlchemy
+    """
+
+    # defines the table name
     __tablename__ = "signed_certificate_timestamps"
 
+    # defines the table columns, see docstring for details
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    certificate_fk = db.Column(
-        db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False
-    )
+    certificate_fk = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
     status = db.Column(db.String(50), nullable=False)
     origin = db.Column(db.String(50), nullable=False)
     log_description = db.Column(db.String(255), nullable=True)
@@ -85,9 +255,12 @@ class SignedCertificateTimestamp(db.Model):
     signature_algorithm = db.Column(db.String(50), nullable=True)
     signature_data = db.Column(db.Text, nullable=True)
 
+    # links this table with the TLS certificate table
+    # the certificate attribute here is the instance of TLSCertificate
     certificate = db.relationship("TLSCertificate", back_populates="sct_list")
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the data from an SQL table entry to a dictionary"""
         return {
             "status": self.status,
             "origin": self.origin,
