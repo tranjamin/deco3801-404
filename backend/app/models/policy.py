@@ -133,7 +133,7 @@ class CertificatePolicy(db.Model):
             min_certificate_lifespan=data.get("minCertificateLifespan", 0),
             min_certificate_days_left=data.get("minCertificateDaysLeft", 0),
             
-            needs_sct=data.get(["needs_sct"], False),
+            needs_sct=data.get(["needsSct"], False),
         )
 
         return policy
