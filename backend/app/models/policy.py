@@ -24,13 +24,13 @@ class Protocols(enum.Enum):
     
     @classmethod
     @functools.cache
-    def lookup_str2int(cls):
-        return {x[0] : x[1] for x in cls.__members__}
+    def lookup_str2int(cls) -> dict[str, int]:
+        return {cls[x].value[1] : cls[x].value[0] for x in cls.__members__}
 
     @classmethod
     @functools.cache
-    def lookup_int2str(cls):
-        return {x[1] : x[0] for x in cls.__members__}
+    def lookup_int2str(cls) -> dict[int, str]:
+        return {cls[x].value[0] : cls[x].value[1] for x in cls.__members__}
     
     def encode(protocols: list[str]) -> int:
         """Convert a list of protocols to a bitvector"""
@@ -55,14 +55,21 @@ class CertificatePolicy(db.Model):
 
     Database columns:
         id (integer): the primary key for the certificate, set to autoincrement
+        active (bool): if this policy is active
+        description (string[255]): a description of this policy
+        domain (string[50]): the domain this policy applies to
+        
         valid_protocols (integer): the protocols which are considered valid, encoded as a bitvector
         valid_subjects (ARRAY(string[50])): subjects which are considered valid
-        valid_sans (): ?
-        valid_issuers (): certificate authorities whcih are considered valid
-        validity_lifespan (integer): the number of days certificates are valid for
-        still_valid_lifespan (integer): minimum number of days a certificate must still be valid for 
-        has_sct (bool): ?
+        valid_sans (ARRAY(string[50])): sans for this policy
+        valid_issuers (ARRAY(string[50])): certificate authorities which are considered valid
+        valid_ciphers (ARRAY(string[50])): ciphers which are valid
         
+        min_certificate_lifespan (integer): the minimum number of days certificates can be valid for
+        min_certificate_days_left (integer): minimum number of days remaining a certificate must be valid for
+        
+        needs_sct (bool): if certificates are required to have a SCT
+
     Inherits from:
         flask_sqlalchemy.extension.SQLAlchemy
     """
@@ -72,27 +79,39 @@ class CertificatePolicy(db.Model):
 
     # defines the column tables, refer to docstring for details
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    valid_protocols = db.Column(db.Integer, nullable=False)
-    valid_subjects = db.Column(ARRAY(db.String(255)), nullable=False)
-    valid_issuers = db.Column(ARRAY(db.String(255)), nullable=False)
-    validity_lifespan = db.Column(db.Integer, nullable=False)
-    still_valid_lifespan = db.Column(db.Integer, nullable=False)
-    has_sct = db.Column(db.Boolean, nullable=False)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    domain = db.Column(db.String(50), nullable=False)
     
-    # TODO: determine whether to link the valid_sans to another table or just have it as a string
-    valid_sans = db.Column(ARRAY(db.String(255)), nullable=False)
+    valid_protocols = db.Column(db.Integer, nullable=False)
+    valid_subjects = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_sans = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_issuers = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_ciphers = db.Column(ARRAY(db.String(50)), nullable=False)
+    
+    min_certificate_lifespan = db.Column(db.Integer, nullable=False)
+    min_certificate_days_left = db.Column(db.Integer, nullable=False)
+    
+    needs_sct = db.Column(db.Boolean, nullable=False)  
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table to a dictionary"""
         return {
             "id": self.id,
-            "valid_protocols": Protocols.decode(self.valid_protocols),
-            "valid_subjects": self.valid_subjects,
-            "valid_issuers": self.valid_issuers,
-            "validity_lifespan": self.validity_lifespan,
-            "still_valid_lifespan": self.still_valid_lifespan,
-            "has_sct": self.has_sct,
-            "valid_sans": self.valid_sans,
+            "active": self.active,
+            "description": self.description,
+            "domain": self.domain,
+            
+            "validProtocols": Protocols.decode(self.valid_protocols),
+            "validSubjects": self.valid_subjects,
+            "validIssuers": self.valid_issuers,
+            "validSans": self.valid_sans,
+            "validCiphers": self.valid_ciphers,            
+            
+            "minCertificateLifespan": self.min_certificate_lifespan,
+            "minCertificateDaysLeft": self.min_certificate_days_left,
+            
+            "needsSct": self.needs_sct,
         }
         
     @staticmethod
@@ -102,20 +121,20 @@ class CertificatePolicy(db.Model):
         # TODO: perform data cleaning and checking first. return None if invalid
 
         policy = CertificatePolicy(
-            valid_protocols=Protocols.encode(data["valid_protocols"]),
-            valid_subjects=data["valid_subjects"],
-            valid_issuers=data.get("valid_issuers"),
-            validity_lifespan=data["validity_lifespan"],
-            still_valid_lifespan=data.get("still_valid_lifespan"),
-            has_sct=data["has_sct"],
-            valid_sans=data["valid_sans"],
+            description=data.get("description", ""),
+            domain=data.get("domain", ""),
+            
+            valid_protocols=Protocols.encode(data.get("validProtocols", [])),
+            valid_subjects=data.get("validSubjects", []),
+            valid_issuers=data.get("validIssuers", []),
+            valid_sans=data.get("validSans", []),
+            valid_ciphers=data.get("validCiphers", []),
+            
+            min_certificate_lifespan=data.get("minCertificateLifespan", 0),
+            min_certificate_days_left=data.get("minCertificateDaysLeft", 0),
+            
+            needs_sct=data.get(["needs_sct"], False),
         )
 
         return policy
-
-class EvaluationResult(db.Model):
-    """
-    
-    """
-    
     
