@@ -28,16 +28,7 @@ export default function Navbar({ active }: Props) {
 
     // sidebar user interface
     return (
-        <div style={{
-            width: 220,
-            height: "100vh",
-            background: "#ffffff",
-            color: "#000000",
-            position: "fixed",
-            top: 0,
-            left: 0,
-            boxShadow: "2px 0 10px rgba(0, 0, 0, 0.6)"
-        }}>
+        <div style={navBarStyle}>
             <h3 style={{ padding: "20px", fontSize: "14px" }}>TLS Certificate Checker</h3>
 
             <div 
@@ -79,16 +70,30 @@ export default function Navbar({ active }: Props) {
                 Settings
             </div>
 
-            <div style={{
-                position: "fixed",
-                bottom: 0,
-                left: 0,
-                padding: "6px",
-                alignContent: "center"
-            }}>
+            <div style={versionStyle}>
                 Version 1.0a
             </div>
         </div>
-    )
-
+    );
 }
+
+
+const navBarStyle: React.CSSProperties = {
+    width: 220,
+    height: "100vh",
+    background: "#ffffff",
+    color: "#000000",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    boxShadow: "2px 0 10px rgba(0, 0, 0, 0.6)"
+};
+
+
+const versionStyle: React.CSSProperties = {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    padding: "6px",
+    alignContent: "center"
+};
