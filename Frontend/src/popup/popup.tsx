@@ -1,20 +1,20 @@
 /// <reference types="chrome" />
 import { useState } from "react";
+import { CurrentSiteSummary } from "./components/currentSiteSummary";
+import { TLSLog } from "./components/TLSLog";
+import { ActionButtons } from "./components/actionButtons";
+import type { TLSData } from "./types";
 
 export default function Popup() {
-    const [data] = useState({
+    // temporary data
+    const [data] = useState<TLSData>({
         domain: "example.com",
-        issuer: "Let's Encrypt",
-        protocol: "TLS 1.3",
+        issuer: "example issuer",
+        validDate: "1719878400000",
+        protocol: "TLS example",
         daysRemaining: 120
     });
 
-    const getStatusColor = () => {
-        // checks for current domain days remaining of tls
-        if (data.daysRemaining < 3) return "red";
-        if (data.daysRemaining < 15) return "orange";
-        return "green";
-    };
 
     const handleOpenReport = () => {
         // finds the report.html file in root dir
@@ -24,89 +24,45 @@ export default function Popup() {
         chrome.tabs.create({ url:reportUrl });
     }
 
+    const handleOpenPolicies = () => {
+        const policiesUrl = chrome.runtime.getURL("policies.html");
+        chrome.tabs.create({ url:policiesUrl });
+    }
+
     const handleOpenSettings = () => {
         const settingsUrl = chrome.runtime.getURL("settings.html");
         chrome.tabs.create({ url:settingsUrl });
     }
 
     return (
-        <div style={{ width: 300, padding: 12, position: "relative", minHeight: "200px"}}>
-            <h3>TLS Certificate Checker</h3>
-            {/* summary view */}
-            <p><b>{data.domain}</b></p>
-            <p>Issuer: {data.issuer}</p>
-            <p>Protocol: {data.protocol}</p>
-
-            {/* days remaining */}
-            <div style={{
-                marginTop: 10,
-                padding: 10,
-                background: getStatusColor(),
-                color: "white",
-                borderRadius: 6
-            }}>
-                {data.daysRemaining} days remaining
-            </div>
-
+        <div style={{ width: 300, padding: 12 }}>
             
-            {/* buttons container */}
-            <div style={{
-                position: "absolute",
-                bottom: "2px",
-                left: "12px",
-                display: "flex", // flexbox to align buttons
-                gap: "8px",
-                alignItems: "center"
-            }}>
-                {/* report button */}
-                <div
-                    onClick={handleOpenReport}
-                    role="button"
-                    style={buttonStyle}
-                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
-                    onKeyDown={(e) => e.key === 'Enter' && handleOpenReport()}
-                >
-                    <img
-                        src="/view-details.svg"
-                        alt="report"
-                        style={{ width: "24px", height: "24px" }}
-                    />
-                </div>
-
-                {/* settings button */}
-                <div
-                    onClick={handleOpenSettings}
-                    role="button"
-                    style={buttonStyle}
-                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
-                    onKeyDown={(e) => e.key === 'Enter' && handleOpenSettings()}
-                >
-                    <img
-                        src="/settings.svg"
-                        alt=""
-                        style={{ width: "24px", height: "24px" }}
-                    />
-                </div>
+            <div style={headerStyle}>
+                <h3><u>TLS Certificate Checker</u></h3>
             </div>
+            
+            {/* layout */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
+                {/* current domain summary view */}
+                <CurrentSiteSummary data={data} />
+        
+                {/* TLS certificate log section */}
+                <TLSLog />
+
+                {/* buttons */}
+                <ActionButtons 
+                    onOpenReport={handleOpenReport}
+                    onOpenPolicies={handleOpenPolicies}
+                    onOpenSettings={handleOpenSettings}
+                />
+            </div>            
         </div>
     );
 }
 
-
-// Shared style to keep buttons consistent
-const buttonStyle: React.CSSProperties = {
+const headerStyle: React.CSSProperties = {
     display: "flex",
+    justifyContent: "center",
     alignItems: "center",
-    gap: "6px",
-    padding: "6px 6px",
-    background: "#ffffff",
-    border: "1px solid #d1d9e0",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "11px",
-    fontWeight: "500",
-    color: "#24292f",
-    transition: "background 0.2s"
+    marginBottom: 10
 };
