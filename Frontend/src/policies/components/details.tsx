@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import type { SecurityPolicy } from "../../policySharing/policySharing";
+import {
+  deletePolicy,
+  type SecurityPolicy,
+  activatePolicy,
+  deactivatePolicy
+} from "../../policySharing/policySharing";
 
 type DetailsProps = {
   policy: SecurityPolicy | null;
@@ -64,8 +69,12 @@ function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
   };
 }
 
-function mapFormDataToPolicy(formData: PolicyFormData): SecurityPolicy {
+function mapFormDataToPolicy(
+  formData: PolicyFormData,
+  existingId?: number,
+): SecurityPolicy {
   return {
+    id: existingId ?? 0,
     name: formData.name,
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
@@ -172,12 +181,16 @@ export default function Details({
   }, [policy, startInEditMode]);
 
   const handleActivate = async () => {
+    if (policy == null) {return}
     console.log("sending activated policy to API");
+    await activatePolicy(policy.id);
     window.location.reload();
   };
 
   const handleDeactivate = async () => {
+    if (policy == null) {return}
     console.log("sending deactivated policy to API");
+    await deactivatePolicy(policy.id);
     window.location.reload();
   };
 
@@ -190,6 +203,14 @@ export default function Details({
     if (!policy) return;
     setFormData(mapPolicyToFormData(policy));
     setIsEditing(true);
+  };
+
+  const handleDelete = async () => {
+    if (!policy) return;
+    //setFormData(mapPolicyToFormData(policy));
+    //setIsEditing(true);
+    await deletePolicy(policy.id);
+    window.location.reload();
   };
 
   const handleInputChange = (field: keyof PolicyFormData, value: string) => {
@@ -230,7 +251,7 @@ export default function Details({
   };
 
   const handleSave = async () => {
-    const policyPayload = mapFormDataToPolicy(formData);
+    const policyPayload = mapFormDataToPolicy(formData, policy?.id);
 
     if (isNewPolicy && onSaveNewPolicy) {
       await onSaveNewPolicy(policyPayload);
@@ -513,9 +534,14 @@ export default function Details({
 
           <div style={bottomActionBar}>
             {!isEditing ? (
+              <>
               <button type="button" style={editbutton} onClick={handleEdit}>
                 Edit
               </button>
+              <button type="button" style={deletebutton} onClick={handleDelete}>
+                Delete
+              </button>
+              </>
             ) : (
               <>
                 <button
@@ -652,7 +678,17 @@ const editbutton: React.CSSProperties = {
   border: "1px solid #000000",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#614c00",
+  color: "#967500",
+  backgroundColor: "rgb(243, 243, 243)",
+  margin: "3px",
+};
+
+const deletebutton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #000000",
+  borderRadius: "6px",
+  cursor: "pointer",
+  color: "#b30000",
   backgroundColor: "rgb(243, 243, 243)",
   margin: "3px",
 };

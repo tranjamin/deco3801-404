@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import PolicyList from "./components/policyList";
 import Details from "./components/details";
-import type { SecurityPolicy } from "../policySharing/policySharing";
+import {type SecurityPolicy, storeNewPolicy } from "../policySharing/policySharing";
 import Navbar from "../sharedComponent/navbar";
 
 export default function Policies() {
@@ -12,6 +12,7 @@ export default function Policies() {
   const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
 
   const emptyPolicy: SecurityPolicy = {
+    id: 0,
     name: "",
     description: "",
     active: false,
@@ -37,6 +38,7 @@ export default function Policies() {
 
   const handleSaveNewPolicy = async (policy: SecurityPolicy) => {
     console.log("placeholder: create new policy", policy);
+    await storeNewPolicy(policy);
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
   };

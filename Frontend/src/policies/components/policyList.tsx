@@ -19,109 +19,112 @@ export default function PolicyList({
   const GetAllPoliciesFunction = async () => {
     // this function will call an API endpoint to fetch all the users saved policies
     //for now just return sample data
-    //const fetchedPolicies = await getAllPolicies();
-    getAllPolicies();
-    const DefaultPolicy1: SecurityPolicy = {
-      name: "My Policy 1",
-      description: "Default 1",
-      active: true,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy2: SecurityPolicy = {
-      name: "My Policy 2",
-      description: "Default 1",
-      active: false,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy3: SecurityPolicy = {
-      name: "My Policy 3",
-      description: "Default 1",
-      active: true,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy4: SecurityPolicy = {
-      name: "My Policy 4",
-      description: "Default 1",
-      active: false,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy5: SecurityPolicy = {
-      name: "My Policy 5",
-      description: "Default 1",
-      active: false,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy6: SecurityPolicy = {
-      name: "My Policy 6",
-      description: "Default 1",
-      active: false,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const DefaultPolicy7: SecurityPolicy = {
-      name: "My Policy 7",
-      description: "Default 1",
-      active: false,
-      protocols: ["1.2", "1.3"],
-      subjects: [],
-      SANs: [],
-      issuers: [],
-      validAfter: 50,
-      validFor: 10,
-      hasSCT: true,
-      ciphers: [],
-    };
-    const policies = [
-      DefaultPolicy1,
-      DefaultPolicy2,
-      DefaultPolicy3,
-      DefaultPolicy4,
-      DefaultPolicy5,
-      DefaultPolicy6,
-      DefaultPolicy7,
-    ];
-    setPolicies(policies);
+    const fetchedPolicies = await getAllPolicies();
+    console.log(fetchedPolicies);
+    console.log(typeof(fetchedPolicies));
+    //const formattedPolicies = mapJSONtoPolicies(fetchedPolicies);
+    //getAllPolicies();
+    // const DefaultPolicy1: SecurityPolicy = {
+    //   name: "My Policy 1",
+    //   description: "Default 1",
+    //   active: true,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy2: SecurityPolicy = {
+    //   name: "My Policy 2",
+    //   description: "Default 1",
+    //   active: false,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy3: SecurityPolicy = {
+    //   name: "My Policy 3",
+    //   description: "Default 1",
+    //   active: true,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy4: SecurityPolicy = {
+    //   name: "My Policy 4",
+    //   description: "Default 1",
+    //   active: false,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy5: SecurityPolicy = {
+    //   name: "My Policy 5",
+    //   description: "Default 1",
+    //   active: false,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy6: SecurityPolicy = {
+    //   name: "My Policy 6",
+    //   description: "Default 1",
+    //   active: false,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const DefaultPolicy7: SecurityPolicy = {
+    //   name: "My Policy 7",
+    //   description: "Default 1",
+    //   active: false,
+    //   protocols: ["1.2", "1.3"],
+    //   subjects: [],
+    //   SANs: [],
+    //   issuers: [],
+    //   validAfter: 50,
+    //   validFor: 10,
+    //   hasSCT: true,
+    //   ciphers: [],
+    // };
+    // const policies = [
+    //   DefaultPolicy1,
+    //   DefaultPolicy2,
+    //   DefaultPolicy3,
+    //   DefaultPolicy4,
+    //   DefaultPolicy5,
+    //   DefaultPolicy6,
+    //   DefaultPolicy7,
+    // ];
+    setPolicies(fetchedPolicies ?? []);
   };
 
   useEffect(() => {
