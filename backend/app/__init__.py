@@ -33,7 +33,7 @@ def create_app():
     # init app
     db.init_app(app)
 
-    from app.models import certificate  # noqa: F401
+    from app.models import certificate, policy  # noqa: F401
 
     # initialise database schema
     with app.app_context():
@@ -41,6 +41,9 @@ def create_app():
 
     # load in blueprint
     from app.routes.certificate_routes import certificate_bp
+    from app.routes.policy_routes import policy_bp
+    
     app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
+    app.register_blueprint(policy_bp, url_prefix="/api/policies/")
 
     return app
