@@ -3,22 +3,22 @@ import React, { useState } from "react";
 import PolicyList from "./components/policyList";
 import Details from "./components/details";
 import type { SecurityPolicy } from "../policySharing/policySharing";
+import Navbar from "../sharedComponent/navbar";
 
 export default function Policies() {
 
-  // make a state for the sidebar thingy, if true then sidebar visible, replace with Alex's code when he does it
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now
 
   return (
     <div style={page}>
-      {/*replace with Alex code when ready*/}
-      <aside style={{ ...sidebar, width: sidebarWidth }}> {/*https://www.w3schools.com/tags/tag_aside.asp*/}
-        <button onClick={() => setSidebarOpen((v) => !v)} style={toggleBtn}>
-          toggle
-        </button>
-      </aside>
+
+      {/* Sidebar navigation */}
+      <div>
+        <Navbar active="policies" />
+      </div>
+      
       {/*actual page*/}
       <div style={{ ...splits, marginLeft: sidebarWidth }}>
         {/*Left Split*/}
@@ -42,27 +42,27 @@ const page: React.CSSProperties = {
   background: "#ffffff",
 };
 
-const sidebar: React.CSSProperties = {
-  position: "fixed", //everything breaks without this
-  top: 0,
-  left: 0,
-  height: "100vh",
-  background: "#111",
-  color: "#fff",
-  transition: "width 200ms",
-  overflow: "hidden", //DO NOT DELETE, stops stuff from showing when collapsed
-  paddingTop: 12,
-  boxSizing: "border-box",
-  zIndex: 20,
-};
+// const sidebar: React.CSSProperties = {
+//   position: "fixed", //everything breaks without this
+//   top: 0,
+//   left: 0,
+//   height: "100vh",
+//   background: "#111",
+//   color: "#fff",
+//   transition: "width 200ms",
+//   overflow: "hidden", //DO NOT DELETE, stops stuff from showing when collapsed
+//   paddingTop: 12,
+//   boxSizing: "border-box",
+//   zIndex: 20,
+// };
 
-const toggleBtn: React.CSSProperties = {
-  margin: "0 10px 12px",
-  border: "none",
-  borderRadius: 6,
-  padding: "8px 10px",
-  cursor: "pointer",
-};
+// const toggleBtn: React.CSSProperties = {
+//   margin: "0 10px 12px",
+//   border: "none",
+//   borderRadius: 6,
+//   padding: "8px 10px",
+//   cursor: "pointer",
+// };
 
 const splits: React.CSSProperties = {
   display: "flex", //horizontal split
