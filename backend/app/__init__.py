@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 import sqlalchemy
 from typing import *
 import os
@@ -74,6 +75,10 @@ db: "SQLAlchemy" = SQLAlchemy()
 def create_app():
     # create app
     app: "Flask" = Flask(__name__)
+    
+    # load CORS
+    CORS(app)
+    app.config["CORS_HEADERS"] = 'Content-Type'
     
     @app.route("/")
     def info():
