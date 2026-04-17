@@ -74,6 +74,41 @@ def create():
     db.session.commit()
     return jsonify(cert.to_dict()), 201
 
+@certificate_bp.route("/create_dummy", methods=["GET"])
+def create_dummy():
+    """
+    API endpoint which creates a dummy certificate policy when navigating to it.
+
+    URL:
+        /create_dummy
+    Methods Supported:
+        GET
+    Returns:
+        On success: A JSON containing the parsed TLS certificate data in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 201
+        On failure: JSON with an 'error' field, Error code 400
+    """
+    cert = TLSCertificate(
+        protocol="tls 1.0",
+        key_exchange="Dummy keyExchange",
+        key_exchange_group="Dummy keyExchangeGroup",
+        cipher="Dummy cipher",
+        mac="Dummy mac",
+        certificate_id=0,
+        subject_name="Dummy subject name",
+        issuer="Dummy issuer",
+        valid_from=0,
+        valid_to=1,
+        certificate_transparency_compliance=CertificateTransparencyCompliance.UNKNOWN,
+        server_signature_algorithm=0,
+        encrypted_client_hello=False,
+    )
+
+    if cert is None:
+        return jsonify({"error": "Request cannot be formatted as a TLS certificate"}), 400
+
+    db.session.add(cert)
+    db.session.commit()
+    return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/<int:cert_id>", methods=["DELETE"])
 def delete(cert_id):

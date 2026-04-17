@@ -150,10 +150,10 @@ def batch_create():
 @policy_bp.route("/create_dummy", methods=["GET"])
 def create_dummy_data():
     """
-    API endpoint which creates a dummy certificate policy
+    API endpoint which creates a dummy certificate policy when navigating to it.
 
     URL:
-        /placeholder
+        /create_dummy
     Methods Supported:
         GET
     Returns:
