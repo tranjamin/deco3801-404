@@ -1,7 +1,10 @@
 export type TLSData = {
-    domain: string;
-    issuer: string;
-    validDate: string;
-    protocol: string;
-    daysRemaining: number;
+  id: string;
+  protocol: string;
+  cipher: string;
+  subjectName: string;
+  sanList: string[];
+  issuer: string;
+  validFrom: string; // or Date if parsed
+  validTo: string;
 };
