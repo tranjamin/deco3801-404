@@ -68,6 +68,9 @@ class TLSCertificate(db.Model):
     )
     server_signature_algorithm = db.Column(db.Integer, nullable=True)
     encrypted_client_hello = db.Column(db.Boolean, nullable=False, default=False)
+    user_fk = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    user = db.relationship("User", back_populates="certificates")
 
     # links this table with the SAN entries table
     # san_entries is a list of SANEntry instances, cascading all changes and deleting unowned entries

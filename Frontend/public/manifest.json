@@ -5,5 +5,12 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab", "tabs"]
+  "permissions": [
+    "activeTab", 
+    "tabs", 
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }

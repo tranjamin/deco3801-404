@@ -93,6 +93,9 @@ class CertificatePolicy(db.Model):
     min_certificate_days_left = db.Column(db.Integer, nullable=False)
     
     needs_sct = db.Column(db.Boolean, nullable=False)  
+    user_fk = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    user = db.relationship("User", back_populates="policies")
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table to a dictionary"""
