@@ -5,14 +5,15 @@ import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
 import type { TLSData } from "./types";
 import {
-    getAuthState,
-    login,
-    logout,
-    me,
-    register as registerUser,
+    getStoredAccessToken,
+    setStoredAccessToken,
+    setStoredUser,
+    clearAuthState,
     type AuthUser,
-} from "../api/middleend";
+} from "../api/authStorage";
 
+const API_BASE_URL = "https://deco3801-404-dev.onrender.com";
+// const API_BASE_URL = "http://127.0.0.1:5000";
 
 export default function Popup() {
     const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -21,6 +22,7 @@ export default function Popup() {
     const [authUser, setAuthUser] = useState<AuthUser | null>(null);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    
     // temporary data
     const [data] = useState<TLSData>({
         domain: "example.com",
@@ -34,13 +36,27 @@ export default function Popup() {
         const loadAuth = async () => {
             setAuthError(null);
             try {
-                const state = await getAuthState();
-                if (!state.isAuthenticated) {
+                const token = await getStoredAccessToken();
+                if (!token) {
                     setIsAuthenticated(false);
                     setAuthUser(null);
                     return;
                 }
-                const currentUser = await me();
+
+                const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        await clearAuthState();
+                    }
+                    throw new Error("Session expired or invalid");
+                }
+
+                const currentUser: AuthUser = await response.json();
                 setAuthUser(currentUser);
                 setIsAuthenticated(true);
             } catch {
@@ -51,23 +67,19 @@ export default function Popup() {
         void loadAuth();
     }, []);
 
-
     const handleOpenReport = () => {
-        // finds the report.html file in root dir
         const reportUrl = chrome.runtime.getURL("report.html");
-
-        // opens new tab of report.html
-        chrome.tabs.create({ url:reportUrl });
+        chrome.tabs.create({ url: reportUrl });
     }
 
     const handleOpenPolicies = () => {
         const policiesUrl = chrome.runtime.getURL("policies.html");
-        chrome.tabs.create({ url:policiesUrl });
+        chrome.tabs.create({ url: policiesUrl });
     }
 
     const handleOpenSettings = () => {
         const settingsUrl = chrome.runtime.getURL("settings.html");
-        chrome.tabs.create({ url:settingsUrl });
+        chrome.tabs.create({ url: settingsUrl });
     };
 
     const resetAuthForm = () => {
@@ -78,15 +90,27 @@ export default function Popup() {
     const handleAuthSubmit = async () => {
         setAuthError(null);
         try {
-            if (authMode === "login") {
-                const response = await login(username, password);
-                setAuthUser(response.user);
-                setIsAuthenticated(true);
-            } else {
-                const response = await registerUser({ username, password });
-                setAuthUser(response.user);
-                setIsAuthenticated(true);
+            const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+            
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.error || responseData.message || "Authentication failed");
             }
+
+            await Promise.all([
+                setStoredAccessToken(responseData.accessToken),
+                setStoredUser(responseData.user)
+            ]);
+
+            setAuthUser(responseData.user);
+            setIsAuthenticated(true);
             resetAuthForm();
         } catch (error) {
             const message = error instanceof Error ? error.message : "Could not authenticate";
@@ -95,14 +119,12 @@ export default function Popup() {
     };
 
     const handleLogout = async () => {
-        await logout();
+        await clearAuthState();
         setIsAuthenticated(false);
         setAuthUser(null);
         setAuthMode("login");
         resetAuthForm();
     };
-
-
 
     if (!isAuthenticated) {
         return (
@@ -163,7 +185,6 @@ export default function Popup() {
 
     return (
         <div style={rootStyle}>
-            
             <div style={headerStyle}>
                 <h3><u>TLS Certificate Checker</u></h3>
             </div>
@@ -173,15 +194,9 @@ export default function Popup() {
                 <button type="button" onClick={() => void handleLogout()}>Log out</button>
             </p>
             
-            {/* layout */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
-                {/* current domain summary view */}
                 <CurrentSiteSummary data={data} />
-        
-                {/* TLS certificate log section */}
                 <TLSLog />
-
-                {/* buttons */}
                 <ActionButtons 
                     onOpenReport={handleOpenReport}
                     onOpenPolicies={handleOpenPolicies}
