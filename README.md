@@ -1,4 +1,3 @@
-=======
 # DECO3801 Team 404
 
 ## Contributing
@@ -13,7 +12,7 @@ The backend files should all be in `/backend`, because it is this and only this 
 
 ### Development
 
-A new endpoint can be created with adding a new route by decorating a function with `@app.route("/endpoint/path")`. The decorated function will be called whenever the endpoint is queried. Do not change the naming of `app` or `backend.py`, or otherwise the backend will also need to be modified.
+A new endpoint can be created with adding a new route by decorating a function with `@app.route("/endpoint/path")`. The decorated function will be called whenever the endpoint is queried. Do not change the naming of `app` or `run.py`, or otherwise the backend will also need to be modified.
 
 ### Run the server locally
 
@@ -23,7 +22,6 @@ pip install -r requirements.txt
 python -m flask --app backend run # to deploy with flask
 python -m gunicorn backend:app # to deploy with gunicorn (linux only)
 ```
->>>>>>> origin/main
 
 
 
