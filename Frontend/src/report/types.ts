@@ -1,4 +1,4 @@
-export type TLSData = {
+export type TLSCertificate = {
   id: string;
   protocol: string;
   cipher: string;
@@ -7,4 +7,9 @@ export type TLSData = {
   issuer: string;
   validFrom: string; // or Date if parsed
   validTo: string;
+};
+
+export type TLSCertificateTransformed = TLSCertificate & {
+  daysRemaining: number;
+  status: "ok" | "warning" | "expired";
 };
