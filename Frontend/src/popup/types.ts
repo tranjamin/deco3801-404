@@ -8,3 +8,8 @@ export type TLSData = {
   validFrom: string; // or Date if parsed
   validTo: string;
 };
+
+export type TLSDataTransformed = TLSData & {
+  daysRemaining: number;
+  status: "ok" | "warning" | "expired";
+};

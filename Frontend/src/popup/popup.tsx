@@ -4,16 +4,24 @@ import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
 import type { TLSData } from "./types";
+import { transformSingleCert } from "./components/utils";
 
 export default function Popup() {
+
     // temporary data
     const [data] = useState<TLSData>({
-        domain: "example.com",
-        issuer: "example issuer",
-        validDate: "1719878400000",
-        protocol: "TLS example",
-        daysRemaining: 120
+        id: "4",
+        protocol: "TLS 1.2",
+        cipher: "ECDHE-RSA-AES256-SHA",
+        subjectName: "legacy-site.net",
+        sanList: ["legacy-site.net"],
+        issuer: "DigiCert",
+        validFrom: "2026-04-01T00:00:00Z",
+        validTo: "2026-04-25T00:00:00Z" 
     });
+
+
+    const transformedData = transformSingleCert(data);
 
 
     const handleOpenReport = () => {
@@ -44,7 +52,7 @@ export default function Popup() {
             {/* layout */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
                 {/* current domain summary view */}
-                <CurrentSiteSummary data={data} />
+                <CurrentSiteSummary data={transformedData} />
         
                 {/* TLS certificate log section */}
                 <TLSLog />

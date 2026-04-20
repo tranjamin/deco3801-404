@@ -10,8 +10,8 @@ export default function Report() {
 
     const [sidebarOpen] = useState(true);
     const sidebarWidth = sidebarOpen ? 220 : 0;
-    const [data] = useState<TLSCertificate[]>(mockTLSData);
 
+    const [data] = useState<TLSCertificate[]>(mockTLSData);
     const transformedData = transformCertificates(data);
 
 
