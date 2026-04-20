@@ -99,6 +99,27 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
 //   });
 // }
 
+export async function addDummyPolicy(): Promise<{ message: string } | null> {
+  //console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
+  try {
+    const response = await fetch(`${baseUrl}/api/policies/create_dummy`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      //body: JSON.stringify(mapPolicyToBackendPayload(policy)),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = (await response.json()) as { message?: string };
+    return { message: data.message ?? "Policy activity updated" };
+  } catch (e) {
+    console.log("BIG ERROR:", e);
+    return null;
+  }
+}
+
 export async function storeNewPolicy(
   policy: SecurityPolicy,
 ): Promise<SecurityPolicy | null> {
