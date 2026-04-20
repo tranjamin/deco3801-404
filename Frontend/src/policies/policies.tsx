@@ -2,13 +2,49 @@
 import React, { useState } from "react";
 import PolicyList from "./components/policyList";
 import Details from "./components/details";
-import type { SecurityPolicy } from "../policySharing/policySharing";
+import {type SecurityPolicy, addDummyPolicy } from "../policySharing/policySharing";
 import Navbar from "../sharedComponent/navbar";
 
 export default function Policies() {
 
   const [sidebarOpen] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
+  const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
+
+  const emptyPolicy: SecurityPolicy = {
+    id: 0,
+    name: "",
+    description: "",
+    active: false,
+    protocols: [],
+    ciphers: [],
+    subjects: [],
+    SANs: [],
+    issuers: [],
+    validAfter: 0,
+    validFor: 0,
+    hasSCT: false,
+  };
+
+  const handleSelectPolicy = (policy: SecurityPolicy) => {
+    setIsCreatingPolicy(false);
+    setSelectedPolicy(policy);
+  };
+
+  const handleAddPolicy = () => {
+    setIsCreatingPolicy(true);
+    setSelectedPolicy(emptyPolicy);
+  };
+
+  const handleSaveNewPolicy = async (policy: SecurityPolicy) => {
+    console.log("placeholder: create new policy", policy);
+    //await storeNewPolicy(policy);
+    await addDummyPolicy();
+    setIsCreatingPolicy(false);
+    setSelectedPolicy(policy);
+    window.location.reload();
+  };
+
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now
 
   return (
@@ -24,13 +60,19 @@ export default function Policies() {
         {/*Left Split*/}
         <div style={{ ...split, ...left }}>
           <PolicyList
-            onSelectPolicy={setSelectedPolicy}
+            onSelectPolicy={handleSelectPolicy}
+            onAddPolicy={handleAddPolicy}
             selectedPolicyName={selectedPolicy?.name ?? null}
           />
         </div>
         {/*Right Split*/}
         <div style={{ ...split, ...right }}>
-          <Details policy={selectedPolicy} />
+          <Details
+            policy={selectedPolicy}
+            startInEditMode={isCreatingPolicy}
+            isNewPolicy={isCreatingPolicy}
+            onSaveNewPolicy={handleSaveNewPolicy}
+          />
         </div>
       </div>
     </div>

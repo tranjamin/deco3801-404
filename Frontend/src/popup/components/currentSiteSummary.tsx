@@ -1,8 +1,8 @@
 import type React from "react";
-import type { TLSData } from "../types";
+import type { TLSDataTransformed } from "../types";
 
 type Props = {
-    data: TLSData;
+    data: TLSDataTransformed;
 };
 
 export function CurrentSiteSummary({ data }: Props) {
@@ -46,7 +46,7 @@ export function CurrentSiteSummary({ data }: Props) {
                 <div style={rightBox}>
                     <div style={{ padding: 3 }}>
                         <p style= {{ margin: 0 }}><b>Domain</b></p>
-                        <p style= {{ margin: 0 }}>{data.domain}</p>
+                        <p style= {{ margin: 0 }}>{data.subjectName}</p>
                     </div>
                     
                     <div style={{ padding: 3 }}>
@@ -56,7 +56,7 @@ export function CurrentSiteSummary({ data }: Props) {
                         
                     <div style={{ padding: 3 }}>
                         <p style= {{ margin: 0 }}><b>Valid Date</b></p>
-                        <p style= {{ margin: 0 }}>{new Date(data.validDate).toLocaleDateString("en-GB")}</p>
+                        <p style= {{ margin: 0, fontSize: "11px" }}>{data.validFrom} - {data.validTo}</p>
                     </div>
                 </div>
             </div>

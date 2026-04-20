@@ -1,5 +1,5 @@
 import React from "react";
-import type { SecurityPolicy } from "../../policySharing/policySharing";
+import { type  SecurityPolicy, activatePolicy, deactivatePolicy } from "../../policySharing/policySharing";
 
 type PolicyStubProps = {
     policy: SecurityPolicy;
@@ -11,11 +11,13 @@ export default function PolicyStub({ policy, onSelect, isSelected }: PolicyStubP
 
     const handleActivate = async () => {
         console.log("sending activated policy to API");
+        await activatePolicy(policy.id);
         window.location.reload();
     }
 
     const handleDeactivate = async () => {
         console.log("sending deactivated policy to API");
+         await deactivatePolicy(policy.id);
         window.location.reload();
     }
     return (
