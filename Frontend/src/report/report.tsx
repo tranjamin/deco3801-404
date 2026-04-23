@@ -2,9 +2,9 @@
 import React, { useState } from "react";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
-import type { TLSCertificate } from "./types";
-import { transformCertificates } from "./components/utils"
-import { mockTLSData } from "./mockData";
+import type { TLSCertificate } from "../sharedComponent/types";
+import { transformCertificates } from "../sharedComponent/utils"
+import { mockTLSData } from "../sharedComponent/mockData";
 
 export default function Report() {
 
@@ -35,7 +35,6 @@ export default function Report() {
                         TLS Certificate Log
                     </h4>
                     <ReportTable data={transformedData} />
-
 
                     
                     <p>The report content generation things will go here</p>
