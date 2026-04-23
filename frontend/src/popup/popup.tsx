@@ -3,15 +3,18 @@
 import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
-import { transformSingleCert } from "../sharedComponent/utils";
+import { countStatus, transformCertificates, transformSingleCert } from "../sharedComponent/utils";
 import { mockTLSData } from "../sharedComponent/mockData";
 
 export default function Popup() {
 
-    // temporary data
+    // temporary data current site
     const data = mockTLSData[3]
     const transformedData = transformSingleCert(data);
 
+    // temporary log data
+    const allDataTransformed = transformCertificates(mockTLSData);
+    const stats = countStatus(allDataTransformed);
 
     const handleOpenReport = () => {
         // finds the report.html file in root dir
@@ -44,7 +47,7 @@ export default function Popup() {
                 <CurrentSiteSummary data={transformedData} />
         
                 {/* TLS certificate log section */}
-                <TLSLog />
+                <TLSLog stats={stats} />
 
                 {/* buttons */}
                 <ActionButtons 

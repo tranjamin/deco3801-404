@@ -1,9 +1,7 @@
 import type { TLSCertificate, TLSCertificateTransformed } from "./types";
 
 // Converts datetime into YYYY-MM-DD instead of YYYY-MM-DDT[TIME]Z
-export function transformCertificates(
-    cert: TLSCertificate[]
-): TLSCertificateTransformed[] {
+export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTransformed[] {
     const now = Date.now();
 
     return cert.map( cert => {
@@ -33,9 +31,7 @@ export function transformCertificates(
 }
 
 
-export function transformSingleCert(
-    cert: TLSCertificate
-): TLSCertificateTransformed {
+export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransformed {
     const formattedValidTo = new Intl.DateTimeFormat("en-CA").format(
         new Date(cert.validTo)
     );
@@ -63,9 +59,7 @@ export function transformSingleCert(
 
 
 
-export function transformCertificatesKeepTime(
-    data: TLSCertificate[]
-): TLSCertificateTransformed[] {
+export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertificateTransformed[] {
     const now = Date.now();
 
     return data.map( cert => {
@@ -82,5 +76,18 @@ export function transformCertificatesKeepTime(
             daysRemaining,
             status
         };
+    })
+}
+
+
+
+
+export function countStatus(data: TLSCertificateTransformed[]) {
+    // for each loop
+    return data.reduce((acc, cert) => {
+        acc[cert.status]++;
+        return acc;
+    }, {
+        ok: 0, warning: 0, expired: 0
     })
 }
