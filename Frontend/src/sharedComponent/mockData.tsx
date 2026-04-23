@@ -39,7 +39,7 @@ export const mockTLSData: TLSCertificate[] = [
     sanList: ["legacy-site.net"],
     issuer: "DigiCert",
     validFrom: "2026-04-01T00:00:00Z",
-    validTo: "2026-04-25T00:00:00Z" // expiring soon
+    validTo: "2026-05-25T00:00:00Z"
   },
   {
     id: "5",
@@ -69,6 +69,6 @@ export const mockTLSData: TLSCertificate[] = [
     sanList: ["old-api.service.com"],
     issuer: "GlobalSign",
     validFrom: "2026-01-14T00:00:00Z",
-    validTo: "2026-04-20T00:00:00Z" // very soon
+    validTo: "2026-04-20T00:00:00Z"
   }
 ];

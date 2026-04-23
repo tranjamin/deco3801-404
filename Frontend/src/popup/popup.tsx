@@ -1,26 +1,15 @@
 /// <reference types="chrome" />
-import { useState } from "react";
+// import { useState } from "react";
 import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
-import type { TLSCertificate } from "../sharedComponent/types";
 import { transformSingleCert } from "../sharedComponent/utils";
+import { mockTLSData } from "../sharedComponent/mockData";
 
 export default function Popup() {
 
     // temporary data
-    const [data] = useState<TLSCertificate>({
-        id: "4",
-        protocol: "TLS 1.2",
-        cipher: "ECDHE-RSA-AES256-SHA",
-        subjectName: "legacy-site.net",
-        sanList: ["legacy-site.net"],
-        issuer: "DigiCert",
-        validFrom: "2026-04-01T00:00:00Z",
-        validTo: "2026-05-14T00:00:00Z" 
-    });
-
-
+    const data = mockTLSData[3]
     const transformedData = transformSingleCert(data);
 
 
