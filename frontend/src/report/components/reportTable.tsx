@@ -14,14 +14,14 @@ export default function ReportTable({ data }: Props) {
             <table style={tableStyle}>
                 <thead>
                     <tr>
-                        <th style={cellStyle}>ID</th>
-                        <th style={cellStyle}>Domain</th>
-                        <th style={cellStyle}>Issuer</th>
-                        <th style={cellStyle}>Protocol</th>
-                        <th style={cellStyle}>Days Remaining</th>
-                        <th style={cellStyle}>Cipher</th>
-                        <th style={cellStyle}>Valid From</th>
-                        <th style={cellStyle}>Valid To</th>
+                        <th style={headerCellStyle}>ID</th>
+                        <th style={headerCellStyle}>Domain</th>
+                        <th style={headerCellStyle}>Issuer</th>
+                        <th style={headerCellStyle}>Protocol</th>
+                        <th style={headerCellStyle}>Days Remaining</th>
+                        <th style={headerCellStyle}>Cipher</th>
+                        <th style={headerCellStyle}>Valid From</th>
+                        <th style={headerCellStyle}>Valid To</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,18 +64,34 @@ const containerStyle: React.CSSProperties = {
     border: "1px solid #ccc",
     borderRadius: "8px",
     padding: "10px",
-    overflowX: "auto",
+    overflowX: "auto", // Enable horizontal scroll
+    overflowY: "auto", // Enables vertical scroll
+    maxHeight: "500px", // Set preferred limit here
 };
-
 
 
 const tableStyle: React.CSSProperties = {
     width: "100%",
     borderCollapse: "collapse",
     border: "1px solid #ccc",
-}
+};
+
 
 const cellStyle: React.CSSProperties = {
     border: "1px solid #ccc",
     padding: "8px",
+};
+
+
+const headerCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    position: "sticky",
+    top: "-11px",
+    backgroundColor: "#ffffff",
+    zIndex: 10,
+    fontWeight: "bold",
+    borderTop: "1px solid #ccc",
+    borderBottom: "2px solid #ccc",
+    borderLeft: "1px solid #ccc",
+    borderRight: "1px solid #ccc",
 };

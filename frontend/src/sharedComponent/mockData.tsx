@@ -155,8 +155,8 @@ export const mockTLSData: TLSCertificate[] = [
     id: "16",
     protocol: "TLS 1.3",
     cipher: "TLS_AES_128_GCM_SHA256",
-    subjectName: "://service.com",
-    sanList: ["://service.com"],
+    subjectName: "service.com",
+    sanList: ["service.com"],
     issuer: "Cloudflare Inc ECC CA-3",
     validFrom: "2026-02-05T00:00:00Z",
     validTo: "2026-05-05T00:00:00Z"
