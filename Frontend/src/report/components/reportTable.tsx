@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 import React from "react";
-import type { TLSCertificateTransformed } from "../types";
+import type { TLSCertificateTransformed } from "../../sharedComponent/types";
 
 
 type Props = {

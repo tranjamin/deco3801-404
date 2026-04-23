@@ -3,13 +3,13 @@ import { useState } from "react";
 import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
-import type { TLSData } from "./types";
-import { transformSingleCert } from "./components/utils";
+import type { TLSCertificate } from "../sharedComponent/types";
+import { transformSingleCert } from "../sharedComponent/utils";
 
 export default function Popup() {
 
     // temporary data
-    const [data] = useState<TLSData>({
+    const [data] = useState<TLSCertificate>({
         id: "4",
         protocol: "TLS 1.2",
         cipher: "ECDHE-RSA-AES256-SHA",
@@ -17,7 +17,7 @@ export default function Popup() {
         sanList: ["legacy-site.net"],
         issuer: "DigiCert",
         validFrom: "2026-04-01T00:00:00Z",
-        validTo: "2026-04-25T00:00:00Z" 
+        validTo: "2026-05-14T00:00:00Z" 
     });
 
 
