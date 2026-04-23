@@ -32,7 +32,7 @@ export function CurrentSiteSummary({ data }: Props) {
                         borderRadius: 6,
                         border: "1px solid #d1d9e0",
                     }}>
-                        <p style={{ margin: 0 }}><b>Days left</b></p>
+                        <p style={{ margin: 0, WebkitTextStroke: "0.5px #414141" }}><b>Days left</b></p>
                         <p style={{ margin: 0 }}>{data.daysRemaining}</p>
                     </div>
 

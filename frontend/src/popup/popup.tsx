@@ -1,28 +1,20 @@
 /// <reference types="chrome" />
-import { useState } from "react";
+// import { useState } from "react";
 import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
-import type { TLSCertificate } from "../sharedComponent/types";
-import { transformSingleCert } from "../sharedComponent/utils";
+import { countStatus, transformCertificates, transformSingleCert } from "../sharedComponent/utils";
+import { mockTLSData } from "../sharedComponent/mockData";
 
 export default function Popup() {
 
-    // temporary data
-    const [data] = useState<TLSCertificate>({
-        id: "4",
-        protocol: "TLS 1.2",
-        cipher: "ECDHE-RSA-AES256-SHA",
-        subjectName: "legacy-site.net",
-        sanList: ["legacy-site.net"],
-        issuer: "DigiCert",
-        validFrom: "2026-04-01T00:00:00Z",
-        validTo: "2026-05-14T00:00:00Z" 
-    });
-
-
+    // temporary data current site
+    const data = mockTLSData[3]
     const transformedData = transformSingleCert(data);
 
+    // temporary log data
+    const allDataTransformed = transformCertificates(mockTLSData);
+    const stats = countStatus(allDataTransformed);
 
     const handleOpenReport = () => {
         // finds the report.html file in root dir
@@ -43,7 +35,7 @@ export default function Popup() {
     }
 
     return (
-        <div style={{ width: 300, padding: 12 }}>
+        <div style={popupContainer}>
             
             <div style={headerStyle}>
                 <h3><u>TLS Certificate Checker</u></h3>
@@ -55,7 +47,7 @@ export default function Popup() {
                 <CurrentSiteSummary data={transformedData} />
         
                 {/* TLS certificate log section */}
-                <TLSLog />
+                <TLSLog stats={stats} />
 
                 {/* buttons */}
                 <ActionButtons 
@@ -67,6 +59,19 @@ export default function Popup() {
         </div>
     );
 }
+
+// frame around the popup
+const popupContainer: React.CSSProperties = {
+    width: "300px",
+    height: "auto",
+    backgroundColor: "#ffffff", // Your actual UI background
+    border: "2px solid #3367d6", // A professional blue frame (Chrome's signature blue)
+    borderRadius: "8px",        // Rounded corners for the frame
+    padding: "12px",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.2)", // Extra depth
+    margin: "1px",              // Prevents the border from clipping against the browser edge
+};
+
 
 const headerStyle: React.CSSProperties = {
     display: "flex",

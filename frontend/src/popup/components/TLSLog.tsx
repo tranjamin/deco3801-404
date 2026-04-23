@@ -1,6 +1,15 @@
 import type React from "react";
 
-export function TLSLog() {
+type Props = {
+    stats: { 
+        ok: number; 
+        warning: number; 
+        expired: number 
+    };
+};
+
+export function TLSLog({ stats } : Props) {
+
     return (
         <div style={cardStyle}>
 
@@ -15,18 +24,18 @@ export function TLSLog() {
 
                 <div style={itemStyle}>
                     <img src="/check.svg" width={24} height={24} />
-                    <p style={{ margin: 5 }}>12</p>
+                    <p style={{ margin: 5 }}>{stats.ok}</p>
                     {/* instead of number, function to grab total number */}
                 </div>
 
                 <div style={itemStyle}>
                     <img src="/warning.svg" width={24} height={24} />
-                    <p style={{ margin: 5 }}>5</p>
+                    <p style={{ margin: 5 }}>{stats.warning}</p>
                 </div>
 
                 <div style={itemStyle}>
                     <img src="/error.svg" width={24} height={24} />
-                    <p style={{ margin: 5 }}>1</p>
+                    <p style={{ margin: 5 }}>{stats.expired}</p>
                 </div>
 
             </div>
