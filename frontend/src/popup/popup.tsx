@@ -35,7 +35,7 @@ export default function Popup() {
     }
 
     return (
-        <div style={{ width: 300, padding: 12 }}>
+        <div style={popupContainer}>
             
             <div style={headerStyle}>
                 <h3><u>TLS Certificate Checker</u></h3>
@@ -59,6 +59,19 @@ export default function Popup() {
         </div>
     );
 }
+
+// frame around the popup
+const popupContainer: React.CSSProperties = {
+    width: "300px",
+    height: "auto",
+    backgroundColor: "#ffffff", // Your actual UI background
+    border: "2px solid #3367d6", // A professional blue frame (Chrome's signature blue)
+    borderRadius: "8px",        // Rounded corners for the frame
+    padding: "12px",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.2)", // Extra depth
+    margin: "1px",              // Prevents the border from clipping against the browser edge
+};
+
 
 const headerStyle: React.CSSProperties = {
     display: "flex",
