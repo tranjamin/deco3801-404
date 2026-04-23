@@ -40,15 +40,15 @@ export default function ReportTable({ data }: Props) {
                         return (
                             <tr key={cert.id} style={rowStyle}>
                                 <td style={cellStyle}>{cert.id}</td>
-                                <td style={cellStyle}>{cert.subjectName}</td>
-                                <td style={cellStyle}>{cert.issuer}</td>
-                                <td style={cellStyle}>{cert.protocol}</td>
-                                <td style={cellStyle}>
+                                <td style={domainCellStyle}>{cert.subjectName}</td>
+                                <td style={issuerCellStyle}>{cert.issuer}</td>
+                                <td style={protocolCellStyle}>{cert.protocol}</td>
+                                <td style={statusCellStyle}>
                                     {cert.status === "expired" ? "Expired" : `${cert.daysRemaining} days`}
                                 </td>
-                                <td style={cellStyle}>{cert.cipher}</td>
-                                <td style={cellStyle}>{cert.validFrom}</td>
-                                <td style={cellStyle}>{cert.validTo}</td>
+                                <td style={cipherCellStyle}>{cert.cipher}</td>
+                                <td style={dateCellStyle}>{cert.validFrom}</td>
+                                <td style={dateCellStyle}>{cert.validTo}</td>
                             </tr>
                         );
                     })}
@@ -66,7 +66,7 @@ const containerStyle: React.CSSProperties = {
     padding: "10px",
     overflowX: "auto", // Enable horizontal scroll
     overflowY: "auto", // Enables vertical scroll
-    maxHeight: "500px", // Set preferred limit here
+    maxHeight: "450px", // Set preferred limit here
 };
 
 
@@ -94,4 +94,39 @@ const headerCellStyle: React.CSSProperties = {
     borderBottom: "2px solid #ccc",
     borderLeft: "1px solid #ccc",
     borderRight: "1px solid #ccc",
+};
+
+
+const domainCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "120px"
+};
+
+
+const issuerCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "300px",
+};
+
+
+const protocolCellStyle: React.CSSProperties = {
+    ...cellStyle,
+};
+
+
+const statusCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "80px",
+};
+
+
+const cipherCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "240px",
+};
+
+
+const dateCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "80px",
 };

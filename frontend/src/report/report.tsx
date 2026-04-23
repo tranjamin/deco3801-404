@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
+import TableFilters from "./components/tableFilters";
+import GenerateReport from "./components/reportForm";
 import type { TLSCertificate } from "../sharedComponent/types";
 import { transformCertificates } from "../sharedComponent/utils"
 import { mockTLSData } from "../sharedComponent/mockData";
@@ -24,7 +26,7 @@ export default function Report() {
             
             
             {/* Report content */}
-            <div style={{ marginLeft: sidebarWidth }}>
+            <div style={{marginLeft: sidebarWidth}}>
                 <div style={page}>
                     <h2 style={heading}>
                         Report
@@ -34,14 +36,13 @@ export default function Report() {
                     <h4 style={subheading}>
                         TLS Certificate Log
                     </h4>
-                    <ReportTable data={transformedData} />
 
-                    
-                    <p>The report content generation things will go here</p>
-                    <p>This should include:</p>
-                    <p> (1) Report Log containing all previously visited domains </p>
-                    <p> (2) Colour-coded visual summary i.e. Red for errors, Yellow for warnings, Green for correct </p>
-                    <p> (3) Filters for sorting and searching as well as report generation </p>
+                    {/* table filters here */}
+                    <TableFilters />
+                    <div style={{ display: "flex", flexDirection: "column", gap:"10px" }}>
+                        <ReportTable data={transformedData} />
+                        <GenerateReport />
+                    </div>
                 </div>
             </div>
 
@@ -53,7 +54,7 @@ export default function Report() {
 
 
 const page: React.CSSProperties = {
-  minHeight: "100vh", //can get rid of later if find way to stop the jank
+//   minHeight: "100vh", //can get rid of later if find way to stop the jank
   background: "#ffffff",
   paddingLeft: "24px",
   paddingRight: "24px",
