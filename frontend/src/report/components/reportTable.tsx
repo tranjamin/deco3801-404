@@ -25,33 +25,41 @@ export default function ReportTable({ data }: Props) {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map(cert => {
+                    {/* if the # of certs is more than 0, display. otherwise show no matching certificates to users */}
+                    {data.length > 0 ? (
+                        data.map(cert => {
+                            let rowStyle: React.CSSProperties = {};
 
-                        let rowStyle: React.CSSProperties = {};
+                            if (cert.status === "expired") {
+                                rowStyle = { backgroundColor: "#ff4c4cda"};
+                            } else if (cert.status === "warning") {
+                                rowStyle = { backgroundColor: "#ffd231" };
+                            } else {
+                                rowStyle = { backgroundColor: "#83ff8d"}
+                            }
 
-                        if (cert.status === "expired") {
-                            rowStyle = { backgroundColor: "#ff4c4cda"};
-                        } else if (cert.status === "warning") {
-                            rowStyle = { backgroundColor: "#ffd231" };
-                        } else {
-                            rowStyle = { backgroundColor: "#83ff8d"}
-                        }
-
-                        return (
-                            <tr key={cert.id} style={rowStyle}>
-                                <td style={cellStyle}>{cert.id}</td>
-                                <td style={domainCellStyle}>{cert.subjectName}</td>
-                                <td style={issuerCellStyle}>{cert.issuer}</td>
-                                <td style={protocolCellStyle}>{cert.protocol}</td>
-                                <td style={statusCellStyle}>
-                                    {cert.status === "expired" ? "Expired" : `${cert.daysRemaining} days`}
-                                </td>
-                                <td style={cipherCellStyle}>{cert.cipher}</td>
-                                <td style={dateCellStyle}>{cert.validFrom}</td>
-                                <td style={dateCellStyle}>{cert.validTo}</td>
-                            </tr>
-                        );
-                    })}
+                            return (
+                                <tr key={cert.id} style={rowStyle}>
+                                    <td style={cellStyle}>{cert.id}</td>
+                                    <td style={domainCellStyle}>{cert.subjectName}</td>
+                                    <td style={issuerCellStyle}>{cert.issuer}</td>
+                                    <td style={protocolCellStyle}>{cert.protocol}</td>
+                                    <td style={statusCellStyle}>
+                                        {cert.status === "expired" ? "Expired" : `${cert.daysRemaining} days`}
+                                    </td>
+                                    <td style={cipherCellStyle}>{cert.cipher}</td>
+                                    <td style={dateCellStyle}>{cert.validFrom}</td>
+                                    <td style={dateCellStyle}>{cert.validTo}</td>
+                                </tr>
+                            );
+                        })
+                    ) : ( 
+                        <tr>
+                            <td colSpan={8} style={{ textAlign: "center", padding: "20px", color: "#685c5c"}}>
+                                No certificates match the selected filters
+                            </td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>
@@ -66,7 +74,7 @@ const containerStyle: React.CSSProperties = {
     padding: "10px",
     overflowX: "auto", // Enable horizontal scroll
     overflowY: "auto", // Enables vertical scroll
-    maxHeight: "450px", // Set preferred limit here
+    height: "450px", // Set preferred limit here
 };
 
 
@@ -99,13 +107,13 @@ const headerCellStyle: React.CSSProperties = {
 
 const domainCellStyle: React.CSSProperties = {
     ...cellStyle,
-    minWidth: "120px"
+    width: "120px"
 };
 
 
 const issuerCellStyle: React.CSSProperties = {
     ...cellStyle,
-    minWidth: "300px",
+    width: "300px",
 };
 
 
@@ -116,17 +124,17 @@ const protocolCellStyle: React.CSSProperties = {
 
 const statusCellStyle: React.CSSProperties = {
     ...cellStyle,
-    minWidth: "80px",
+    width: "120px",
 };
 
 
 const cipherCellStyle: React.CSSProperties = {
     ...cellStyle,
-    minWidth: "240px",
+    width: "240px",
 };
 
 
 const dateCellStyle: React.CSSProperties = {
     ...cellStyle,
-    minWidth: "80px",
+    width: "80px",
 };
