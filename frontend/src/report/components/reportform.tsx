@@ -3,7 +3,6 @@ export default function GenerateReport() {
 
     return(
         <div style={containerStyle}>
-            test
             <p>The report content generation things will go here</p>
             <p>This should include:</p>
             <p> (1) Report Log containing all previously visited domains </p>

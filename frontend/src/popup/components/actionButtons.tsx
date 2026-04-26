@@ -16,6 +16,7 @@ export function ActionButtons({
                 role="button"
                 style={buttonStyle}
                 onClick={onOpenReport}
+                title="Open report log"
                 onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                 onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
                 onKeyDown={(e) => e.key === 'Enter' && onOpenReport}
@@ -28,6 +29,7 @@ export function ActionButtons({
                 role="button"
                 style={buttonStyle}
                 onClick={onOpenPolicies}
+                title="Open policies page"
                 onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                 onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
                 onKeyDown={(e) => e.key === 'Enter' && onOpenPolicies}
@@ -40,6 +42,7 @@ export function ActionButtons({
                 role="button"
                 style={buttonStyle}
                 onClick={onOpenSettings}
+                title="Open settings page"
                 onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                 onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
                 onKeyDown={(e) => e.key === 'Enter' && onOpenSettings}
