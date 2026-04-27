@@ -169,7 +169,7 @@ export default function PolicyList({
         </div>
       </div>
       {policies.length === 0 ? (
-        <p>dis do be da policy list bruva</p>
+        <p>loading...</p>
       ) : (
         policies.map((policy, index) =>
           policy.active === true ? (
@@ -186,7 +186,7 @@ export default function PolicyList({
       )}
       <h3 style={subheading}>Inactive Policies</h3>
       {policies.length === 0 ? (
-        <p>dis do be da policy list bruva</p>
+        <p>loading...</p>
       ) : (
         policies.map((policy, index) =>
           policy.active === false ? (

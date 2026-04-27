@@ -72,8 +72,21 @@ export async function importPolicy(iPolicy: string) {
 }
 
 export async function exportPolicy(cPolicy: SecurityPolicy) {
-  const ePolicy: string = JSON.stringify(cPolicy);
-  // include the actual download function within the frontend window code
+  const ePolicy: string = JSON.stringify(cPolicy, null, 2);
+  const blob = new Blob([ePolicy], { type: "application/json" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeName = (cPolicy.name || "policy")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "_");
+
+  link.href = objectUrl;
+  link.download = `${safeName || "policy"}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(objectUrl);
+
   return ePolicy;
 }
 
