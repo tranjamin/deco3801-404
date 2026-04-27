@@ -28,6 +28,23 @@ def get_all():
     certs = CertificatePolicy.query.all()
     return jsonify([c.to_dict() for c in certs]), 200
 
+@policy_bp.route("/", methods=["DELETE"])
+def delete_database():
+    """
+    API endpoint which deletes the policy database
+
+    URL:
+        /
+    Methods Supported:
+        DELETE
+    Returns:
+        On success: TODO
+        On failure: TODO
+    """
+    # TODO: handle any errors
+    db.drop_all()
+    return "Success", 200
+
 
 @policy_bp.route("/<int:policy_id>", methods=["GET"])
 def get_one(policy_id):
@@ -111,6 +128,39 @@ def delete(policy_id):
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
 
+@policy_bp.route("/<int:policy_id>/update", methods=["PUT"])
+def update_policy(policy_id):
+    """
+    API endpoint which modifies a certificate policy by ID
+
+    URL:
+        /<policy_id>, where policy_id (int) is the primary key of the certificate policy
+    Methods Supported:
+        PUT
+    Request Data:
+        JSON in a format readable by :class:`CertificatePolicy` `.from_dict()`
+    Returns:
+        On success: A JSON containing the parsed certificate policy data in the format specified by :class:`CertificatePolicy` `.to_dict()`, Error code 201
+        On failure: JSON with an 'error' field, Error code 400
+    """
+    policy: CertificatePolicy = CertificatePolicy.query.get_or_404(policy_id)
+
+    data = request.get_json(force=True)
+    new_policy: CertificatePolicy = CertificatePolicy.from_dict(data)
+    
+    policy.description = new_policy.description
+    policy.name = new_policy.name
+    policy.valid_protocols = new_policy.valid_protocols
+    policy.valid_subjects = new_policy.valid_subjects
+    policy.valid_sans = new_policy.valid_sans
+    policy.valid_issuers = new_policy.valid_issuers
+    policy.valid_ciphers = new_policy.valid_ciphers
+    policy.min_certificate_lifespan = new_policy.min_certificate_lifespan
+    policy.min_certificate_days_left = new_policy.min_certificate_days_left
+    policy.needs_sct = new_policy.needs_sct
+
+    db.session.commit()
+    return jsonify({"message": "Updated"}), 200
 
 @policy_bp.route("/batch", methods=["POST"])
 def batch_create():
@@ -162,7 +212,7 @@ def create_dummy_data():
     """
     policy = CertificatePolicy(
         description="A dummy certificate policy created by navigating to /api/policies/create_dummy",
-        domain="www.dummy.com",
+        name="Dummy Policy",
         
         valid_protocols=Protocols.encode(["tls 1.0", "tls 1.1"]),
         valid_subjects=["Dummy subject 1", "Dummy subject 2"],

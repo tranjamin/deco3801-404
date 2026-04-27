@@ -1,8 +1,8 @@
 from __future__ import annotations
 import enum
+import stat
 from app import db
-from typing import *
-import time
+from typing import Any
 import functools
 
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -32,6 +32,7 @@ class Protocols(enum.Enum):
     def lookup_int2str(cls) -> dict[int, str]:
         return {cls[x].value[0] : cls[x].value[1] for x in cls.__members__}
     
+    @staticmethod
     def encode(protocols: list[str]) -> int:
         """Convert a list of protocols to a bitvector"""
         valid_protocols: int = 0
@@ -40,6 +41,7 @@ class Protocols(enum.Enum):
             
         return valid_protocols
     
+    @staticmethod
     def decode(bitvector: int) -> list[str]:
         """Convert a bitvector to a list of protocols"""
         valid_protocols: list[str] = []
@@ -57,7 +59,7 @@ class CertificatePolicy(db.Model):
         id (integer): the primary key for the certificate, set to autoincrement
         active (bool): if this policy is active
         description (string[255]): a description of this policy
-        domain (string[50]): the domain this policy applies to
+        name (string[50]): the name of this policy
         
         valid_protocols (integer): the protocols which are considered valid, encoded as a bitvector
         valid_subjects (ARRAY(string[50])): subjects which are considered valid
@@ -81,7 +83,7 @@ class CertificatePolicy(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
     description = db.Column(db.String(255), nullable=False)
-    domain = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
     
     valid_protocols = db.Column(db.Integer, nullable=False)
     valid_subjects = db.Column(ARRAY(db.String(50)), nullable=False)
@@ -100,7 +102,7 @@ class CertificatePolicy(db.Model):
             "id": self.id,
             "active": self.active,
             "description": self.description,
-            "domain": self.domain,
+            "name": self.name,
             
             "validProtocols": Protocols.decode(self.valid_protocols),
             "validSubjects": self.valid_subjects,
@@ -121,8 +123,8 @@ class CertificatePolicy(db.Model):
         # TODO: perform data cleaning and checking first. return None if invalid
 
         policy = CertificatePolicy(
-            description=data.get("description", ""),
-            domain=data.get("domain", ""),
+            name=data.get("name", "Unnamed Policy"),
+            description=data.get("description", "No description provided"),
             
             valid_protocols=Protocols.encode(data.get("validProtocols", [])),
             valid_subjects=data.get("validSubjects", []),
@@ -133,7 +135,7 @@ class CertificatePolicy(db.Model):
             min_certificate_lifespan=data.get("minCertificateLifespan", 0),
             min_certificate_days_left=data.get("minCertificateDaysLeft", 0),
             
-            needs_sct=data.get(["needsSct"], False),
+            needs_sct=data.get("needsSct", False),
         )
 
         return policy
