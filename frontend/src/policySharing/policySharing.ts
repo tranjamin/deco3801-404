@@ -1,4 +1,4 @@
-export const baseUrl: string = "https://deco3801-404-dev.onrender.com";
+export const baseUrl: string = "http://127.0.0.1:5000/";
 
 export interface SecurityPolicy {
   id: number;
@@ -34,7 +34,7 @@ type RawPolicy = {
 
 function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"> {
   return {
-    domain: policy.name,
+    name: policy.name,
     description: policy.description,
     //active: policy.active,
     validProtocols: policy.protocols,
@@ -192,6 +192,24 @@ export async function deactivatePolicy(
 
 export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
   console.log(policy, policyID);
+  try {
+    const response = await fetch(`${baseUrl}/api/policies/${policyID}/update`, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(mapPolicyToBackendPayload(policy)),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+  } catch (e) {
+    console.log("BIG ERROR:", e);
+    return null;
+  }
 }
 
 export async function deletePolicy(policyID: number) {
@@ -255,7 +273,7 @@ export async function getAllPolicies() {
 export function mapJSONtoPolicies(jsonInput: RawPolicy[]): SecurityPolicy[] {
   return jsonInput.map((policy) => ({
     id: policy.id,
-    name: policy.name ?? policy.domain ?? "Unnamed Policy",
+    name: policy.name ?? "Unnamed Policy",
     description: policy.description ?? "",
     active: policy.active ?? false,
     protocols: policy.validProtocols ?? [],

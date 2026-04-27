@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import PolicyList from "./components/policyList";
 import Details from "./components/details";
-import {type SecurityPolicy, addDummyPolicy } from "../policySharing/policySharing";
+import {type SecurityPolicy, storeNewPolicy} from "../policySharing/policySharing";
 import Navbar from "../sharedComponent/navbar";
 
 export default function Policies() {
@@ -38,8 +38,8 @@ export default function Policies() {
 
   const handleSaveNewPolicy = async (policy: SecurityPolicy) => {
     console.log("placeholder: create new policy", policy);
-    //await storeNewPolicy(policy);
-    await addDummyPolicy();
+    await storeNewPolicy(policy);
+    // await addDummyPolicy();
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
     window.location.reload();
