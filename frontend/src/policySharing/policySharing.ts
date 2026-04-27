@@ -1,4 +1,4 @@
-export const baseUrl: string = "http://127.0.0.1:5000/";
+export const baseUrl: string = "https://deco3801-404-dev.onrender.com";
 
 export interface SecurityPolicy {
   id: number;
