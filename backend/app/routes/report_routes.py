@@ -16,22 +16,8 @@ def _visit_has_issues(visit):
     return (not visit.evaluation_passed) or bool(visit.issues_found) or policy_failed
 
 
-# ---------------------------------------------------------------------------
-# Domain Visit Logging
-# ---------------------------------------------------------------------------
-
 @report_bp.route("/visits", methods=["POST"])
 def log_visit():
-    """
-    Log a domain visit with certificate evaluation results.
-    Expected JSON payload:
-    {
-        "domain": "example.com",
-        "certificate_id": 123,  // optional, if certificate exists in DB
-        "user_agent": "Mozilla/5.0...",  // optional
-        "tab_id": 456  // optional
-    }
-    """
     data = request.get_json(force=True)
 
     if not data.get("domain"):
@@ -42,15 +28,12 @@ def log_visit():
     user_agent = data.get("user_agent")
     tab_id = data.get("tab_id")
 
-    # Get certificate if it exists
     cert = None
     if certificate_id:
         cert = TLSCertificate.query.get(certificate_id)
 
-    # Perform basic evaluation
     evaluation_result = {"pass": True, "issues": [], "days_until_expiry": None}
     if cert:
-        # Use the same evaluation logic as certificate routes
         now = time.time()
         days_until_expiry = (cert.valid_to - now) / 86400
         issues = []
@@ -60,7 +43,6 @@ def log_visit():
         elif days_until_expiry < 30:
             issues.append("expiring_soon")
 
-        # Add weak protocol/cipher checks
         WEAK_PROTOCOLS = {"SSL 2.0", "SSL 3.0", "TLS 1.0", "TLS 1.1"}
         WEAK_CIPHERS = {"RC4", "DES", "3DES", "NULL", "EXPORT", "MD5"}
 
@@ -76,7 +58,6 @@ def log_visit():
             "days_until_expiry": round(days_until_expiry, 1),
         }
 
-    # Create domain visit record
     visit = DomainVisit.from_certificate_evaluation(
         domain=domain,
         cert=cert,
@@ -96,23 +77,8 @@ def log_visit():
     }), 201
 
 
-# ---------------------------------------------------------------------------
-# Visit History Retrieval
-# ---------------------------------------------------------------------------
-
 @report_bp.route("/visits", methods=["GET"])
 def get_visit_history():
-    """
-    Get domain visit history with filtering options.
-    Query parameters:
-    - domain: filter by domain
-    - limit: max results (default 100)
-    - offset: pagination offset (default 0)
-    - start_date: unix timestamp for start date
-    - end_date: unix timestamp for end date
-    - has_issues: true/false to filter visits with issues
-    """
-    # Parse query parameters
     domain_filter = request.args.get("domain")
     limit = int(request.args.get("limit", 100))
     offset = int(request.args.get("offset", 0))
@@ -122,7 +88,6 @@ def get_visit_history():
 
     query = DomainVisit.query
 
-    # Apply filters
     if domain_filter:
         query = query.filter(DomainVisit.domain.ilike(f"%{domain_filter}%"))
 
@@ -140,11 +105,8 @@ def get_visit_history():
         except ValueError:
             return jsonify({"error": "Invalid end_date format"}), 400
 
-    # Order by most recent first
     query = query.order_by(desc(DomainVisit.visited_at))
 
-    # Apply issue filtering in Python because SQLite JSON queries are awkward
-    # for nested policy result objects.
     if has_issues is not None:
         has_issues_bool = has_issues.lower() == "true"
         all_visits = query.all()
@@ -168,23 +130,14 @@ def get_visit_history():
 
 @report_bp.route("/visits/<int:visit_id>", methods=["GET"])
 def get_visit_detail(visit_id):
-    """Get detailed information about a specific visit."""
     visit = DomainVisit.query.get_or_404(visit_id)
     return jsonify(visit.to_dict()), 200
 
 
-# ---------------------------------------------------------------------------
-# Domain Statistics
-# ---------------------------------------------------------------------------
-
 @report_bp.route("/domains/stats", methods=["GET"])
 def get_domain_stats():
-    """
-    Get statistics about domain visits and their certificate health.
-    """
-    # Get date range (default to last 30 days)
     end_date = time.time()
-    start_date = end_date - (30 * 24 * 60 * 60)  # 30 days ago
+    start_date = end_date - (30 * 24 * 60 * 60)
 
     start_param = request.args.get("start_date")
     end_param = request.args.get("end_date")
@@ -201,27 +154,23 @@ def get_domain_stats():
         except ValueError:
             return jsonify({"error": "Invalid end_date"}), 400
 
-    # Query visits in date range
     visits = DomainVisit.query.filter(
         DomainVisit.visited_at >= start_date,
         DomainVisit.visited_at <= end_date
     ).all()
 
-    # Calculate statistics
     total_visits = len(visits)
     unique_domains = len(set(v.domain for v in visits))
 
     visits_with_issues = sum(1 for v in visits if _visit_has_issues(v))
     clean_visits = total_visits - visits_with_issues
 
-    # Domain frequency
     domain_counts = {}
     for visit in visits:
         domain_counts[visit.domain] = domain_counts.get(visit.domain, 0) + 1
 
     top_domains = sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)[:10]
 
-    # Issue breakdown
     issue_counts = {}
     for visit in visits:
         for issue in visit.issues_found:

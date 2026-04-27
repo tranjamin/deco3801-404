@@ -3,18 +3,12 @@ from app import db
 
 
 class DomainVisit(db.Model):
-    """
-    Tracks domain visits and their certificate evaluation results.
-    This enables historical reporting and trend analysis.
-    """
-
     __tablename__ = "domain_visits"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     domain = db.Column(db.String(255), nullable=False, index=True)
     visited_at = db.Column(db.Float, nullable=False, default=time.time, index=True)
 
-    # Certificate details at time of visit
     certificate_id = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=True)
     protocol = db.Column(db.String(50), nullable=True)
     cipher = db.Column(db.String(100), nullable=True)
@@ -23,15 +17,12 @@ class DomainVisit(db.Model):
     valid_from = db.Column(db.Float, nullable=True)
     valid_to = db.Column(db.Float, nullable=True)
 
-    # Evaluation results
     evaluation_passed = db.Column(db.Boolean, nullable=False, default=False)
-    issues_found = db.Column(db.JSON, nullable=False, default=list)  # List of issue strings
+    issues_found = db.Column(db.JSON, nullable=False, default=list)
     days_until_expiry = db.Column(db.Float, nullable=True)
 
-    # Policy evaluation results (against active policies at time of visit)
-    policy_results = db.Column(db.JSON, nullable=False, default=list)  # List of policy evaluation dicts
+    policy_results = db.Column(db.JSON, nullable=False, default=list)
 
-    # Browser/extension context
     user_agent = db.Column(db.Text, nullable=True)
     tab_id = db.Column(db.Integer, nullable=True)
 
@@ -59,9 +50,6 @@ class DomainVisit(db.Model):
 
     @staticmethod
     def from_certificate_evaluation(domain, cert, evaluation_result, policy_results=None, user_agent=None, tab_id=None):
-        """
-        Create a DomainVisit from a certificate and its evaluation results.
-        """
         now = time.time()
 
         return DomainVisit(
