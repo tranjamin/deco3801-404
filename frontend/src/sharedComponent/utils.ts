@@ -1,28 +1,21 @@
-import type { TLSData } from "../types";
-import type { TLSDataTransformed } from "../types";
+import type { TLSCertificate, TLSCertificateTransformed } from "./types";
 
-
-export function transformCertificate(
-    cert: TLSData[]
-): TLSDataTransformed[] {
+// Converts datetime into YYYY-MM-DD instead of YYYY-MM-DDT[TIME]Z
+export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTransformed[] {
     const now = Date.now();
 
     return cert.map( cert => {
-
         const formattedValidTo = new Intl.DateTimeFormat("en-CA").format(
             new Date(cert.validTo)
         );
-
         const formattedValidFrom = new Intl.DateTimeFormat("en-CA").format(
             new Date(cert.validFrom)
         );
-        
+    
         const diff = new Date(cert.validTo).getTime() - now;
-
         const daysRemaining = Math.ceil(diff / (1000*60*60*24));
 
-        let status: TLSDataTransformed["status"];
-
+        let status: TLSCertificateTransformed["status"];
         if (daysRemaining < 0) status = "expired";
         else if (daysRemaining < 15) status = "warning";
         else status = "ok";
@@ -38,13 +31,10 @@ export function transformCertificate(
 }
 
 
-export function transformSingleCert(
-    cert: TLSData
-): TLSDataTransformed {
+export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransformed {
     const formattedValidTo = new Intl.DateTimeFormat("en-CA").format(
         new Date(cert.validTo)
     );
-
     const formattedValidFrom = new Intl.DateTimeFormat("en-CA").format(
         new Date(cert.validFrom)
     );
@@ -52,8 +42,8 @@ export function transformSingleCert(
     const now = Date.now();
     const diff = new Date(cert.validTo).getTime() - now;
     const daysRemaining = Math.ceil(diff / (1000*60*60*24));
-    let status: TLSDataTransformed["status"];
-
+    
+    let status: TLSCertificateTransformed["status"];
     if (daysRemaining <= 0) status = "expired";
     else if (daysRemaining < 15) status = "warning";
     else status = "ok";
@@ -65,4 +55,39 @@ export function transformSingleCert(
         daysRemaining,
         status
     };
+}
+
+
+
+export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertificateTransformed[] {
+    const now = Date.now();
+
+    return data.map( cert => {
+        const diff = new Date(cert.validTo).getTime() - now;
+        const daysRemaining = Math.ceil(diff / (1000*60*60*24));
+
+        let status: TLSCertificateTransformed["status"];
+        if (daysRemaining < 0) status = "expired";
+        else if (daysRemaining < 15) status = "warning";
+        else status = "ok";
+
+        return {
+            ...cert,
+            daysRemaining,
+            status
+        };
+    })
+}
+
+
+
+
+export function countStatus(data: TLSCertificateTransformed[]) {
+    // for each loop
+    return data.reduce((acc, cert) => {
+        acc[cert.status]++;
+        return acc;
+    }, {
+        ok: 0, warning: 0, expired: 0
+    })
 }

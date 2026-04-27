@@ -1,8 +1,8 @@
 import type React from "react";
-import type { TLSDataTransformed } from "../types";
+import type { TLSCertificateTransformed } from "../../sharedComponent/types";
 
 type Props = {
-    data: TLSDataTransformed;
+    data: TLSCertificateTransformed;
 };
 
 export function CurrentSiteSummary({ data }: Props) {
@@ -32,7 +32,7 @@ export function CurrentSiteSummary({ data }: Props) {
                         borderRadius: 6,
                         border: "1px solid #d1d9e0",
                     }}>
-                        <p style={{ margin: 0 }}><b>Days left</b></p>
+                        <p style={{ margin: 0, WebkitTextStroke: "0.5px #414141" }}><b>Days left</b></p>
                         <p style={{ margin: 0 }}>{data.daysRemaining}</p>
                     </div>
 
@@ -56,7 +56,7 @@ export function CurrentSiteSummary({ data }: Props) {
                         
                     <div style={{ padding: 3 }}>
                         <p style= {{ margin: 0 }}><b>Valid Date</b></p>
-                        <p style= {{ margin: 0, fontSize: "11px" }}>{data.validFrom} - {data.validTo}</p>
+                        <p style= {{ margin: 0, fontSize: "10.5px" }}>{data.validFrom} - {data.validTo}</p>
                     </div>
                 </div>
             </div>
