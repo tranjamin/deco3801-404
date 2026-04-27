@@ -1,9 +1,9 @@
 from __future__ import annotations
 import enum
-import stat
 from app import db
-from typing import Any
+from typing import Any, List
 import functools
+from sqlalchemy.orm import Mapped
 
 from sqlalchemy.dialects.postgresql import ARRAY
 
@@ -77,24 +77,27 @@ class CertificatePolicy(db.Model):
     """
 
     # defines the table name
-    __tablename__ = "certificate_policies"
+    __tablename__: str = "certificate_policies"
 
     # defines the column tables, refer to docstring for details
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    active = db.Column(db.Boolean, default=True, nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    name = db.Column(db.String(50), nullable=False)
+    id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    active: Mapped[bool] = db.Column(db.Boolean, default=True, nullable=False)
+    description: Mapped[str] = db.Column(db.String(255), nullable=False)
+    name: Mapped[str] = db.Column(db.String(50), nullable=False)
     
-    valid_protocols = db.Column(db.Integer, nullable=False)
-    valid_subjects = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_sans = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_issuers = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_ciphers = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_protocols: Mapped[int] = db.Column(db.Integer, nullable=False)
+    valid_subjects: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_sans: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_issuers: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_ciphers: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
     
-    min_certificate_lifespan = db.Column(db.Integer, nullable=False)
-    min_certificate_days_left = db.Column(db.Integer, nullable=False)
+    min_certificate_lifespan: Mapped[int] = db.Column(db.Integer, nullable=False)
+    min_certificate_days_left: Mapped[int] = db.Column(db.Integer, nullable=False)
     
-    needs_sct = db.Column(db.Boolean, nullable=False)  
+    needs_sct: Mapped[bool] = db.Column(db.Boolean, nullable=False)  
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table to a dictionary"""

@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 from app.models.policy import CertificatePolicy, Protocols
 from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
 
-from __future__ import annotations
-from typing import *
+from typing import Dict, Any, List
 import time
 
-def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> dict:
+def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> Dict[str, Any]:
     """
     Evaluate a TLS certificate against a certificate policy.
 
@@ -17,19 +18,19 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
     """
 
     # stores any issues with the certificate we have detected
-    issues = []
+    issues: List[str] = []
     
     # calculate time
-    now = time.time()
-    days_until_expiry = (cert.valid_to - now) // 86400 # seconds to days
+    now: float = time.time()
+    days_until_expiry: int = int(cert.valid_to - now) // 86400 # seconds to days
 
     # check expiry date
     if cert.valid_to < now:
         issues.append("expired")
-    elif days_until_expiry < policy.still_valid_lifespan:
+    elif days_until_expiry < policy.min_certificate_days_left:
         issues.append("expiring_soon")
     
-    if (cert.valid_from - cert.valid_to) // 86400 < policy.validity_lifespan:
+    if (cert.valid_from - cert.valid_to) // 86400 < policy.min_certificate_lifespan:
         issues.append("lifespan_too_short")
 
     # check if protocols are weak
@@ -40,10 +41,10 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
     if cert.subject_name not in policy.valid_subjects:
         issues.append("incorrect subject name")
     
-    if cert.issue not in policy.valid_issuers:
+    if cert.issuer not in policy.valid_issuers:
         issues.append("invalid issuer")
     
-    if policy.has_sct and cert.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
+    if policy.needs_sct and cert.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
         issues.append("noncompliant SCT")
 
     return {

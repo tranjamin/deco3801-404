@@ -1,7 +1,8 @@
 from __future__ import annotations
 import enum
 from app import db
-from typing import *
+from sqlalchemy.orm import Mapped
+from typing import Dict, Any, List
 import time
 
 class CertificateConfig():
@@ -48,38 +49,41 @@ class TLSCertificate(db.Model):
     """
 
     # defines the table name
-    __tablename__ = "tls_certificates"
+    __tablename__: str = "tls_certificates"
 
     # defines the column tables, refer to docstring for details
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    protocol = db.Column(db.String(50), nullable=False)
-    key_exchange = db.Column(db.String(100), nullable=False)
-    key_exchange_group = db.Column(db.String(100), nullable=True)
-    cipher = db.Column(db.String(100), nullable=False)
-    mac = db.Column(db.String(100), nullable=True)
-    certificate_id = db.Column(db.Integer, nullable=False)
-    subject_name = db.Column(db.String(255), nullable=False)
-    issuer = db.Column(db.String(255), nullable=False)
-    valid_from = db.Column(db.Float, nullable=False)
-    valid_to = db.Column(db.Float, nullable=False)
-    certificate_transparency_compliance = db.Column(
+    id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    protocol: Mapped[str] = db.Column(db.String(50), nullable=False)
+    key_exchange: Mapped[str] = db.Column(db.String(100), nullable=False)
+    key_exchange_group: Mapped[str] = db.Column(db.String(100), nullable=True)
+    cipher: Mapped[str] = db.Column(db.String(100), nullable=False)
+    mac: Mapped[str] = db.Column(db.String(100), nullable=True)
+    certificate_id: Mapped[int] = db.Column(db.Integer, nullable=False)
+    subject_name: Mapped[str] = db.Column(db.String(255), nullable=False)
+    issuer: Mapped[str] = db.Column(db.String(255), nullable=False)
+    valid_from: Mapped[float] = db.Column(db.Float, nullable=False)
+    valid_to: Mapped[float] = db.Column(db.Float, nullable=False)
+    certificate_transparency_compliance: Mapped[CertificateTransparencyCompliance] = db.Column(
         db.Enum(CertificateTransparencyCompliance),
         nullable=False,
     )
-    server_signature_algorithm = db.Column(db.Integer, nullable=True)
-    encrypted_client_hello = db.Column(db.Boolean, nullable=False, default=False)
+    server_signature_algorithm: Mapped[int] = db.Column(db.Integer, nullable=True)
+    encrypted_client_hello: Mapped[bool] = db.Column(db.Boolean, nullable=False, default=False)
 
     # links this table with the SAN entries table
     # san_entries is a list of SANEntry instances, cascading all changes and deleting unowned entries
-    san_entries = db.relationship(
+    san_entries: Mapped[List[SANEntry]] = db.relationship(
         "SANEntry", back_populates="certificate", cascade="all, delete-orphan"
-    )
+    ) # type: ignore
 
     # links this table with the SAN entries table
     # san_entries is a list of SANEntry instances, cascading all changes and deleting unowned entries
-    sct_list = db.relationship(
+    sct_list: Mapped[List[SignedCertificateTimestamp]] = db.relationship(
         "SignedCertificateTimestamp", back_populates="certificate", cascade="all, delete-orphan"
-    )
+    ) # type: ignore
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table to a dictionary"""
@@ -148,7 +152,7 @@ class TLSCertificate(db.Model):
 
         return cert
     
-    def _evaluate_cert(self) -> dict:
+    def evaluate_cert(self) -> Dict[str, Any]:
         """
         Evaluate a TLS certificate against the default policy.
 
@@ -160,11 +164,11 @@ class TLSCertificate(db.Model):
         """
 
         # stores any issues with the certificate we have detected
-        issues = []
+        issues: List[str] = []
         
         # calculate time
-        now = time.time()
-        days_until_expiry = (self.valid_to - now) // 86400 # seconds to days
+        now: float = time.time()
+        days_until_expiry: int = int(self.valid_to - now) // 86400 # seconds to days
 
         # check expiry date
         if self.valid_to < now:
@@ -207,17 +211,19 @@ class SANEntry(db.Model):
     """
 
     # defines the table name
-    __tablename__ = "san_entries"
+    __tablename__: str = "san_entries"
 
     # defines the table columns, see docstring for details
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    certificate_fk = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
-    name = db.Column(db.String(255), nullable=False)
+    id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    certificate_fk: Mapped[int] = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
+    name: Mapped[str] = db.Column(db.String(255), nullable=False)
 
     # links this table with the TLS certificate table
     # the certificate attribute here is the instance of TLSCertificate
     certificate = db.relationship("TLSCertificate", back_populates="san_entries")
 
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
 class SignedCertificateTimestamp(db.Model):
     """
@@ -244,20 +250,23 @@ class SignedCertificateTimestamp(db.Model):
     __tablename__ = "signed_certificate_timestamps"
 
     # defines the table columns, see docstring for details
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    certificate_fk = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
-    status = db.Column(db.String(50), nullable=False)
-    origin = db.Column(db.String(50), nullable=False)
-    log_description = db.Column(db.String(255), nullable=True)
-    log_id = db.Column(db.String(255), nullable=True)
-    timestamp = db.Column(db.Float, nullable=False)
-    hash_algorithm = db.Column(db.String(50), nullable=True)
-    signature_algorithm = db.Column(db.String(50), nullable=True)
-    signature_data = db.Column(db.Text, nullable=True)
+    id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    certificate_fk: Mapped[int] = db.Column(db.Integer, db.ForeignKey("tls_certificates.id"), nullable=False)
+    status: Mapped[str] = db.Column(db.String(50), nullable=False)
+    origin: Mapped[str] = db.Column(db.String(50), nullable=False)
+    log_description: Mapped[str] = db.Column(db.String(255), nullable=True)
+    log_id: Mapped[str] = db.Column(db.String(255), nullable=True)
+    timestamp: Mapped[float] = db.Column(db.Float, nullable=False)
+    hash_algorithm: Mapped[str] = db.Column(db.String(50), nullable=True)
+    signature_algorithm: Mapped[str] = db.Column(db.String(50), nullable=True)
+    signature_data: Mapped[str] = db.Column(db.Text, nullable=True)
 
     # links this table with the TLS certificate table
     # the certificate attribute here is the instance of TLSCertificate
-    certificate = db.relationship("TLSCertificate", back_populates="sct_list")
+    certificate: Mapped[List[TLSCertificate]] = db.relationship("TLSCertificate", back_populates="sct_list") # type: ignore
+    
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table entry to a dictionary"""
