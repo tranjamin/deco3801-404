@@ -5,6 +5,7 @@ import {
   activatePolicy,
   deactivatePolicy,
   exportPolicy,
+  updatePolicy
 } from "../../policySharing/policySharing";
 
 type DetailsProps = {
@@ -48,6 +49,18 @@ type ProtocolSelectorProps = {
 
 const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"];
 
+function normalizeProtocol(protocol: string): string {
+  return protocol.trim().toLowerCase().replace(/^tls\s+/, "");
+}
+
+function toDisplayProtocol(protocol: string): string {
+  return `TLS ${normalizeProtocol(protocol)}`;
+}
+
+function toBackendProtocol(protocol: string): string {
+  return `tls ${normalizeProtocol(protocol)}`;
+}
+
 const emptyFormData: PolicyFormData = {
   name: "",
   description: "",
@@ -63,11 +76,17 @@ const emptyFormData: PolicyFormData = {
 };
 
 function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
+  const protocolSet = new Set(
+    policy.protocols.map((protocol) => toDisplayProtocol(protocol)),
+  );
+
   return {
     name: policy.name,
     description: policy.description,
     active: String(policy.active),
-    protocols: [...policy.protocols],
+    protocols: AVAILABLE_PROTOCOLS.filter((protocol) =>
+      protocolSet.has(protocol),
+    ),
     ciphers: [...policy.ciphers],
     subjects: [...policy.subjects],
     SANs: [...policy.SANs],
@@ -87,7 +106,7 @@ function mapFormDataToPolicy(
     name: formData.name,
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
-    protocols: [...formData.protocols],
+    protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
     SANs: [...formData.SANs],
@@ -166,6 +185,7 @@ function ArrayListEditor({
           id={inputId}
           style={textInput}
           type="text"
+          maxLength={50}
           value={draftValue}
           onChange={(e) => onDraftChange(e.target.value)}
           title={tooltip}
@@ -307,10 +327,12 @@ export default function Details({
     if (isNewPolicy && onSaveNewPolicy) {
       await onSaveNewPolicy(policyPayload);
       return;
+    } else if (!isNewPolicy && updatePolicy && policy) {
+      await updatePolicy(policyPayload, policy.id);
     }
 
     console.log("saving edited policy to API", policyPayload);
-    //window.location.reload();
+    window.location.reload();
   };
 
   const handleBack = async () => {
@@ -408,6 +430,7 @@ export default function Details({
                     id="policy-name"
                     style={textInput}
                     type="text"
+                    maxLength={50}
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     title="The name of the policy"
@@ -426,6 +449,7 @@ export default function Details({
                     id="policy-description"
                     style={textInput}
                     type="text"
+                    maxLength={255}
                     value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)

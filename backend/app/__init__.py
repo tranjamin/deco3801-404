@@ -88,6 +88,7 @@ HELP_STRING = """
 <br>        [POST] / : stores a policy. requires a policy JSON and returns the stored policy's JSON
 <br>        [DELETE] /&lt;id&gt; : deletes a policy by ID. returns {"message": &lt;message&gt;}
 <br>        [PUT] /&lt;id&gt;/active : sets if a policy is active or not. requires a {"active": &lt;true/false&gt;} and returns {"message": &lt;message&gt;}
+<br>        [PUT] /&lt;id&gt;/update : updates a policy with new details. requires a policy JSON and returns {"message": <message>}
 <br>        [POST] /batch : stores multiple policies. requires a {"policies": &lt;list of policy JSONs&gt;, returns {"created": &lt;number created&gt;, "ids": &lt;list of policy IDs&gt;}
 <br>        [GET] /create_dummy : stores a dummy policy when navigated to. returns the dummy policy's JSON
 <br>
@@ -115,7 +116,7 @@ HELP_STRING = """
 <br>"id": integer - only in response, ignored in request
 <br>"active": boolean - only in response, ignored in request
 <br>"description": string (max 255)
-<br>"domain": string (max 50)
+<br>"name": string (max 50)
 <br>
 <br>"validProtocols": list of the following options: "tls 1.0", "tls 1.1", "tls 1.2", "tls 1.3"
 <br>"validSubjects": list of string(max 50)

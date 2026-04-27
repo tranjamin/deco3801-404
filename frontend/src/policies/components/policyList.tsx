@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getAllPolicies, type SecurityPolicy } from "../../policySharing/policySharing";
+import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policySharing/policySharing";
 //import { getAllPolicies } from "../../policySharing/policySharing";
 import PolicyStub from "./policyStub";
 
@@ -132,8 +132,42 @@ export default function PolicyList({
   }, []);
 
   const handleImport = () => {
-    // finds the report.html file in root dir
-    console.log("importing");
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.onchange = async (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      const file = target.files?.[0];
+
+      if (!file) return;
+
+      try {
+        const fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const content = e.target?.result;
+            if (typeof content === "string") {
+              resolve(content);
+            } else {
+              reject(new Error("Failed to read file"));
+            }
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsText(file);
+        });
+
+        await importPolicy(fileContent);
+        window.location.reload();
+      } catch (error) {
+        console.error("Import failed:", error);
+        alert(
+          "Failed to import policy. Please ensure it is a valid JSON file.",
+        );
+      }
+    };
+
+    input.click();
   };
 
   const handleAdd = () => {
