@@ -7,6 +7,13 @@ from sqlalchemy.orm import Mapped
 
 from sqlalchemy.dialects.postgresql import ARRAY
 
+POLICY_NAME_MAXLEN = 50
+POLICY_DESC_MAXLEN = 255
+POLICY_SUBJ_MAXLEN = 50
+POLICY_SANS_MAXLEN = 50
+POLICY_ISSU_MAXLEN = 50
+POLICY_CIPH_MAXLEN = 50
+
 class Protocols(enum.Enum):
     """
     An enumerated class to define different TLS protocols. Valid protocols are encoded by a bitvector and are enumerated by the format TLS<subversion nnumber>V<version number>.
@@ -37,7 +44,8 @@ class Protocols(enum.Enum):
         """Convert a list of protocols to a bitvector"""
         valid_protocols: int = 0
         for ele in protocols:
-            valid_protocols |= (1 << Protocols.lookup_str2int()[ele])
+            if ele in Protocols.lookup_str2int().keys():
+                valid_protocols |= (1 << Protocols.lookup_str2int()[ele])
             
         return valid_protocols
     
@@ -82,14 +90,14 @@ class CertificatePolicy(db.Model):
     # defines the column tables, refer to docstring for details
     id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
     active: Mapped[bool] = db.Column(db.Boolean, default=True, nullable=False)
-    description: Mapped[str] = db.Column(db.String(255), nullable=False)
-    name: Mapped[str] = db.Column(db.String(50), nullable=False)
+    description: Mapped[str] = db.Column(db.String(POLICY_DESC_MAXLEN), nullable=False)
+    name: Mapped[str] = db.Column(db.String(POLICY_NAME_MAXLEN), nullable=False)
     
     valid_protocols: Mapped[int] = db.Column(db.Integer, nullable=False)
-    valid_subjects: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_sans: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_issuers: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
-    valid_ciphers: Mapped[List[str]] = db.Column(ARRAY(db.String(50)), nullable=False)
+    valid_subjects: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_SUBJ_MAXLEN)), nullable=False)
+    valid_sans: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_SANS_MAXLEN)), nullable=False)
+    valid_issuers: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_ISSU_MAXLEN)), nullable=False)
+    valid_ciphers: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_CIPH_MAXLEN)), nullable=False)
     
     min_certificate_lifespan: Mapped[int] = db.Column(db.Integer, nullable=False)
     min_certificate_days_left: Mapped[int] = db.Column(db.Integer, nullable=False)
@@ -121,15 +129,91 @@ class CertificatePolicy(db.Model):
         
     @staticmethod
     def from_dict(data: dict[str, Any]) -> CertificatePolicy | None:
-        """Creates a TLSCertificate instance from a dictionary. Returns None if dictionary is invalid"""
+        """
+        Creates a TLSCertificate instance from a dictionary. Returns None if dictionary is invalid, on the following conditions:
+            - Fields have the incorrect data type (lists can be parsed from strings)
+            - Some required fields are missing (validProtocols, validSubjects)
+        """
 
-        # TODO: perform data cleaning and checking first. return None if invalid
-
+        # trim down all strings to their required length. modifies the data
+        # ensure correct data types
+        
+        ## 
+        if isinstance(data.get("name", ""), str):
+            data["name"] = data["name"][:POLICY_NAME_MAXLEN]
+        else:
+            return None
+        
+        ##
+        if isinstance(data.get("description", ""), str):
+            data["description"] = data["description"][:POLICY_DESC_MAXLEN]
+        else:
+            return None
+        
+        ##
+        if isinstance(data.get("validProtocols"), str):
+            data["validProtocols"] = [data["validProtocols"]]
+        elif not isinstance(data.get("validProtocols"), list):
+            return None 
+        protocol_bv: int = Protocols.encode(data.get("validProtocols", []))
+        if not protocol_bv:
+            return None
+        
+        ##
+        if isinstance(data.get("validSubjects"), str):
+            data["validSubjects"] = [data["validSubjects"][:POLICY_SUBJ_MAXLEN]]
+        elif not isinstance(data.get("validSubjects"), list):
+            return None
+        else:
+            data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data["validSubjects"]]
+        
+        ##
+        if isinstance(data.get("validIssuers"), str):
+            data["validIssuers"] = [data["validIssuers"][:POLICY_ISSU_MAXLEN]]
+        elif not isinstance(data.get("validIssuers"), list):
+            return None
+        else:
+            data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data["validIssuers"]]
+            
+        ##
+        if isinstance(data.get("validSans"), str):
+            data["validSans"] = [data["validSans"][:POLICY_SANS_MAXLEN]]
+        elif not isinstance(data.get("validSans"), list):
+            return None
+        else:
+            data["validSans"] = [i[:POLICY_SANS_MAXLEN] for i in data["validSans"]]
+            
+        ##
+        if isinstance(data.get("validCiphers"), str):
+            data["validCiphers"] = [data["validCiphers"][:POLICY_CIPH_MAXLEN]]
+        elif not isinstance(data.get("validCiphers"), list):
+            return None
+        else:
+            data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data["validCiphers"]]
+        
+        ##
+        if not isinstance(data.get("minCertificateLifespan", 0), int):
+            return None
+        elif data.get("minCertificateLifespan", 0) < 0:
+            return None
+        
+        ##
+        if not isinstance(data.get("minCertificateDaysLeft", 0), int):
+            return None
+        elif data.get("minCertificateDaysLeft", 0) < 0:
+            return None
+        
+        ##
+        if not isinstance(data.get("needsSct", False), bool):
+            return None
+        
+        # extraneous fields are ignored
+        # any other errors are simply ignored or replaced by defaults in the constructor
         policy = CertificatePolicy(
             name=data.get("name", "Unnamed Policy"),
             description=data.get("description", "No description provided"),
             
-            valid_protocols=Protocols.encode(data.get("validProtocols", [])),
+            valid_protocols=protocol_bv,
             valid_subjects=data.get("validSubjects", []),
             valid_issuers=data.get("validIssuers", []),
             valid_sans=data.get("validSans", []),
