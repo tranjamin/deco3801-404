@@ -110,18 +110,18 @@ class TLSCertificate(db.Model):
 
         # calculate 
         cert = TLSCertificate(
-            protocol=data["protocol"],
-            key_exchange=data["keyExchange"],
-            key_exchange_group=data.get("keyExchangeGroup"),
-            cipher=data["cipher"],
+            protocol=data.get("protocol", ""),
+            key_exchange=data.get("keyExchange", ""),
+            key_exchange_group=data.get("keyExchangeGroup", None),
+            cipher=data.get("cipher", ""),
             mac=data.get("mac"),
-            certificate_id=data["certificateId"],
-            subject_name=data["subjectName"],
-            issuer=data["issuer"],
-            valid_from=data["validFrom"],
-            valid_to=data["validTo"],
+            certificate_id=data.get("certificateId", 0),
+            subject_name=data.get("subjectName", ""),
+            issuer=data.get("issuer", ""),
+            valid_from=data.get("validFrom", 0.0),
+            valid_to=data.get("validTo", 0.0),
             certificate_transparency_compliance=CertificateTransparencyCompliance(
-                data["certificateTransparencyCompliance"]
+                data.get("certificateTransparencyCompliance", "unknown")
             ),
             server_signature_algorithm=data.get("serverSignatureAlgorithm"),
             encrypted_client_hello=data.get("encryptedClientHello", False),
@@ -147,7 +147,7 @@ class TLSCertificate(db.Model):
             )
 
         return cert
-
+    
     def _evaluate_cert(self) -> dict:
         """
         Evaluate a TLS certificate against the default policy.
