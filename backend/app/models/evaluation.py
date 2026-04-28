@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from app.models.policy import CertificatePolicy, Protocols
-from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
+# from app.models.policy import CertificatePolicy
+# from app.models.certificate import TLSCertificate
+from app.models.utils import Flags, CertificateTransparencyCompliance, Protocols
 
-from typing import Dict, Any, List
+from typing import Dict, Any, Tuple
 import time
 
-def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> Dict[str, Any]:
+def evaluate_against_policy(cert: 'TLSCertificate', policy: 'CertificatePolicy') -> Tuple[int, Dict[str, Any]]:
     """
     Evaluate a TLS certificate against a certificate policy.
 
@@ -15,10 +16,11 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
         days_until_expiry (int)
         issues (list[str])
         pass (bool)
+    Also returns a bitector corresponding to the issues found
     """
-
-    # stores any issues with the certificate we have detected
-    issues: List[str] = []
+    
+    # stores issues in a bitvector
+    warnings: int = 0
     
     # calculate time
     now: float = time.time()
@@ -26,30 +28,30 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
 
     # check expiry date
     if cert.valid_to < now:
-        issues.append("expired")
+        warnings |= (1 << Flags.WARN_EXPIRED.value[0])
     elif days_until_expiry < policy.min_certificate_days_left:
-        issues.append("expiring_soon")
+        warnings |= (1 << Flags.WARN_EXPIRING.value[0])
     
     if (cert.valid_from - cert.valid_to) // 86400 < policy.min_certificate_lifespan:
-        issues.append("lifespan_too_short")
+        warnings |= (1 << Flags.WARN_SHORT_LIFESPAN.value[0])
 
     # check if protocols are weak
     if cert.protocol not in Protocols.decode(policy.valid_protocols):
-        issues.append("weak_protocol")
+        warnings |= (1 << Flags.WARN_PROTOCOL.value[0])
 
     # check for valid subjects
     if cert.subject_name not in policy.valid_subjects:
-        issues.append("incorrect subject name")
+        warnings |= (1 << Flags.WARN_SUBJECT_NAME.value[0])
     
     if cert.issuer not in policy.valid_issuers:
-        issues.append("invalid issuer")
+        warnings |= (1 << Flags.WARN_ISSUER.value[0])
     
-    if policy.needs_sct and cert.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
-        issues.append("noncompliant SCT")
+    if cert.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
+        warnings |= (1 << Flags.WARN_SECURITY_COMPLIANCE.value[0])
 
-    return {
-        "is_expired": cert.valid_to < now,
-        "days_until_expiry": days_until_expiry,
-        "issues": issues,
-        "pass": len(issues) == 0,
+    return warnings, {
+        "isExpired": bool(warnings & 1),
+        "daysUntilExpiry": days_until_expiry,
+        "issues": Flags.decode(warnings),
+        "pass": not bool(warnings),
     }

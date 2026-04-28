@@ -1,11 +1,11 @@
 from __future__ import annotations
-import enum
-from app import db
 from typing import Any, List
-import functools
-from sqlalchemy.orm import Mapped
 
+from app import db
+from sqlalchemy.orm import Mapped
 from sqlalchemy.dialects.postgresql import ARRAY
+
+from app.models.utils import Protocols
 
 POLICY_NAME_MAXLEN = 50
 POLICY_DESC_MAXLEN = 255
@@ -13,50 +13,7 @@ POLICY_SUBJ_MAXLEN = 50
 POLICY_SANS_MAXLEN = 50
 POLICY_ISSU_MAXLEN = 50
 POLICY_CIPH_MAXLEN = 50
-
-class Protocols(enum.Enum):
-    """
-    An enumerated class to define different TLS protocols. Valid protocols are encoded by a bitvector and are enumerated by the format TLS<subversion nnumber>V<version number>.
-
-    Values --> (bit position, string encoding):
-        TLS1V0 --> (0, "tls 1.0")
-        TLS1V1 --> (1, "tls 1.1")
-        TLS1V2 --> (2, "tls 1.2")
-        TLS1V3 --> (3, "tls 1.3")
-    """
-    TLS1V0 = (0, "tls 1.0")
-    TLS1V1 = (1, "tls 1.1")
-    TLS1V2 = (2, "tls 1.2")
-    TLS1V3 = (3, "tls 1.3")
-    
-    @classmethod
-    @functools.cache
-    def lookup_str2int(cls) -> dict[str, int]:
-        return {cls[x].value[1] : cls[x].value[0] for x in cls.__members__}
-
-    @classmethod
-    @functools.cache
-    def lookup_int2str(cls) -> dict[int, str]:
-        return {cls[x].value[0] : cls[x].value[1] for x in cls.__members__}
-    
-    @staticmethod
-    def encode(protocols: list[str]) -> int:
-        """Convert a list of protocols to a bitvector"""
-        valid_protocols: int = 0
-        for ele in protocols:
-            if ele in Protocols.lookup_str2int().keys():
-                valid_protocols |= (1 << Protocols.lookup_str2int()[ele])
-            
-        return valid_protocols
-    
-    @staticmethod
-    def decode(bitvector: int) -> list[str]:
-        """Convert a bitvector to a list of protocols"""
-        valid_protocols: list[str] = []
-        for i in range(len(Protocols)):
-            if bitvector & (1 << i):
-                valid_protocols.append(Protocols.lookup_int2str()[i])
-        return valid_protocols
+POLICY_MAX_ARRAY_SIZE = 20
 
 class CertificatePolicy(db.Model):
     """
@@ -77,9 +34,6 @@ class CertificatePolicy(db.Model):
         
         min_certificate_lifespan (integer): the minimum number of days certificates can be valid for
         min_certificate_days_left (integer): minimum number of days remaining a certificate must be valid for
-        
-        needs_sct (bool): if certificates are required to have a SCT
-
     Inherits from:
         flask_sqlalchemy.extension.SQLAlchemy
     """
@@ -102,8 +56,6 @@ class CertificatePolicy(db.Model):
     min_certificate_lifespan: Mapped[int] = db.Column(db.Integer, nullable=False)
     min_certificate_days_left: Mapped[int] = db.Column(db.Integer, nullable=False)
     
-    needs_sct: Mapped[bool] = db.Column(db.Boolean, nullable=False)  
-
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
@@ -123,8 +75,6 @@ class CertificatePolicy(db.Model):
             
             "minCertificateLifespan": self.min_certificate_lifespan,
             "minCertificateDaysLeft": self.min_certificate_days_left,
-            
-            "needsSct": self.needs_sct,
         }
         
     @staticmethod
@@ -165,7 +115,7 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validSubjects"), list):
             return None
         else:
-            data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data["validSubjects"]]
+            data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data["validSubjects"]][:POLICY_MAX_ARRAY_SIZE]
         
         ##
         if isinstance(data.get("validIssuers"), str):
@@ -173,7 +123,7 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validIssuers"), list):
             return None
         else:
-            data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data["validIssuers"]]
+            data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data["validIssuers"]][:POLICY_MAX_ARRAY_SIZE]
             
         ##
         if isinstance(data.get("validSans"), str):
@@ -181,7 +131,7 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validSans"), list):
             return None
         else:
-            data["validSans"] = [i[:POLICY_SANS_MAXLEN] for i in data["validSans"]]
+            data["validSans"] = [i[:POLICY_SANS_MAXLEN] for i in data["validSans"]][:POLICY_MAX_ARRAY_SIZE]
             
         ##
         if isinstance(data.get("validCiphers"), str):
@@ -189,7 +139,7 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validCiphers"), list):
             return None
         else:
-            data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data["validCiphers"]]
+            data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data["validCiphers"]][:POLICY_MAX_ARRAY_SIZE]
         
         ##
         if not isinstance(data.get("minCertificateLifespan", 0), int):

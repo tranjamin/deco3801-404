@@ -31,6 +31,9 @@ HELP_STRING = """
 <br>        [POST] /batch : stores multiple policies. requires a {"policies": &lt;list of policy JSONs&gt;, returns {"created": &lt;number created&gt;, "ids": &lt;list of policy IDs&gt;}
 <br>        [GET] /create_dummy : stores a dummy policy when navigated to. returns the dummy policy's JSON
 <br>
+<br>    /api/evaluation/ : top-level route for evaluating certificates against policies
+<br>        [GET] / : evaluates a policy. requires a {"certificate_id": &ltcertificate_id&gt, "policy_id": &ltpolicy_id&gt} and returns an Evaluation Result
+
 <h2>Required Data Formats:</h2>
 <br>
 <br>Certificate JSON:
@@ -42,14 +45,8 @@ HELP_STRING = """
 <br>"issuer": string (max 255)
 <br>"validFrom": float
 <br>"validTo": float
-<br>"mac": string (max 100)
-<br>"certificateId": integer
-<br>"keyExchange": string (max 50)
-<br>"keyExchangeGroup": string (max 50), optional
-<br>"signedCertificateTimestampList": ? only returned
-<br>"certificateTransparencyCompliance": choice of "unknown", "not-compliant", or "compliant"
-<br>"serverSignatureAlgorithm": integer
-<br>"encryptedClientHello": boolean
+<br>"url": string (max 255)
+<br>"issues": list of strings
 <br>
 <br>Policy JSON:
 <br>"id": integer - only in response, ignored in request
@@ -65,6 +62,12 @@ HELP_STRING = """
 <br>"minCertificateLifespan": int (in days)
 <br>"minCertificateDaysLeft": int
 <br>"needsSct": boolean
+<br>
+<br>Evaluation JSON:
+<br> "isExpired": bool, True if certificate has expired
+<br> "daysUntilExpiry": int (in days)
+<br> "issues": list of issues flagged, in the format specified by `class:Flags`
+<br> "pass": bool, True if all checks passed
 """
 
 # load in any environment variables from .env
@@ -81,8 +84,25 @@ def create_app():
     app.config["CORS_HEADERS"] = 'Content-Type'
     
     @app.route("/")
-    def _():
+    def info():
         return HELP_STRING
+    
+    @app.route("/DANGER/DELETE", methods=["GET"])
+    def delete_database():
+        """
+        API endpoint which deletes the policy database. ONLY USED FOR ADMIN
+
+        URL:
+            /DANGER/DELETE
+        Methods Supported:
+            GET
+        Returns:
+            On success: TODO
+            On failure: TODO
+        """
+        # TODO: handle any errors
+        db.drop_all()
+        return "Success", 200
 
     # convert environment variables to a URL
     db_url = sqlalchemy.URL(
@@ -102,15 +122,17 @@ def create_app():
     # init app
     db.init_app(app)
 
+    from app.routes.certificate_routes import certificate_bp
+    from app.routes.policy_routes import policy_bp
+    from app.routes.evaluation_routes import evaluation_bp    
+    
     # initialise database schema
     with app.app_context():
         db.create_all()
 
     # load in blueprint
-    from app.routes.certificate_routes import certificate_bp
-    from app.routes.policy_routes import policy_bp
-    
     app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
     app.register_blueprint(policy_bp, url_prefix="/api/policies/")
+    app.register_blueprint(evaluation_bp, url_prefix="/api/evaluate")
 
     return app

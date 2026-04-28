@@ -2,13 +2,11 @@ from flask import Blueprint, request, jsonify
 from typing import List, Dict, Any, Literal
 
 from app import db
-from app.models.policy import (
-    CertificatePolicy,
-    Protocols
-)
+from app.models.policy import CertificatePolicy
+from app.models.utils import Protocols
 
 # represents this collection of endpoints
-policy_bp: 'Blueprint' = Blueprint("policy_bp", __name__)
+policy_bp: Blueprint = Blueprint("policy_bp", __name__)
 
 @policy_bp.route("/", methods=["GET"])
 def get_all():
@@ -24,24 +22,6 @@ def get_all():
     """
     certs: List[CertificatePolicy] = CertificatePolicy.query.all() # type: ignore
     return jsonify([c.to_dict() for c in certs]), 200
-
-@policy_bp.route("/", methods=["DELETE"])
-def delete_database() -> tuple[Literal['Success'], Literal[200]]:
-    """
-    API endpoint which deletes the policy database
-
-    URL:
-        /
-    Methods Supported:
-        DELETE
-    Returns:
-        On success: TODO
-        On failure: TODO
-    """
-    # TODO: handle any errors
-    db.drop_all()
-    return "Success", 200
-
 
 @policy_bp.route("/<int:policy_id>", methods=["GET"])
 def get_one(policy_id: int):
@@ -156,7 +136,6 @@ def update_policy(policy_id: int):
     policy.valid_ciphers = new_policy.valid_ciphers
     policy.min_certificate_lifespan = new_policy.min_certificate_lifespan
     policy.min_certificate_days_left = new_policy.min_certificate_days_left
-    policy.needs_sct = new_policy.needs_sct
 
     db.session.commit()
     return jsonify({"message": "Updated"}), 200
@@ -222,8 +201,6 @@ def create_dummy_data():
         
         min_certificate_lifespan=45,
         min_certificate_days_left=7,
-        
-        needs_sct=False,
     )
 
     db.session.add(policy)
