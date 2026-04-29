@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
-import GenerateReport from "./components/reportForm";
+import GenerateReport from "./components/reportform";
 import { filterCertificates, sortCertificates } from "./utils/tableUtils";
 import type { TLSCertificate } from "../sharedComponent/types";
 import { transformCertificates } from "../sharedComponent/utils"

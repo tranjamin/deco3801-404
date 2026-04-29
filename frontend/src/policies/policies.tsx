@@ -42,7 +42,7 @@ export default function Policies() {
     // await addDummyPolicy();
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
-    window.location.reload();
+    //window.location.reload();
   };
 
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now
