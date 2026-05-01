@@ -19,7 +19,7 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
             if ( filterRef.current && !filterRef.current.contains(event.target as Node)) {
                 setShowFilterMenu(false);
             }
-        }
+        } // function handle for clicking outside the popup. in this case, if filter menu is open and clicked outside, the menu is closed.
 
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -40,7 +40,7 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
         });
     };
 
-    const clearFilters = () => {
+    const resetFilters = () => {
         setFilterStatus(allStatus);
     };
 
@@ -100,10 +100,10 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
 
                             {filterStatus.length !== 3 && (
                                 <button
-                                    onClick={clearFilters}
+                                    onClick={resetFilters}
                                     title="Reset all filters to default"
                                     style={resetButtonStyle}
-                                > Clear All</button>
+                                > Reset Filters</button>
                             )}
                         </div>
                     )}                  
