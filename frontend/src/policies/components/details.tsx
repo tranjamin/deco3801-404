@@ -3,7 +3,8 @@ import {
   deletePolicy,
   type SecurityPolicy,
   activatePolicy,
-  deactivatePolicy
+  deactivatePolicy,
+  updatePolicy
 } from "../../policySharing/policySharing";
 
 type DetailsProps = {
@@ -256,10 +257,12 @@ export default function Details({
     if (isNewPolicy && onSaveNewPolicy) {
       await onSaveNewPolicy(policyPayload);
       return;
+    } else if (!isNewPolicy && updatePolicy && policy) {
+      await updatePolicy(policyPayload, policy.id);
     }
 
     console.log("saving edited policy to API", policyPayload);
-    //window.location.reload();
+    window.location.reload();
   };
 
   const handleBack = async () => {
