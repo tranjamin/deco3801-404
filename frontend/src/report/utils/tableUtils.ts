@@ -1,13 +1,23 @@
 import type { TLSCertificateTransformed } from "../../sharedComponent/types";
 
 
-export function filterCertificates( data: TLSCertificateTransformed[], statusFilters:string[]) {
-    if (statusFilters.length === 3) {
-        return data;
-    }
-
-    return data.filter(cert => statusFilters.includes(cert.status));
+type Filters = {
+    status: string[];
+    protocol: string[];
 }
+
+
+
+export function filterCertificates( data: TLSCertificateTransformed[], filters:Filters) {
+    return data.filter(cert => {
+
+        const statusFilters = filters.status.length === 0 || filters.status.includes(cert.status);
+
+        const protocolFilters = filters.protocol.length === 0 || filters.protocol.includes(cert.protocol);
+
+        return statusFilters && protocolFilters;
+    });
+};
 
 
 export function sortCertificates( data: TLSCertificateTransformed[], sortBy: string) {
@@ -35,4 +45,17 @@ export function sortCertificates( data: TLSCertificateTransformed[], sortBy: str
         default:
             return sorted.sort((a, b) => Number(b.id) - Number(a.id));
     }
-}
+};
+
+
+export function searchCertificates(data: TLSCertificateTransformed[], query: string) {
+
+    if (!query.trim()) return data; // checks if query is empty. if so, return the entire data
+
+    const lowerQuery = query.toLowerCase(); // convert query to lower case
+
+    return data.filter(cert => 
+        cert.subjectName.toLowerCase().includes(lowerQuery) || // checks if part of the domain includes the query
+        cert.issuer.toLowerCase().includes(lowerQuery) // checks if part of the issuer includes the query
+    );
+};

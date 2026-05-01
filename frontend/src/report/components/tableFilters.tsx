@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 
+type Filters = {
+    status: string[];
+    protocol: string[];
+}
+
 type Props = {
     sortBy: string;
-    filterStatus: string[];
+    filters: Filters;
+    searchQuery: string;
     setSortBy: (value: string) => void;
-    setFilterStatus: React.Dispatch<React.SetStateAction<string[]>>;
+    setFilters: React.Dispatch<React.SetStateAction<Filters>>;
+    setSearchQuery: (value: string) => void;
 };
 
 // filterStatus, 
-export default function TableFilters({sortBy, filterStatus, setSortBy, setFilterStatus}: Props) {
+export default function TableFilters({sortBy, filters, searchQuery, setSortBy, setFilters, setSearchQuery}: Props) {
 
     // handles back to default screen when clicked outside the popup/dropdown
     const sortRef = useRef<HTMLDivElement>(null);
@@ -26,33 +33,51 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
     }, []);
 
     // handles checkbox for filters
-    const allStatus = ["ok", "warning", "expired"]
-    const handleCheckboxChange = (status: string) => {
-        setFilterStatus((prev) => {
-            let next;
-            if (prev.includes(status)) {
-                next = prev.filter((s) => s !== status); // removes from array if exists
-            } else {
-                next = [...prev, status]; // adds to array if doesnt exist
-            }
+    const handleCheckboxChange = (category: "status" | "protocol", value: string) => {
+        setFilters(prev => {
+            const current = prev[category];
 
-            return next;
+            const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value]
+            
+            return {...prev, [category]: next};
         });
     };
 
     const resetFilters = () => {
-        setFilterStatus(allStatus);
+        setFilters({
+            status: [],
+            protocol: []
+        });
     };
 
     return(
         <div style={containerStyle}>
             <div style={gridContainer}>
+                
+                {/* search */}
+                <div style={searchWrapperStyle}>
+                    <input 
+                        type="text"
+                        placeholder="Search domain or issuer"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={searchInputStyle}
+                    />{searchQuery && (
+                        <button 
+                            onClick={() => setSearchQuery("")}
+                            style={clearButtonStyle}
+                            aria-label="Clear search"
+                        >✕</button>
+                    )}
+                </div>
+                
+
                 {/* sort by */}
-                <div ref={sortRef}>
-                    <label>
+                <div style={{paddingTop: "4px"}} ref={sortRef}>
+                    <label style={{fontSize: "16px"}}>
                         Sort By:
                         <select
-                            style={{ marginLeft: "6px" }}
+                            style={{ fontSize: "16px", marginLeft: "6px" }}
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
                         >
@@ -85,25 +110,51 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
                         onClick={() => setShowFilterMenu(!showFilterMenu)}
                         title="Filter table"
                     >
-                        <img src="/filter.svg" width={16} height={16}/>
+                        <img src="/filter.svg" width={20} height={20}/>
                     </button> { showFilterMenu && (
                         <div style={popupStyle}>
-                            {["ok", "warning", "expired"].map((status) => (
-                                <label key={status} style={{ display: "block" }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={filterStatus.includes(status)}
-                                        onChange={() => handleCheckboxChange(status)}
-                                    /><span style={{textTransform: "capitalize"}}>{status}</span>
-                                </label>
-                            ))}
+                            
+                            <div style={filterRowStyle}>
+                                {/* protocol */}
+                                <div style={filterColumnStyle}>
+                                    <strong>Protocol</strong>
+                                    {["TLS 1.1", "TLS 1.2", "TLS 1.3", "TLS 1.4"].map((protocol) => (
+                                        <label key={protocol} style={checkboxLabelStyle}>
+                                            <input 
+                                                type="checkbox"
+                                                style={{ transform: "scale(1.4)", marginRight: "6px" }}
+                                                checked={filters.protocol.includes(protocol)}
+                                                onChange={() => handleCheckboxChange("protocol", protocol)}
+                                            /><span style={{textTransform: "capitalize"}}>{protocol}</span>
 
-                            {filterStatus.length !== 3 && (
+                                        </label>
+                                    ))}
+                                </div>
+                                
+                                <div style={dividerStyle}/>
+
+                                {/* status */}
+                                <div style={filterColumnStyle}>
+                                    <strong>Status</strong>
+                                    {["ok", "warning", "expired"].map((status) => (
+                                        <label key={status} style={checkboxLabelStyle}>
+                                            <input
+                                                type="checkbox"
+                                                style={{ transform: "scale(1.4)", marginRight: "6px" }}
+                                                checked={filters.status.includes(status)}
+                                                onChange={() => handleCheckboxChange("status", status)}
+                                            /><span style={{textTransform: "capitalize"}}>{status}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {(filters.status.length > 0 || filters.protocol.length > 0) && (
                                 <button
                                     onClick={resetFilters}
                                     title="Reset all filters to default"
                                     style={resetButtonStyle}
-                                > Reset Filters</button>
+                                >Reset Filters</button>
                             )}
                         </div>
                     )}                  
@@ -125,7 +176,7 @@ const containerStyle: React.CSSProperties = {
 
 const gridContainer: React.CSSProperties = {
     display: "flex",
-    gap: "8px"
+    gap: "16px"
 }
 
 
@@ -138,7 +189,36 @@ const popupStyle: React.CSSProperties = {
     boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
     zIndex: 100,
     marginTop: "5px",
+    fontSize: "16px"
 };
+
+
+const filterRowStyle: React.CSSProperties = {
+    display: "flex",
+    gap: "12px",
+    alignItems: "flex-start",
+};
+
+
+const filterColumnStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    minWidth: "80px",
+};
+
+
+const dividerStyle: React.CSSProperties = {
+    width: "1px",
+    backgroundColor: "#d8d8d8",
+    margin: "0 4px"
+};
+
+
+const checkboxLabelStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px"
+}
 
 
 const resetButtonStyle: React.CSSProperties = {
@@ -155,3 +235,33 @@ const resetButtonStyle: React.CSSProperties = {
     fontSize: "12px",
     textAlign: "center"
 }
+
+
+const searchWrapperStyle: React.CSSProperties = {
+    position: "relative",
+    display: "inline-block",
+};
+
+
+const searchInputStyle: React.CSSProperties = {
+    padding: "6px 10px",
+    borderRadius: "6px",
+    border: "1px solid #b4b4b4",
+    width: "200px",
+    fontSize: "14px"
+};
+
+
+const clearButtonStyle: React.CSSProperties = {
+    position: "absolute",
+    right: "6px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "#757575",
+    padding: 0,
+    lineHeight: 1
+};
