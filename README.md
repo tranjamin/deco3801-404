@@ -40,10 +40,11 @@ The backend files should all be in `/backend`, because it is this and only this 
 
 A new endpoint can be created with adding a new route by decorating a function with `@app.route("/endpoint/path")`. The decorated function will be called whenever the endpoint is queried. Do not change the naming of `app` or `run.py`, or otherwise the backend will also need to be modified.
 
-### Run the server locally
+### Local Testing
 
 ```sh
 cd backend
+# first, copy an .env file with either local or deployed database secrets to backend/.env
 pip install -r requirements.txt
 python -m flask --app backend run # to deploy with flask
 python -m gunicorn backend:app # to deploy with gunicorn (linux only)
@@ -56,10 +57,8 @@ Policy Import/Export Format;
     "description": "My Example Policy",
     "protocols": ["TLS 1.2", "QUIC"],
     "subjects": ["UQ", "The University of Queensland", "Blackboard"],
-    "SANs": ["https://portal.my.uq.edu.au/#/dashboard", "https://my.uq.edu.au/#/dashboard", "1.2.3.4"],
     "issuers": ["Amazon RSA 2048 M04", "Let's Encrypt", "DigiCert"],
     "issuedAfter": 50,
     "validFor": 10,
-    "hasSCT": True,
     "transparencyCompliance": True,
 }
