@@ -39,7 +39,7 @@ jobs:
         DB_USERNAME: ${{ secrets.DB_USERNAME }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         DB_HOSTNAME: ${{ secrets.DB_HOSTNAME }}
-        DB_DATABASE: ${ {secrets.DB_DATABASE }}
+        DB_DATABASE: ${{secrets.DB_DATABASE }}
         DB_PORT: ${{ secrets.DB_PORT }}
       run: |
         pytest
