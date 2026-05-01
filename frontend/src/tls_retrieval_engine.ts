@@ -2,6 +2,8 @@ console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
 
+const BACKEND_BASE_URL = " ";
+
 /**
  * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the 
  * debugger to the constructed target. It must wait for asynchronous methods 
@@ -41,7 +43,9 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
 /**
  * Writes the TLS Security Details to the console when the event, Network.responseReceived, 
  * is received through chrome.debugger.onEvent, and the hostname of the selected
- * tab is identical to the hostname of the response URL.
+ * tab is identical to the hostname of the response URL. It then builds a certificate
+ * payload in the format expected by the backend, and logs that payload as a formatted JSON, 
+ * before sending the formatted JSON to the backend via sendCertToBackend().
  * 
  * @param source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
  * for this use case
@@ -51,7 +55,7 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
  * the payload contains fields including requestId, loaderId, timestamp, etc.
  */
 function handleDebuggerEvent(
-  _source: chrome.debugger.Debuggee,
+  source: chrome.debugger.Debuggee,
   method: string,
   params?: any
 ): void {
@@ -86,22 +90,29 @@ function handleDebuggerEvent(
 
     if (responseHostname === selectedHostname) {
         const payload = {
-            url: response.url,
-            protocol: securityDetails.protocol,
-            cipher: securityDetails.cipher,
-            issuer: securityDetails.issuer,
-            subjectName: securityDetails.subjectName,
-            sanList: securityDetails.sanList,
-            validFrom: securityDetails.validFrom,
-            validTo: securityDetails.validTo,
-            certificateTransparencyCompliance:
+          protocol: securityDetails.protocol,
+          keyExchange: securityDetails.keyExchange,
+          keyExchangeGroup: securityDetails.keyExchangeGroup,
+          cipher: securityDetails.cipher,
+          mac: securityDetails.mac,
+          certificateId: securityDetails.certificateId,
+          subjectName: securityDetails.subjectName,
+          sanList: securityDetails.sanList ?? [],
+          issuer: securityDetails.issuer,
+          validFrom: securityDetails.validFrom,
+          validTo: securityDetails.validTo,
+          signedCertificateTimestampList:
+            securityDetails.signedCertificateTimestampList ?? [],
+          certificateTransparencyCompliance:
             securityDetails.certificateTransparencyCompliance,
-            encryptedClientHello: securityDetails.encryptedClientHello
+          serverSignatureAlgorithm: securityDetails.serverSignatureAlgorithm,
+          encryptedClientHello: securityDetails.encryptedClientHello ?? false
         };
 
-        console.log("TLS metadata for matching response hostname secured.");
+        console.log("TLS certificate payload captured.");
         console.log(JSON.stringify(payload, null, 2));
 
+        sendCertToBackend(payload);
         return;
     }
 
@@ -121,6 +132,40 @@ function handleActionClick(tab: chrome.tabs.Tab): void {
   console.log("Extension icon clicked.");
   selectedTab = tab;
   attachToTab(tab);
+}
+
+/**
+ * Sends a POST request to the backend, with JSON headers and a JSON body containing the
+ * TLS certificate metadata payload, using fetch(). The backend's reply is then sent back,
+ * as a Response object. If the TLS certificate metadata was accepted, then the saved
+ * Certificate sent, will be recorded in the console. Otherwise, the Certificate will be
+ * rejected by the backend, or if the TLS certificate was not sent at all, these errors
+ * will be logged.
+ * @param payload 
+ * @returns void
+ */
+async function sendCertToBackend(payload: object): Promise<void> {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/certificates/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Backend rejected TLS certificate:", response.status, errorText);
+      return;
+    }
+
+    const savedCertificate = await response.json();
+    console.log("TLS certificate saved to backend:");
+    console.log(savedCertificate);
+  } catch (error) {
+    console.error("Failed to send TLS certificate to backend:", error);
+  }
 }
 
 // Registers the handleDebuggerEvent function as the function to run when Chrome delivers 
