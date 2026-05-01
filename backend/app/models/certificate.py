@@ -9,6 +9,11 @@ from app.models.utils import Flags, CertificateTransparencyCompliance
 from app.models.policy import CertificatePolicy
 from app.models.evaluation import evaluate_against_policy
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
 CERT_URL_MAXLEN = 255
 CERT_PROT_MAXLEN = 50
 CERT_CIPH_MAXLEN = 50
@@ -57,6 +62,9 @@ class TLSCertificate(db.Model):
         db.Enum(CertificateTransparencyCompliance),
         nullable=False,
     )
+
+    user_id: Mapped[int] = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user: Mapped[User] = db.relationship("User", back_populates="certificates")
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
