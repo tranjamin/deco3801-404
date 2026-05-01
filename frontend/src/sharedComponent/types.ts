@@ -12,4 +12,5 @@ export type TLSCertificate = {
 export type TLSCertificateTransformed = TLSCertificate & {
   daysRemaining: number;
   status: "ok" | "warning" | "expired";
+  desc: string;
 };

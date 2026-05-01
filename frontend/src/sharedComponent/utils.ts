@@ -16,16 +16,24 @@ export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTra
         const daysRemaining = Math.ceil(diff / (1000*60*60*24));
 
         let status: TLSCertificateTransformed["status"];
-        if (daysRemaining < 0) status = "expired";
+        if (daysRemaining <= 0) status = "expired";
         else if (daysRemaining < 15) status = "warning";
         else status = "ok";
+
+        let desc: TLSCertificateTransformed["desc"];
+        if (daysRemaining <= 0) desc = "Expired due to passing the valid date period";
+        else if (daysRemaining < 15) desc = "Soon to expire due to valid date period";
+        else desc = "Everything is currently fine";
+
+        // if statements for incorrect policies description
 
         return {
             ...cert,
             validTo: formattedValidTo,
             validFrom: formattedValidFrom,
             daysRemaining,
-            status
+            status,
+            desc
         };
     })
 }
@@ -48,12 +56,18 @@ export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransfo
     else if (daysRemaining < 15) status = "warning";
     else status = "ok";
 
+    let desc: TLSCertificateTransformed["desc"];
+    if (daysRemaining <= 0) desc = "Expired due to passing the valid date period";
+    else if (daysRemaining < 15) desc = "Soon to expire due to valid date period";
+    else desc = "Everything is currently fine";
+
     return {
         ...cert,
         validTo: formattedValidTo,
         validFrom: formattedValidFrom,
         daysRemaining,
-        status
+        status,
+        desc
     };
 }
 
@@ -71,10 +85,16 @@ export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertif
         else if (daysRemaining < 15) status = "warning";
         else status = "ok";
 
+        let desc: TLSCertificateTransformed["desc"];
+        if (daysRemaining <= 0) desc = "Expired due to passing the valid date period";
+        else if (daysRemaining < 15) desc = "Soon to expire due to valid date period";
+        else desc = "Everything is currently fine";
+
         return {
             ...cert,
             daysRemaining,
-            status
+            status,
+            desc
         };
     })
 }
