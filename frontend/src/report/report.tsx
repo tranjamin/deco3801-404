@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
-import GenerateReport from "./components/reportform";
-import { filterCertificates, sortCertificates } from "./utils/tableUtils";
+import GenerateReport from "./components/reportForm";
+import { filterCertificates, searchCertificates, sortCertificates } from "./utils/tableUtils";
 import type { TLSCertificate } from "../sharedComponent/types";
 import { transformCertificates } from "../sharedComponent/utils"
 import { mockTLSData } from "../sharedComponent/mockData";
@@ -17,15 +17,21 @@ export default function Report() {
 
     const [data] = useState<TLSCertificate[]>(mockTLSData); // mock data for visual testing
 
+    // sorting, filtering, searching
     const [sortBy, setSortBy] = useState("default");
-    const [filterStatus, setFilterStatus] = useState<string[]>(["ok", "warning", "expired"]);
+    const [filters, setFilters] = useState({
+        status: [] as string[],
+        protocol: [] as string[],
+    });
+    const [searchQuery, setSearchQuery] = useState("");
 
     const transformedData = transformCertificates(data); // add days remaining and "status" to the data structure
 
-    // filter data and then sort the data for display
-    const filteredData = filterCertificates(transformedData, filterStatus);
+    // search -> filter -> sort
+    const searchedData = searchCertificates(transformedData, searchQuery);
+    const filteredData = filterCertificates(searchedData, filters);
     const sortedData = sortCertificates(filteredData, sortBy);
-
+    
 
     return (
         <div>
@@ -50,9 +56,11 @@ export default function Report() {
                     {/* table filters here */}
                     <TableFilters 
                         sortBy={sortBy}
-                        filterStatus={filterStatus}
+                        filters={filters}
+                        searchQuery={searchQuery}
                         setSortBy={setSortBy}
-                        setFilterStatus={setFilterStatus}
+                        setFilters={setFilters}
+                        setSearchQuery={setSearchQuery}
                     />
                     <div style={{ display: "flex", flexDirection: "column", gap:"10px" }}>
                         <ReportTable data={sortedData} />
