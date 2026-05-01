@@ -8,7 +8,11 @@ from typing import Any, List
 from app.models.utils import Flags, CertificateTransparencyCompliance
 from app.models.policy import CertificatePolicy
 from app.models.evaluation import evaluate_against_policy
-from app.models.user import User
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 CERT_URL_MAXLEN = 255
 CERT_PROT_MAXLEN = 50

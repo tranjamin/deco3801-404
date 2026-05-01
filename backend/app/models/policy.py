@@ -6,7 +6,11 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.dialects.postgresql import ARRAY
 
 from app.models.utils import Protocols
-from app.models.user import User
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 POLICY_NAME_MAXLEN = 50
 POLICY_DESC_MAXLEN = 255
