@@ -131,6 +131,7 @@ def create_app():
     from app.routes.policy_routes import policy_bp
     from app.routes.evaluation_routes import evaluation_bp 
     from app.routes.auth_routes import auth_bp   
+    from app.routes.user_routes import user_bp
     
     # initialise database schema
     with app.app_context():
@@ -141,5 +142,6 @@ def create_app():
     app.register_blueprint(policy_bp, url_prefix="/api/policies/")
     app.register_blueprint(evaluation_bp, url_prefix="/api/evaluate")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(user_bp, url_prefix="/api/user")
 
     return app
