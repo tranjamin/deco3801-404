@@ -1,4 +1,4 @@
-export const baseUrl: string = "http://127.0.0.1:5000/";
+export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
 export interface SecurityPolicy {
   id: number;
@@ -14,6 +14,20 @@ export interface SecurityPolicy {
   validFor: number; //days remaining until expiration
   hasSCT: boolean;
   //transparencyCompliance: boolean;
+}
+
+export interface ExportedPolicy {
+  name: string;
+  description: string;
+  active: boolean;
+  protocols: string[];
+  ciphers: string[];
+  subjects: string[];
+  SANs: string[];
+  issuers: string[];
+  validAfter: number; //maximum days since certificate issue
+  validFor: number; //days remaining until expiration
+  hasSCT: boolean;
 }
 
 type RawPolicy = {
@@ -66,14 +80,44 @@ export const DefaultPolicy1: SecurityPolicy = {
 //Need to include 2 more default policies and update the above to be industry standard
 
 export async function importPolicy(iPolicy: string) {
-  const cPolicy: SecurityPolicy = JSON.parse(iPolicy);
-  storeNewPolicy(cPolicy);
+  const exportedPolicy: ExportedPolicy = JSON.parse(iPolicy);
+  const cPolicy: SecurityPolicy = {
+    id: 0,
+    ...exportedPolicy,
+  };
+  await storeNewPolicy(cPolicy);
   return cPolicy;
 }
 
 export async function exportPolicy(cPolicy: SecurityPolicy) {
-  const ePolicy: string = JSON.stringify(cPolicy);
-  // include the actual download function within the frontend window code
+  const sPolicy: ExportedPolicy = {
+    name: cPolicy.name,
+    description: cPolicy.description,
+    active: cPolicy.active,
+    protocols: cPolicy.protocols,
+    ciphers: cPolicy.ciphers,
+    subjects: cPolicy.subjects,
+    SANs: cPolicy.SANs,
+    issuers: cPolicy.issuers,
+    validAfter: cPolicy.validAfter,
+    validFor: cPolicy.validFor,
+    hasSCT: cPolicy.hasSCT,
+  }
+  const ePolicy: string = JSON.stringify(sPolicy, null, 2);
+  const blob = new Blob([ePolicy], { type: "application/json" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeName = (cPolicy.name || "policy")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "_");
+
+  link.href = objectUrl;
+  link.download = `${safeName || "policy"}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(objectUrl);
+
   return ePolicy;
 }
 
