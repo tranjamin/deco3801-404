@@ -14,13 +14,22 @@ export function sortCertificates( data: TLSCertificateTransformed[], sortBy: str
     const sorted = [...data];
 
     switch (sortBy) {
-        case "expiry":
+        case "expiryAsc":
+            return sorted.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+        case "domainAsc":
+            return sorted.sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+
+        case "issuerAsc":
+            return sorted.sort((a, b) => a.issuer.localeCompare(b.issuer));
+
+        case "expiryDesc":
             return sorted.sort((a, b) => b.daysRemaining - a.daysRemaining);
         
-        case "domain":
+        case "domainDesc":
             return sorted.sort((a, b) => b.subjectName.localeCompare(a.subjectName));
 
-        case "issuer":
+        case "issuerDesc":
             return sorted.sort((a, b) => b.issuer.localeCompare(a.issuer));
 
         default:

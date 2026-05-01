@@ -56,10 +56,24 @@ export default function TableFilters({sortBy, filterStatus, setSortBy, setFilter
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
                         >
-                            <option value="default">Default</option>
-                            <option value="domain">Domain Name</option>
-                            <option value="issuer">Issuer</option>
-                            <option value="expiry">Expiry Date</option>
+                            <optgroup label="Default Sort">
+                                <option value="default">Default</option>
+                            </optgroup>
+
+                            <optgroup label="Domain">
+                                <option value="domainAsc">Domain Name (A-Z)</option>
+                                <option value="domainDesc">Domain Name (Z-A)</option>
+                            </optgroup>
+                            
+                            <optgroup label="Issuer">
+                                <option value="issuerAsc">Issuer (A-Z)</option>
+                                <option value="issuerDesc">Issuer (Z-A)</option>
+                            </optgroup>
+                            
+                            <optgroup label="Date">
+                                <option value="expiryAsc">Expiry Date (Old-New)</option>
+                                <option value="expiryDesc">Expiry Date (New-Old)</option>
+                            </optgroup>
                         </select>
                     </label>
                 </div>

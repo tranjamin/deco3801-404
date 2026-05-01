@@ -14,7 +14,6 @@ export default function ReportTable({ data }: Props) {
             <table style={tableStyle}>
                 <thead>
                     <tr>
-                        <th style={headerCellStyle}>ID</th>
                         <th style={headerCellStyle}>Domain</th>
                         <th style={headerCellStyle}>Issuer</th>
                         <th style={headerCellStyle}>Protocol</th>
@@ -22,6 +21,7 @@ export default function ReportTable({ data }: Props) {
                         <th style={headerCellStyle}>Cipher</th>
                         <th style={headerCellStyle}>Valid From</th>
                         <th style={headerCellStyle}>Valid To</th>
+                        <th style={headerCellStyle}>Description</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,9 +38,10 @@ export default function ReportTable({ data }: Props) {
                                 rowStyle = { backgroundColor: "#83ff8d"}
                             }
 
+                            // insert if statement for red background due to incorrect policies (mismatching policies)
+
                             return (
                                 <tr key={cert.id} style={rowStyle}>
-                                    <td style={cellStyle}>{cert.id}</td>
                                     <td style={domainCellStyle}>{cert.subjectName}</td>
                                     <td style={issuerCellStyle}>{cert.issuer}</td>
                                     <td style={protocolCellStyle}>{cert.protocol}</td>
@@ -50,6 +51,7 @@ export default function ReportTable({ data }: Props) {
                                     <td style={cipherCellStyle}>{cert.cipher}</td>
                                     <td style={dateCellStyle}>{cert.validFrom}</td>
                                     <td style={dateCellStyle}>{cert.validTo}</td>
+                                    <td style={cellStyle}>{cert.desc}</td>
                                 </tr>
                             );
                         })
