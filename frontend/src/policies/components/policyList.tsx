@@ -124,7 +124,40 @@ export default function PolicyList({
     //   DefaultPolicy6,
     //   DefaultPolicy7,
     // ];
-    setPolicies(fetchedPolicies ?? []);
+    const backendPolicies = fetchedPolicies ?? [];
+    setPolicies(backendPolicies);
+
+    try {
+      // Load default policies bundled with the app (Vite import.meta.glob)
+      const modules = import.meta.glob('../../../../defaultPolicies/*.JSON', {
+        eager: true,
+        as: 'raw',
+      }) as Record<string, string>;
+
+      const defaultFiles = Object.values(modules);
+
+      const backendNames = new Set(
+        backendPolicies.map((p) => (p?.name ?? '').toLowerCase()),
+      );
+
+      for (const fileContent of defaultFiles) {
+        try {
+          const parsed = JSON.parse(fileContent) as { name?: unknown };
+          const name = typeof parsed.name === 'string' ? parsed.name : null;
+
+          if (!name) continue;
+
+          if (!backendNames.has(name.toLowerCase())) {
+            // importPolicy validates and stores the policy via the API
+            await importPolicy(fileContent);
+          }
+        } catch (err) {
+          console.warn('Skipping invalid default policy file:', err);
+        }
+      }
+    } catch (e) {
+      console.warn('No default policies found or failed to load defaults.', e);
+    }
   };
 
   useEffect(() => {
@@ -161,9 +194,11 @@ export default function PolicyList({
         window.location.reload();
       } catch (error) {
         console.error("Import failed:", error);
-        alert(
-          "Failed to import policy. Please ensure it is a valid JSON file.",
-        );
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Please ensure it is a valid JSON file.";
+        alert(`Failed to import policy. ${message}`);
       }
     };
 

@@ -16,14 +16,13 @@ export default function Policies() {
     name: "",
     description: "",
     active: false,
+    domains: [],
     protocols: [],
     ciphers: [],
     subjects: [],
-    SANs: [],
     issuers: [],
     validAfter: 0,
     validFor: 0,
-    hasSCT: false,
   };
 
   const handleSelectPolicy = (policy: SecurityPolicy) => {
@@ -118,7 +117,7 @@ const split: React.CSSProperties = {
 };
 
 const left: React.CSSProperties = {
-  background: "#e5e7eb",
+  background: "#ffffff",
   color: "#000000",
   borderRight: "3px solid #000000",
   overflow: "auto",
@@ -126,7 +125,7 @@ const left: React.CSSProperties = {
 };
 
 const right: React.CSSProperties = {
-  background: "#e5e7eb",
+  background: "#ffffff",
   color: "#111",
   borderLeft: "3px solid #000000"
 };

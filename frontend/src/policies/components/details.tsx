@@ -19,17 +19,16 @@ type PolicyFormData = {
   name: string;
   description: string;
   active: string;
+  domains: string[];
   protocols: string[];
   ciphers: string[];
   subjects: string[];
-  SANs: string[];
   issuers: string[];
   validFor: string;
   validAfter: string;
-  hasSCT: string;
 };
 
-type ArrayFieldName = "protocols" | "ciphers" | "subjects" | "SANs" | "issuers";
+type ArrayFieldName = "domains" | "protocols" | "ciphers" | "subjects" | "issuers";
 
 type ArrayListEditorProps = {
   label: string;
@@ -65,14 +64,13 @@ const emptyFormData: PolicyFormData = {
   name: "",
   description: "",
   active: "",
+  domains: [],
   protocols: [],
   ciphers: [],
   subjects: [],
-  SANs: [],
   issuers: [],
   validFor: "0",
   validAfter: "0",
-  hasSCT: "",
 };
 
 function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
@@ -84,16 +82,15 @@ function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
     name: policy.name,
     description: policy.description,
     active: String(policy.active),
+    domains: [...policy.domains],
     protocols: AVAILABLE_PROTOCOLS.filter((protocol) =>
       protocolSet.has(protocol),
     ),
     ciphers: [...policy.ciphers],
     subjects: [...policy.subjects],
-    SANs: [...policy.SANs],
     issuers: [...policy.issuers],
     validFor: String(policy.validFor),
     validAfter: String(policy.validAfter),
-    hasSCT: String(policy.hasSCT),
   };
 }
 
@@ -106,14 +103,13 @@ function mapFormDataToPolicy(
     name: formData.name,
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
+    domains: [...formData.domains],
     protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
-    SANs: [...formData.SANs],
     issuers: [...formData.issuers],
     validAfter: Number(formData.validAfter) || 0,
     validFor: Number(formData.validFor) || 0,
-    hasSCT: formData.hasSCT === "true",
   };
 }
 
@@ -210,10 +206,10 @@ export default function Details({
   const [arrayDrafts, setArrayDrafts] = useState<
     Record<ArrayFieldName, string>
   >({
+    domains: "",
     protocols: "",
     ciphers: "",
     subjects: "",
-    SANs: "",
     issuers: "",
   });
 
@@ -222,10 +218,10 @@ export default function Details({
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
       setArrayDrafts({
+        domains: "",
         protocols: "",
         ciphers: "",
         subjects: "",
-        SANs: "",
         issuers: "",
       });
       return;
@@ -234,10 +230,10 @@ export default function Details({
     setIsEditing(false);
     setFormData(emptyFormData);
     setArrayDrafts({
+      domains: "",
       protocols: "",
       ciphers: "",
       subjects: "",
-      SANs: "",
       issuers: "",
     });
   }, [policy, startInEditMode]);
@@ -465,6 +461,21 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <ArrayListEditor
+                    label="Domains"
+                    inputId="policy-domains"
+                    items={formData.domains}
+                    draftValue={arrayDrafts.domains}
+                    onDraftChange={(value) =>
+                      handleArrayDraftChange("domains", value)
+                    }
+                    onAdd={() => handleArrayAdd("domains")}
+                    onRemove={(index) => handleArrayRemove("domains", index)}
+                    tooltip="Domains where this policy should apply"
+                  />
+                </div>
+
+                <div style={fieldGroup}>
+                  <ArrayListEditor
                     label="Ciphers"
                     inputId="policy-ciphers"
                     items={formData.ciphers}
@@ -490,21 +501,6 @@ export default function Details({
                     onAdd={() => handleArrayAdd("subjects")}
                     onRemove={(index) => handleArrayRemove("subjects", index)}
                     tooltip="Valid certificate subject names"
-                  />
-                </div>
-
-                <div style={fieldGroup}>
-                  <ArrayListEditor
-                    label="SANs"
-                    inputId="policy-sans"
-                    items={formData.SANs}
-                    draftValue={arrayDrafts.SANs}
-                    onDraftChange={(value) =>
-                      handleArrayDraftChange("SANs", value)
-                    }
-                    onAdd={() => handleArrayAdd("SANs")}
-                    onRemove={(index) => handleArrayRemove("SANs", index)}
-                    tooltip="Valid Subject Alternative Names on certificates"
                   />
                 </div>
 
@@ -571,27 +567,6 @@ export default function Details({
                   />
                 </div>
 
-                <div style={fieldGroup}>
-                  <label
-                    style={checkboxLabel}
-                    htmlFor="policy-has-sct"
-                    title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
-                  >
-                    <input
-                      id="policy-has-sct"
-                      type="checkbox"
-                      checked={formData.hasSCT === "true"}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "hasSCT",
-                          e.currentTarget.checked ? "true" : "false",
-                        )
-                      }
-                      title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
-                    />
-                    Has SCT
-                  </label>
-                </div>
               </div>
             ) : (
               <>
@@ -603,6 +578,9 @@ export default function Details({
                   {policy.active ? "Active" : "Inactive"}
                 </p>
                 <p>
+                  <strong>Domains:</strong> {policy.domains.join(", ")}
+                </p>
+                <p>
                   <strong>Protocols:</strong> {policy.protocols.join(", ")}
                 </p>
                 <p>
@@ -610,9 +588,6 @@ export default function Details({
                 </p>
                 <p>
                   <strong>Subjects:</strong> {policy.subjects.join(", ")}
-                </p>
-                <p>
-                  <strong>SANs:</strong> {policy.SANs.join(", ")}
                 </p>
                 <p>
                   <strong>Valid Certificate Authorities:</strong>{" "}
@@ -627,9 +602,6 @@ export default function Details({
                     How many days is the certificate still valid for? (minimum):
                   </strong>{" "}
                   {policy.validAfter}
-                </p>
-                <p>
-                  <strong>Has SCT?:</strong> {policy.hasSCT ? "True" : "False"}
                 </p>
               </>
             )}
@@ -821,12 +793,6 @@ const sliderInput: React.CSSProperties = {
   margin: 0,
   padding: 0,
   display: "block",
-};
-
-const checkboxLabel: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
 };
 
 const listBox: React.CSSProperties = {
