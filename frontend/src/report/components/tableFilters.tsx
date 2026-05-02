@@ -118,7 +118,7 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
                                 {/* protocol */}
                                 <div style={filterColumnStyle}>
                                     <strong>Protocol</strong>
-                                    {["TLS 1.1", "TLS 1.2", "TLS 1.3", "TLS 1.4"].map((protocol) => (
+                                    {["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"].map((protocol) => (
                                         <label key={protocol} style={checkboxLabelStyle}>
                                             <input 
                                                 type="checkbox"
