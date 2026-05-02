@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import sqlalchemy
 import os
@@ -74,6 +75,7 @@ HELP_STRING = """
 load_dotenv()
 
 db: SQLAlchemy = SQLAlchemy()
+jwt: JWTManager = JWTManager()
 
 def create_app():
     # create app
@@ -118,13 +120,17 @@ def create_app():
     # set database uri and additional configs
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url.render_as_string(hide_password=False)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "change-this-jwt-secret")
+    # TODO: Add JWT secret key to environment variables
 
     # init app
     db.init_app(app)
+    jwt.init_app(app)
 
     from app.routes.certificate_routes import certificate_bp
     from app.routes.policy_routes import policy_bp
-    from app.routes.evaluation_routes import evaluation_bp    
+    from app.routes.evaluation_routes import evaluation_bp 
+    from app.routes.auth_routes import auth_bp   
     
     # initialise database schema
     with app.app_context():
@@ -134,5 +140,6 @@ def create_app():
     app.register_blueprint(certificate_bp, url_prefix="/api/certificates")
     app.register_blueprint(policy_bp, url_prefix="/api/policies/")
     app.register_blueprint(evaluation_bp, url_prefix="/api/evaluate")
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
     return app

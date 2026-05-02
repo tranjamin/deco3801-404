@@ -4,6 +4,7 @@ import {
   type SecurityPolicy,
   activatePolicy,
   deactivatePolicy,
+  exportPolicy,
   updatePolicy
 } from "../../policySharing/policySharing";
 
@@ -38,7 +39,27 @@ type ArrayListEditorProps = {
   onDraftChange: (value: string) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
+  tooltip?: string;
 };
+
+type ProtocolSelectorProps = {
+  selectedProtocols: string[];
+  onProtocolChange: (protocol: string, checked: boolean) => void;
+};
+
+const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"];
+
+function normalizeProtocol(protocol: string): string {
+  return protocol.trim().toLowerCase().replace(/^tls\s+/, "");
+}
+
+function toDisplayProtocol(protocol: string): string {
+  return `TLS ${normalizeProtocol(protocol)}`;
+}
+
+function toBackendProtocol(protocol: string): string {
+  return `tls ${normalizeProtocol(protocol)}`;
+}
 
 const emptyFormData: PolicyFormData = {
   name: "",
@@ -49,17 +70,23 @@ const emptyFormData: PolicyFormData = {
   subjects: [],
   SANs: [],
   issuers: [],
-  validFor: "",
-  validAfter: "",
+  validFor: "0",
+  validAfter: "0",
   hasSCT: "",
 };
 
 function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
+  const protocolSet = new Set(
+    policy.protocols.map((protocol) => toDisplayProtocol(protocol)),
+  );
+
   return {
     name: policy.name,
     description: policy.description,
     active: String(policy.active),
-    protocols: [...policy.protocols],
+    protocols: AVAILABLE_PROTOCOLS.filter((protocol) =>
+      protocolSet.has(protocol),
+    ),
     ciphers: [...policy.ciphers],
     subjects: [...policy.subjects],
     SANs: [...policy.SANs],
@@ -79,7 +106,7 @@ function mapFormDataToPolicy(
     name: formData.name,
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
-    protocols: [...formData.protocols],
+    protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
     SANs: [...formData.SANs],
@@ -90,6 +117,34 @@ function mapFormDataToPolicy(
   };
 }
 
+function ProtocolSelector({
+  selectedProtocols,
+  onProtocolChange,
+}: ProtocolSelectorProps) {
+  return (
+    <div style={fieldGroup}>
+      <label
+        style={fieldLabel}
+        title="Select allowed TLS/SSL protocol versions"
+      >
+        Protocols
+      </label>
+      <div style={checkboxGroup}>
+        {AVAILABLE_PROTOCOLS.map((protocol) => (
+          <label key={protocol} style={checkboxItem}>
+            <input
+              type="checkbox"
+              checked={selectedProtocols.includes(protocol)}
+              onChange={(e) => onProtocolChange(protocol, e.target.checked)}
+            />
+            {protocol}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ArrayListEditor({
   label,
   inputId,
@@ -98,10 +153,13 @@ function ArrayListEditor({
   onDraftChange,
   onAdd,
   onRemove,
+  tooltip,
 }: ArrayListEditorProps) {
   return (
     <div style={fieldGroup}>
-      <label style={fieldLabel}>{label}</label>
+      <label style={fieldLabel} title={tooltip}>
+        {label}
+      </label>
       <div style={listBox}>
         {items.length > 0 ? (
           items.map((item, index) => (
@@ -127,8 +185,11 @@ function ArrayListEditor({
           id={inputId}
           style={textInput}
           type="text"
+          maxLength={50}
           value={draftValue}
           onChange={(e) => onDraftChange(e.target.value)}
+          title={tooltip}
+          placeholder="press Add to add to list of valid items"
         />
         <button type="button" style={addButton} onClick={onAdd}>
           Add
@@ -196,8 +257,8 @@ export default function Details({
   };
 
   const handleShare = async () => {
-    console.log("Downloading Policy JSON");
-    //window.location.reload();
+    if (!policy) return;
+    await exportPolicy(policy);
   };
 
   const handleEdit = () => {
@@ -218,6 +279,15 @@ export default function Details({
     setFormData((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  };
+
+  const handleProtocolChange = (protocol: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      protocols: checked
+        ? [...prev.protocols, protocol]
+        : prev.protocols.filter((p) => p !== protocol),
     }));
   };
 
@@ -349,46 +419,49 @@ export default function Details({
             {isEditing ? (
               <div>
                 <div style={fieldGroup}>
-                  <label style={fieldLabel} htmlFor="policy-name">
+                  <label
+                    style={fieldLabel}
+                    htmlFor="policy-name"
+                    title="The name of the policy"
+                  >
                     Name
                   </label>
                   <input
                     id="policy-name"
                     style={textInput}
                     type="text"
+                    maxLength={50}
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
+                    title="The name of the policy"
                   />
                 </div>
 
                 <div style={fieldGroup}>
-                  <label style={fieldLabel} htmlFor="policy-description">
+                  <label
+                    style={fieldLabel}
+                    htmlFor="policy-description"
+                    title="A brief description of what this policy enforces"
+                  >
                     Description
                   </label>
                   <input
                     id="policy-description"
                     style={textInput}
                     type="text"
+                    maxLength={255}
                     value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)
                     }
+                    title="A brief description of what this policy enforces"
                   />
                 </div>
 
-                <div style={fieldGroup}>
-                  <ArrayListEditor
-                    label="Protocols"
-                    inputId="policy-protocols"
-                    items={formData.protocols}
-                    draftValue={arrayDrafts.protocols}
-                    onDraftChange={(value) =>
-                      handleArrayDraftChange("protocols", value)
-                    }
-                    onAdd={() => handleArrayAdd("protocols")}
-                    onRemove={(index) => handleArrayRemove("protocols", index)}
-                  />
-                </div>
+                <ProtocolSelector
+                  selectedProtocols={formData.protocols}
+                  onProtocolChange={handleProtocolChange}
+                />
 
                 <div style={fieldGroup}>
                   <ArrayListEditor
@@ -401,6 +474,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("ciphers")}
                     onRemove={(index) => handleArrayRemove("ciphers", index)}
+                    tooltip="Valid cipher suites for TLS connections"
                   />
                 </div>
 
@@ -415,6 +489,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("subjects")}
                     onRemove={(index) => handleArrayRemove("subjects", index)}
+                    tooltip="Valid certificate subject names"
                   />
                 </div>
 
@@ -429,6 +504,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("SANs")}
                     onRemove={(index) => handleArrayRemove("SANs", index)}
+                    tooltip="Valid Subject Alternative Names on certificates"
                   />
                 </div>
 
@@ -443,41 +519,64 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("issuers")}
                     onRemove={(index) => handleArrayRemove("issuers", index)}
+                    tooltip="Valid certificate issuers or Certificate Authorities"
                   />
                 </div>
 
                 <div style={fieldGroup}>
-                  <label style={fieldLabel} htmlFor="policy-valid-for">
+                  <label
+                    style={fieldLabel}
+                    htmlFor="policy-valid-for"
+                    title="Minimum number of days the certificate should be valid after issuance"
+                  >
                     Valid for how many days after issue?
                   </label>
+                  <div style={sliderValueText}>{formData.validFor} days</div>
                   <input
                     id="policy-valid-for"
-                    style={textInput}
-                    type="text"
+                    style={sliderInput}
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="1"
                     value={formData.validFor}
                     onChange={(e) =>
                       handleInputChange("validFor", e.target.value)
                     }
+                    title="Minimum number of days the certificate should be valid after issuance"
                   />
                 </div>
 
                 <div style={fieldGroup}>
-                  <label style={fieldLabel} htmlFor="policy-valid-after">
+                  <label
+                    style={fieldLabel}
+                    htmlFor="policy-valid-after"
+                    title="Minimum number of days remaining until certificate expiration"
+                  >
                     How many days is the certificate still valid for? (minimum)
                   </label>
+                  <div style={sliderValueText}>{formData.validAfter} days</div>
                   <input
                     id="policy-valid-after"
-                    style={textInput}
-                    type="text"
+                    style={sliderInput}
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="1"
                     value={formData.validAfter}
                     onChange={(e) =>
                       handleInputChange("validAfter", e.target.value)
                     }
+                    title="Minimum number of days remaining until certificate expiration"
                   />
                 </div>
 
                 <div style={fieldGroup}>
-                  <label style={checkboxLabel} htmlFor="policy-has-sct">
+                  <label
+                    style={checkboxLabel}
+                    htmlFor="policy-has-sct"
+                    title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
+                  >
                     <input
                       id="policy-has-sct"
                       type="checkbox"
@@ -488,6 +587,7 @@ export default function Details({
                           e.currentTarget.checked ? "true" : "false",
                         )
                       }
+                      title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
                     />
                     Has SCT
                   </label>
@@ -712,6 +812,15 @@ const textInput: React.CSSProperties = {
   borderRadius: "4px",
   padding: "8px",
   fontSize: "14px",
+  flex: 1,
+  minWidth: 0,
+};
+
+const sliderInput: React.CSSProperties = {
+  width: "100%",
+  margin: 0,
+  padding: 0,
+  display: "block",
 };
 
 const checkboxLabel: React.CSSProperties = {
@@ -773,6 +882,28 @@ const deleteItemButton: React.CSSProperties = {
   lineHeight: 1,
   padding: 0,
   flexShrink: 0,
+};
+
+const checkboxGroup: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  padding: "8px",
+  border: "1px solid #b5b5b5",
+  borderRadius: "6px",
+  backgroundColor: "#f7f7f7",
+};
+
+const checkboxItem: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  cursor: "pointer",
+};
+
+const sliderValueText: React.CSSProperties = {
+  fontSize: "13px",
+  color: "#666666",
 };
 
 const bottomActionBar: React.CSSProperties = {
