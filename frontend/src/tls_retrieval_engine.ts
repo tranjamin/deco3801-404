@@ -55,7 +55,7 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
  * the payload contains fields including requestId, loaderId, timestamp, etc.
  */
 function handleDebuggerEvent(
-  _source: chrome.debugger.Debuggee,
+  source: chrome.debugger.Debuggee,
   method: string,
   params?: any
 ): void {
