@@ -4,8 +4,12 @@ from typing import Any, List
 from app import db
 from sqlalchemy.orm import Mapped
 from werkzeug.security import check_password_hash, generate_password_hash
-from app.models.certificate import TLSCertificate
-from app.models.policy import CertificatePolicy
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.certificate import TLSCertificate
+    from app.models.policy import CertificatePolicy
 
 USER_NAME_MAXLEN = 80
 USER_PASS_MAXLEN = 255
