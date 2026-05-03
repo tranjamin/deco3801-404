@@ -2,7 +2,8 @@ console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
 
-const BACKEND_BASE_URL = " ";
+const BACKEND_BASE_URL = "http://localhost:5000";
+const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`
 
 /**
  * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the 
@@ -47,18 +48,18 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
  * payload in the format expected by the backend, and logs that payload as a formatted JSON, 
  * before sending the formatted JSON to the backend via sendCertToBackend().
  * 
- * @param source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
+ * @param _source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
  * for this use case
  * @param method, which is of a string type (which is required by the callback parameter)
  * and is a CDP event name. 
  * @param params, is the payload object for an event, e.g., for Network.responseReceived,
  * the payload contains fields including requestId, loaderId, timestamp, etc.
  */
-function handleDebuggerEvent(
-  source: chrome.debugger.Debuggee,
+async function handleDebuggerEvent(
+  _source: chrome.debugger.Debuggee,
   method: string,
   params?: any
-): void {
+): Promise<void> {
 
     if (method !== "Network.responseReceived") {
         return;
@@ -90,33 +91,30 @@ function handleDebuggerEvent(
 
     if (responseHostname === selectedHostname) {
         const payload = {
+          url: response.url,
           protocol: securityDetails.protocol,
-          keyExchange: securityDetails.keyExchange,
-          keyExchangeGroup: securityDetails.keyExchangeGroup,
-          cipher: securityDetails.cipher,
-          mac: securityDetails.mac,
-          certificateId: securityDetails.certificateId,
-          subjectName: securityDetails.subjectName,
+          cipher: securityDetails.cipher ?? "",
+
+
+          subjectName: securityDetails.subjectName ?? "",
           sanList: securityDetails.sanList ?? [],
-          issuer: securityDetails.issuer,
-          validFrom: securityDetails.validFrom,
-          validTo: securityDetails.validTo,
-          signedCertificateTimestampList:
-            securityDetails.signedCertificateTimestampList ?? [],
+          issuer: securityDetails.issuer ?? "",
+          validFrom: Math.trunc(securityDetails.validFrom),
+          validTo: Math.trunc(securityDetails.validTo),
+
           certificateTransparencyCompliance:
-            securityDetails.certificateTransparencyCompliance,
-          serverSignatureAlgorithm: securityDetails.serverSignatureAlgorithm,
-          encryptedClientHello: securityDetails.encryptedClientHello ?? false
+            securityDetails.certificateTransparencyCompliance ?? "unknown",
+
         };
 
         console.log("TLS certificate payload captured.");
         console.log(JSON.stringify(payload, null, 2));
 
-        sendCertToBackend(payload);
+        await sendCertToBackend(payload);
         return;
     }
 
-    console.log("TLS security details received, but hostname did not match.")
+    console.log("TLS security details received, but hostname did not match.");
 
     //console.log(securityDetails);
   
@@ -146,7 +144,7 @@ function handleActionClick(tab: chrome.tabs.Tab): void {
  */
 async function sendCertToBackend(payload: object): Promise<void> {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/certificates/`, {
+    const response = await fetch(CERTIFICATE_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
