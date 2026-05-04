@@ -1,3 +1,5 @@
+import { setCurrentCertificateData} from "./api/storage";
+
 console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
@@ -5,6 +7,7 @@ let attachedTabId: number | null = null;
 
 const BACKEND_BASE_URL = "http://localhost:5000";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
+//const CUR_CERT_STORAGE_KEY = "currentCert";
 
 /**
  * Need to create a filter that only allows 
@@ -208,6 +211,7 @@ async function handleOnUpdate(
  * @returns void
  */
 async function sendCertToBackend(payload: object): Promise<void> {
+  storeCurrentCert(payload);
   try {
     const response = await fetch(CERTIFICATE_ENDPOINT, {
       method: "POST",
@@ -229,6 +233,44 @@ async function sendCertToBackend(payload: object): Promise<void> {
   } catch (error) {
     console.error("Failed to send TLS certificate to backend:", error);
   }
+}
+
+async function prepCurrentCertForDisplay(payload: object) {
+  console.log(payload);
+  // const tempVar = {
+  //   id: "1",
+  //   protocol: "TLS 1.3",
+  //   cipher: "TLS_AES_256_GCM_SHA384",
+  //   subjectName: "example.com",
+  //   sanList: ["example.com", "www.example.com"],
+  //   issuer: "Let's Encrypt",
+  //   validFrom: "2025-01-01T00:00:00Z",
+  //   validTo: "2026-01-01T00:00:00Z"
+  // }
+  const p = payload as Record<string, unknown>;
+  const readStr = (key: string, fallback = "") =>
+    typeof p[key] === "string" ? (p[key] as string) : fallback;
+
+
+  console.log(Number(readStr("validFrom")));
+  const tempVar = {
+    id: "1",
+    protocol: readStr("protocol"),
+    cipher: readStr("cipher"),
+    subjectName: readStr("subjectName"),
+    sanList: readStr("sanList"),
+    issuer: readStr("issuer"),
+    validFrom: new Date(Number(p["validFrom"]) * 1000).toISOString(),
+    validTo: new Date(Number(p["validTo"]) * 1000).toISOString(),
+  };
+  return(tempVar);
+}
+
+async function storeCurrentCert(payload: object) {
+  console.log("storing cert");
+  const formattedCert = JSON.stringify(await prepCurrentCertForDisplay(payload), null, 2);
+  console.log("formatted cert:",formattedCert);
+  setCurrentCertificateData(formattedCert);
 }
 
 // Registers the handleDebuggerEvent function as the function to run when Chrome delivers 
