@@ -130,7 +130,7 @@ async function handleDebuggerEvent(
           await detachFromTab(source.tabId);
           attachedTabId = null;
         }
-        
+
         return;
     }
 
@@ -163,7 +163,7 @@ async function handleDebuggerEvent(
   //return tab;
 //}
 
-function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: chrome.tabs.Tab): void {
+async function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: chrome.tabs.Tab): Promise <void> {
   if (!changeInfo.url) {
     return;
   }
@@ -173,10 +173,15 @@ function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: chrome.
   if (!tab.active) {
     return;
   }
+
+  const window = await chrome.windows.get(tab.windowId);
+
+  if (!window.focused) {
+    return;
+  }
   if (tab.id === undefined) {
     return;
   }
-
   if (attachedTabId !== null) {
     console.log("Debugger already attached - waiting for current capture to finish.");
     return;
