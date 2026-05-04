@@ -1,3 +1,5 @@
+import { getStoredAccessToken } from "../api/storage";
+
 export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
 export interface SecurityPolicy {
@@ -266,12 +268,16 @@ export async function storeNewPolicy(
 ): Promise<SecurityPolicy | null> {
   console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const response = await fetch(`${baseUrl}/api/policies/`, {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(mapPolicyToBackendPayload(policy)),
     });
     if (!response.ok) {
@@ -289,12 +295,16 @@ export async function activatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const response = await fetch(`${baseUrl}/api/policies/${policyID}/active`, {
       method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ active: true }),
     });
     if (!response.ok) {
@@ -312,12 +322,16 @@ export async function deactivatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const response = await fetch(`${baseUrl}/api/policies/${policyID}/active`, {
       method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ active: false }),
     });
     if (!response.ok) {
@@ -334,12 +348,16 @@ export async function deactivatePolicy(
 export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
   console.log(policy, policyID);
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const response = await fetch(`${baseUrl}/api/policies/${policyID}/update`, {
       method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(mapPolicyToBackendPayload(policy)),
     });
     if (!response.ok) {
@@ -356,11 +374,15 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
 export async function deletePolicy(policyID: number) {
   console.log(policyID);
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
+
     const response = await fetch(`${baseUrl}/api/policies/${policyID}`, {
       method: "DELETE",
-      headers: {
-        Accept: "application/json",
-      },
+      headers,
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
