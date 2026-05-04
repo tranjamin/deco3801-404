@@ -1,16 +1,19 @@
 import time
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from typing import List, Dict, Any
 
 from app import db
 from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
 from app.models.evaluation import evaluate_against_policy
 from app.models.policy import CertificatePolicy
+from app.models.user import User
 
 # represents this collection of endpoints
 certificate_bp: Blueprint = Blueprint("certificate_bp", __name__)
 
 @certificate_bp.route("/", methods=["GET"])
+@jwt_required()
 def get_all():
     """
     API endpoint which retrieves all TLS certificates
@@ -22,11 +25,24 @@ def get_all():
     Returns:
         On success: A JSON containing a list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
     """
-    certs: List[TLSCertificate] = TLSCertificate.query.all() # type: ignore
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
+    
+    # we have a master username for admin (temporary)
+    if user.username == "master":
+        certs: List[TLSCertificate] = TLSCertificate.query.all() # type: ignore
+    else:
+        certs: List[TLSCertificate] = TLSCertificate.query.filter(
+            TLSCertificate.user_id == user_id
+        )
+
     return jsonify([c.to_dict() for c in certs]), 200
 
 
 @certificate_bp.route("/<int:cert_id>", methods=["GET"])
+@jwt_required()
 def get_one(cert_id: int):
     """
     API endpoint which retrieves a TLS certificate by ID
@@ -39,12 +55,21 @@ def get_one(cert_id: int):
         On success: A JSON containing the requested TLS certificate in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
         On failure: Error code 404
     """
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     # returns 404 if failed
     cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+
+    if user.username != "master" and cert.user_id != user_id:
+        return 404
+
     return jsonify(cert.to_dict()), 200
 
 
 @certificate_bp.route("/", methods=["POST"])
+@jwt_required()
 def create():
     """
     API endpoint which stores a TLS certificate.
@@ -67,7 +92,13 @@ def create():
     if cert is None:
         return jsonify({"error": "Request cannot be formatted as a TLS certificate"}), 400
     
-    policies: List[CertificatePolicy] = CertificatePolicy.query.all()
+    user_id: int = int(get_jwt_identity())
+    cert.user_id = user_id
+
+    policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
+            CertificatePolicy.user_id == user_id
+        )
+
     cert.evaluate_against_policies_and_store(policies)
 
     db.session.add(cert)
@@ -75,6 +106,7 @@ def create():
     return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/create_dummy", methods=["GET"])
+@jwt_required()
 def create_dummy():
     """
     API endpoint which creates a dummy certificate policy when navigating to it.
@@ -99,8 +131,12 @@ def create_dummy():
         valid_to=1,
         certificate_transparency_compliance=CertificateTransparencyCompliance.UNKNOWN,
     )
+    user_id: int = int(get_jwt_identity())
+    cert.user_id = user_id
     
-    policies: List[CertificatePolicy] = CertificatePolicy.query.all()
+    policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
+            CertificatePolicy.user_id == user_id
+        )
     cert.evaluate_against_policies_and_store(policies)
 
     db.session.add(cert)
@@ -108,6 +144,7 @@ def create_dummy():
     return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/<int:cert_id>", methods=["DELETE"])
+@jwt_required()
 def delete(cert_id: int):
     """
     API endpoint which deletes a TLS certificate by ID
@@ -120,13 +157,22 @@ def delete(cert_id: int):
         On success: A JSON with a 'message' field, Error code 200
         On failure: Error code 404
     """
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     # automatically handles any errors
     cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+
+    if user.username != "master" and cert.user_id != user_id:
+        return 404
+
     db.session.delete(cert)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
 
 @certificate_bp.route("/batch", methods=["POST"])
+@jwt_required()
 def batch_create():
     """
     API endpoint which creates a batch of TLS certificates
@@ -149,11 +195,15 @@ def batch_create():
     if not entries:
         return jsonify({"error": "No certificates provided"}), 400
 
+    # get user
+    user_id: int = int(get_jwt_identity())
+
     # parse each certificate to a table entry
     created_ids: List[Any] = []
     for entry in entries:
         cert: TLSCertificate | None = TLSCertificate.from_dict(entry)
         if cert is not None:
+            cert.user_id = user_id
             db.session.add(cert)
             created_ids.append(cert.id)
             db.session.flush() # we may want to flush less frequently than this
@@ -164,6 +214,7 @@ def batch_create():
     return jsonify({"created": len(created_ids), "ids": created_ids}), 201
 
 @certificate_bp.route("/expiring", methods=["GET"])
+@jwt_required()
 def expiring():
     """
     API endpoint which retrieves all certificates which expire in the next <n> days
@@ -178,6 +229,8 @@ def expiring():
         On success: A JSON in the format {'days_window': <n>, 'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
         On failure: #TODO
     """
+    # get user
+    user_id: int = int(get_jwt_identity())
     
     days = int(request.args.get("days", 30))
     now: float = time.time()
@@ -187,6 +240,7 @@ def expiring():
 
     # query all certificates that lie within the expiry range
     certs: List[TLSCertificate] = TLSCertificate.query.filter(  # type: ignore
+        TLSCertificate.user_id == user_id,
         TLSCertificate.valid_to >= now,
         TLSCertificate.valid_to <= cutoff,
     ).all()
@@ -199,6 +253,7 @@ def expiring():
 
 
 @certificate_bp.route("/expired", methods=["GET"])
+@jwt_required()
 def expired():
     """
     API endpoint which retrieves all certificates which have expired
@@ -211,11 +266,16 @@ def expired():
         On success: A JSON in the format {'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
         On failure: #TODO
     """
+    # get user
+    user_id: int = int(get_jwt_identity())
     
     #TODO: handle errors
 
     now: float = time.time()
-    certs: List[TLSCertificate] = TLSCertificate.query.filter(TLSCertificate.valid_to < now).all() # type: ignore
+    certs: List[TLSCertificate] = TLSCertificate.query.filter(
+        TLSCertificate.user_id == user_id,
+        TLSCertificate.valid_to < now
+        ).all() # type: ignore
     return jsonify({
         "count": len(certs),
         "certificates": [c.to_dict() for c in certs],
@@ -223,6 +283,7 @@ def expired():
 
 
 @certificate_bp.route("/search", methods=["GET"])
+@jwt_required()
 def search():
     """
     API endpoint which searches for certificates by subject
@@ -237,7 +298,13 @@ def search():
         On success: A JSON in the format {'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
         On failure: A JSON with an 'error' field, Error code 400
     """
-    query = TLSCertificate.query 
+    query = TLSCertificate.query
+
+    # get user
+    user_id: int = int(get_jwt_identity())
+    query = query.filter(
+        TLSCertificate.user_id == user_id
+    )
 
     # filter by subject
     subject: str | None = request.args.get("subject")
