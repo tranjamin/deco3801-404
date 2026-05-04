@@ -5,11 +5,13 @@ from typing import List, Dict, Any, Literal
 from app import db
 from app.models.policy import CertificatePolicy
 from app.models.utils import Protocols
+from app.models.user import User
 
 # represents this collection of endpoints
 policy_bp: Blueprint = Blueprint("policy_bp", __name__)
 
 @policy_bp.route("/", methods=["GET"])
+@jwt_required()
 def get_all():
     """
     API endpoint which retrieves all certificate policies
@@ -21,10 +23,25 @@ def get_all():
     Returns:
         On success: A JSON containing a list of certificates in the format specified by :class:`TLSPolicy` `.to_dict()`, Error code 200
     """
-    certs: List[CertificatePolicy] = CertificatePolicy.query.all() # type: ignore
+
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
+    # we have a master username for admin (temporary)
+    if user.username == "master":
+        certs: List[CertificatePolicy] = CertificatePolicy.query.all()
+
+    # otherwise, retrieve just this user's policies
+    else:
+        certs: List[CertificatePolicy] = CertificatePolicy.query.filter(
+            CertificatePolicy.user_id == user_id
+        )
+
     return jsonify([c.to_dict() for c in certs]), 200
 
 @policy_bp.route("/<int:policy_id>", methods=["GET"])
+@jwt_required()
 def get_one(policy_id: int):
     """
     API endpoint which retrieves a certificate policy by ID
@@ -37,8 +54,16 @@ def get_one(policy_id: int):
         On success: A JSON containing the requested certificate policy in the format specified by :class:`CertificatePolicy` `.to_dict()`, Error code 200
         On failure: Error code 404
     """
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     # automatically handles any errors
     policy: CertificatePolicy = CertificatePolicy.query.get_or_404(policy_id)
+
+    if user.username != "master" and policy.user_id != user_id:
+        return 404
+
     return jsonify(policy.to_dict()), 200
 
 @policy_bp.route("/<int:policy_id>/active", methods=["PUT"])
@@ -57,12 +82,20 @@ def update_active(policy_id: int):
         On success: A JSON with a 'message' field, Error code 200
         On failure: Error code 404
     """    
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     data: Dict[str, Any] = request.get_json(force=True)
     policy: CertificatePolicy = CertificatePolicy.query.get_or_404(policy_id)
+
+    if user.username != "master" and policy.user_id != user_id:
+        return 404
+
     policy.active = data.get("active", False)
     db.session.commit()
     return jsonify({"message": f"Updated to {policy.active}"}), 200
-
+    
 @policy_bp.route("/", methods=["POST"])
 @jwt_required()
 def create():
@@ -107,7 +140,15 @@ def delete(policy_id: int):
         On success: A JSON with a 'message' field, Error code 200
         On failure: Error code 404
     """
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     policy: CertificatePolicy = CertificatePolicy.query.get_or_404(policy_id)
+
+    if user.username != "master" and policy.user_id != user_id:
+        return 404
+    
     db.session.delete(policy)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
@@ -128,7 +169,14 @@ def update_policy(policy_id: int):
         On success: A JSON containing the parsed certificate policy data in the format specified by :class:`CertificatePolicy` `.to_dict()`, Error code 201
         On failure: JSON with an 'error' field, Error code 400
     """
+    # get the user
+    user_id: int = int(get_jwt_identity())
+    user: User = User.query.get_or_404(user_id)
+
     policy: CertificatePolicy = CertificatePolicy.query.get_or_404(policy_id)
+
+    if user.username != "master" and policy.user_id != user_id:
+        return 404
 
     data: Dict[str, Any] = request.get_json(force=True)
     new_policy: CertificatePolicy | None = CertificatePolicy.from_dict(data)
@@ -149,6 +197,7 @@ def update_policy(policy_id: int):
     return jsonify({"message": "Updated"}), 200
 
 @policy_bp.route("/batch", methods=["POST"])
+@jwt_required()
 def batch_create():
     """
     API endpoint which creates a batch of certificate policies
@@ -170,11 +219,15 @@ def batch_create():
     if not entries:
         return jsonify({"error": "No policies provided"}), 400
 
+    # get user
+    user_id: int = int(get_jwt_identity())
+
     # parse each certificate to a table entry
     created_ids: List[int] = []
     for entry in entries:
         policy: CertificatePolicy | None = CertificatePolicy.from_dict(entry)
         if policy is not None:
+            policy.user_id = user_id
             db.session.add(policy)
             db.session.flush()
             created_ids.append(policy.id)
@@ -185,6 +238,7 @@ def batch_create():
     return jsonify({"created": len(created_ids), "ids": created_ids}), 201
 
 @policy_bp.route("/create_dummy", methods=["GET"])
+@jwt_required()
 def create_dummy_data():
     """
     API endpoint which creates a dummy certificate policy when navigating to it.
@@ -210,6 +264,9 @@ def create_dummy_data():
         min_certificate_lifespan=45,
         min_certificate_days_left=7,
     )
+
+    user_id: int = int(get_jwt_identity())
+    policy.user_id = user_id
 
     db.session.add(policy)
     db.session.commit()

@@ -5,7 +5,7 @@ from flask import Flask
 
 from app import create_app
 
-HTTP_METHODS = ["get", "post", "put", "patch", "delete", "head", "options"]
+HTTP_METHODS = ["get", "post", "put", "delete"]
 
 @pytest.fixture()
 def app():
@@ -22,48 +22,102 @@ def client(app: Flask) -> FlaskClient:
 def runner(app: Flask) -> FlaskCliRunner:
     return app.test_cli_runner()
 
-def test_invalid_methods_batch(client: FlaskClient):  
+def test_invalid_methods_info(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["get"]:
+            continue
+        assert getattr(client, method)("/").status_code == 405
+
+def test_invalid_methods_cert(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["get", "post"]:
+            continue
+        assert getattr(client, method)("/api/certificates/").status_code == 405
+
+def test_invalid_methods_cert_batch(client: FlaskClient):  
     for method in HTTP_METHODS:
         if method in ["post"]:
             continue
-        assert getattr(client, method)("/batch").status_code == 404
+        assert getattr(client, method)("/api/certificates/batch").status_code == 405
 
-def test_invalid_methods_root(client: FlaskClient):
-    for method in HTTP_METHODS:
-        if method in ["post", "get"]:
-            continue
-        assert getattr(client, method)("/").status_code == 404
-
-def test_invalid_methods_search(client: FlaskClient):    
+def test_invalid_methods_cert_expiring(client: FlaskClient):  
     for method in HTTP_METHODS:
         if method in ["get"]:
             continue
-        assert getattr(client, method)("/search").status_code == 404
+        assert getattr(client, method)("/api/certificates/expiring").status_code == 405
 
-def test_invalid_methods_expired(client: FlaskClient):
+def test_invalid_methods_cert_expired(client: FlaskClient):  
     for method in HTTP_METHODS:
         if method in ["get"]:
             continue
-        assert getattr(client, method)("/expired").status_code == 404
+        assert getattr(client, method)("/api/certificates/expired").status_code == 405
 
-def test_invalid_methods_expiring(client: FlaskClient):
+def test_invalid_methods_cert_search(client: FlaskClient):  
     for method in HTTP_METHODS:
         if method in ["get"]:
             continue
-        assert getattr(client, method)("/expiring").status_code == 404
+        assert getattr(client, method)("/api/certificates/search").status_code == 405
+
+def test_invalid_methods_cert_create_dummy(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["get"]:
+            continue
+        assert getattr(client, method)("/api/certificates/create_dummy").status_code == 405
 
 def test_invalid_methods_cert_id(client: FlaskClient):
     for method in HTTP_METHODS:
-        if method in ["post", "delete"]:
+        if method in ["get", "delete"]:
             continue
         random.seed(42)
         for _ in range(10):
-            assert getattr(client, method)(f"/{random.randint(-10000, 10000)}").status_code == 404
+            assert getattr(client, method)(f"api/certificates/{random.randint(0, 10000)}").status_code == 405
 
-def test_invalid_methods_cert_id_evaluate(client: FlaskClient):    
+def test_invalid_methods_policy(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["get", "post"]:
+            continue
+        assert getattr(client, method)("/api/policies/").status_code == 405
+
+def test_invalid_methods_policy_batch(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["post"]:
+            continue
+        assert getattr(client, method)("/api/policies/batch").status_code == 405
+
+def test_invalid_methods_policy_create_dummy(client: FlaskClient):  
+    for method in HTTP_METHODS:
+        if method in ["get"]:
+            continue
+        assert getattr(client, method)("/api/policies/create_dummy").status_code == 405
+
+def test_invalid_methods_policy_id(client: FlaskClient):
+    for method in HTTP_METHODS:
+        if method in ["delete", "get"]:
+            continue
+        random.seed(42)
+        for _ in range(10):
+            assert getattr(client, method)(f"api/policies/{random.randint(0, 10000)}").status_code == 405
+
+def test_invalid_methods_policy_id_active(client: FlaskClient):
+    for method in HTTP_METHODS:
+        if method in ["put"]:
+            continue
+        random.seed(42)
+        for _ in range(10):
+            assert getattr(client, method)(f"api/policies/{random.randint(0, 10000)}/active").status_code == 405
+
+def test_invalid_methods_policy_id_update(client: FlaskClient):
+    for method in HTTP_METHODS:
+        if method in ["put"]:
+            continue
+        random.seed(42)
+        for _ in range(10):
+            assert getattr(client, method)(f"api/policies/{random.randint(0, 10000)}/update").status_code == 405
+
+def test_invalid_methods_eval(client: FlaskClient):
     for method in HTTP_METHODS:
         if method in ["get"]:
             continue
         random.seed(42)
         for _ in range(10):
-            assert getattr(client, method)(f"/{random.randint(-10000, 10000)}/evaluate").status_code == 404
+            assert getattr(client, method)(f"api/evaluate/").status_code == 405

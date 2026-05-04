@@ -18,9 +18,7 @@ HELP_STRING = """
 <br>        [GET] /expiring : gets certificates expiring soon. requires a {"days": &lt;max days until expiry&gt;} and returns {"days window": &lt;max days until expiry&gt;, "count": &lt;num certificates found&gt;, "certificates": &lt;list of certificate JSONs&gt;}
 <br>        [GET] /expired : gets expired certificates. returns {"count": &lt;num certificates found&gt;, "certificates": &lt;list of certificate JSONs&gt;}
 <br>        [GET] /search : gets a filtered list of certificates. requires a list of filters, {"subject": &lt;subject&gt;, "issuer": &lt;issuer&gt;, "protocol": &lt;protocol&gt;, "compliance": &lt;transparency compliance&gt;}, all optional, and returns {"count": &lt;num certificates found&gt;, "certificates": &lt;list of certificate JSONs&gt;}
-<br>        [GET] /stats : gets statistics for the stored certificates. returns the following stats in a JSON: "total", "expiring_within_30_days", "expired", "with_issues", "by_compliance", "by_protocol".
 <br>        [GET] /create_dummy : stores a dummy certificate when navigated to. returns the dummy certificate's JSON
-<br>        [GET] /evaluate : evaluates the validity of a certificate against the default policy. Not fully implemented yet.      
 <br>         
 <br>    /api/policies/ : top-level route for retrieving policies
 <br>        [GET] / : retrieves all policies. returns a list of policy JSONs
@@ -32,7 +30,7 @@ HELP_STRING = """
 <br>        [POST] /batch : stores multiple policies. requires a {"policies": &lt;list of policy JSONs&gt;, returns {"created": &lt;number created&gt;, "ids": &lt;list of policy IDs&gt;}
 <br>        [GET] /create_dummy : stores a dummy policy when navigated to. returns the dummy policy's JSON
 <br>
-<br>    /api/evaluation/ : top-level route for evaluating certificates against policies
+<br>    /api/evaluate/ : top-level route for evaluating certificates against policies
 <br>        [GET] / : evaluates a policy. requires a {"certificate_id": &ltcertificate_id&gt, "policy_id": &ltpolicy_id&gt} and returns an Evaluation Result
 
 <h2>Required Data Formats:</h2>
