@@ -1,7 +1,7 @@
 console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
-let attachedTabId: number | null
+let attachedTabId: number | null;
 
 const BACKEND_BASE_URL = "http://localhost:5000";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
