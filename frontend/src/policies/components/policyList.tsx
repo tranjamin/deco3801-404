@@ -4,7 +4,7 @@ import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policyS
 import PolicyStub from "./policyStub";
 
 type PolicyListProps = {
-  onSelectPolicy: (policy: SecurityPolicy) => void;
+  onSelectPolicy: (policy: SecurityPolicy, isDefault?: boolean) => void;
   onAddPolicy: () => void;
   selectedPolicyName: string | null;
 };
@@ -15,6 +15,7 @@ export default function PolicyList({
   selectedPolicyName,
 }: PolicyListProps) {
   const [policies, setPolicies] = useState<SecurityPolicy[]>([]);
+  const [defaultPolicyNames, setDefaultPolicies] = useState<string[]>([]);
 
   const GetAllPoliciesFunction = async () => {
     // this function will call an API endpoint to fetch all the users saved policies
@@ -125,39 +126,54 @@ export default function PolicyList({
     //   DefaultPolicy7,
     // ];
     const backendPolicies = fetchedPolicies ?? [];
-    setPolicies(backendPolicies);
+    const collectedDefaults: string[] = [];
 
     try {
       // Load default policies bundled with the app (Vite import.meta.glob)
-      const modules = import.meta.glob('../../../../defaultPolicies/*.JSON', {
-        eager: true,
-        as: 'raw',
-      }) as Record<string, string>;
 
-      const defaultFiles = Object.values(modules);
+      
+      const modules = import.meta.glob('../../../../defaultPolicies/*.json', {
+        eager: true
+      }) as Record<string, { default: string }>;
+
+      console.log("imported:",modules);
+
+      const defaultFiles = Object.values(modules).map(m => m.default);
 
       const backendNames = new Set(
         backendPolicies.map((p) => (p?.name ?? '').toLowerCase()),
       );
-
+      console.log("default files:", defaultFiles);
       for (const fileContent of defaultFiles) {
         try {
-          const parsed = JSON.parse(fileContent) as { name?: unknown };
+          //const parsed = JSON.parse(fileContent) as { name?: unknown };
+          const parsed = fileContent as { name?: unknown };
           const name = typeof parsed.name === 'string' ? parsed.name : null;
 
           if (!name) continue;
 
+          collectedDefaults.push(name);
+
           if (!backendNames.has(name.toLowerCase())) {
             // importPolicy validates and stores the policy via the API
-            await importPolicy(fileContent);
+            console.log("importing a policy")
+            await importPolicy(JSON.stringify(fileContent));
+            
           }
         } catch (err) {
           console.warn('Skipping invalid default policy file:', err);
         }
       }
+      //window.location.reload();
     } catch (e) {
       console.warn('No default policies found or failed to load defaults.', e);
     }
+
+    setDefaultPolicies(collectedDefaults);
+    const allPolicies = await getAllPolicies();
+    setPolicies(allPolicies ?? backendPolicies);
+    console.log("default policy names:", collectedDefaults)
+    
   };
 
   useEffect(() => {
@@ -247,6 +263,7 @@ export default function PolicyList({
               policy={policy}
               onSelect={onSelectPolicy}
               isSelected={selectedPolicyName === policy.name}
+              isDefault={defaultPolicyNames.some((n) => n === (policy.name ?? ''))}
             />
           ) : (
             ""
@@ -262,8 +279,9 @@ export default function PolicyList({
             <PolicyStub
               key={`${policy.name}-${index}`}
               policy={policy}
-              onSelect={onSelectPolicy}
-              isSelected={selectedPolicyName === policy.name}
+                onSelect={onSelectPolicy}
+                isSelected={selectedPolicyName === policy.name}
+                isDefault={defaultPolicyNames.some((n) => n.toLowerCase() === (policy.name ?? '').toLowerCase())}
             />
           ) : (
             ""

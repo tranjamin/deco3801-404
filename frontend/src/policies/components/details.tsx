@@ -12,7 +12,8 @@ type DetailsProps = {
   policy: SecurityPolicy | null;
   startInEditMode?: boolean;
   isNewPolicy?: boolean;
-  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void;
+  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void,
+  isDefaultPolicy?: boolean;
 };
 
 type PolicyFormData = {
@@ -200,7 +201,9 @@ export default function Details({
   startInEditMode = false,
   isNewPolicy = false,
   onSaveNewPolicy,
+  isDefaultPolicy,
 }: DetailsProps) {
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<PolicyFormData>(emptyFormData);
   const [arrayDrafts, setArrayDrafts] = useState<
@@ -213,7 +216,11 @@ export default function Details({
     issuers: "",
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+
   useEffect(() => {
+    console.log("default?:", isDefaultPolicy);
     if (policy) {
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
@@ -269,6 +276,15 @@ export default function Details({
     //setIsEditing(true);
     await deletePolicy(policy.id);
     window.location.reload();
+  };
+
+  const confirmDelete = async (isDefaultPolicy: boolean) => {
+    // call existing delete logic; keep it centralized
+    if (!isDefaultPolicy) {
+      await handleDelete();
+    } else {
+      //add code here for deleting the policy in the default folder
+    }
   };
 
   const handleInputChange = (field: keyof PolicyFormData, value: string) => {
@@ -613,7 +629,14 @@ export default function Details({
               <button type="button" style={editbutton} onClick={handleEdit}>
                 Edit
               </button>
-              <button type="button" style={deletebutton} onClick={handleDelete}>
+              <button
+                type="button"
+                style={deletebutton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+              >
                 Delete
               </button>
               </>
@@ -636,6 +659,48 @@ export default function Details({
               </>
             )}
           </div>
+          {showDeleteConfirm && (
+            <div
+              style={modalOverlay}
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              <div style={modal} onClick={(e) => e.stopPropagation()}>
+                <p style={modalMessage}>
+                  {policy
+                    ? (isDefaultPolicy === true || (typeof isDefaultPolicy === 'undefined'))
+                      ? `This is a default policy bundled with the app. Deleting it will remove the local copy. Are you sure you want to delete "${policy.name}"?`
+                      : `Are you sure you want to permanently delete "${policy.name}"? This action cannot be undone.`
+                    : "No policy selected."
+                  }
+                </p>
+
+                <div style={modalActions}>
+                  <button
+                    type="button"
+                    style={modalBackButton}
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    style={modalDeleteButton}
+                    onClick={async () => {
+                      if (typeof isDefaultPolicy != 'undefined') {
+                        await confirmDelete(isDefaultPolicy);
+                      } else {
+                        await confirmDelete(false);
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <p>Select a policy from the left pane to view details.</p>
@@ -877,7 +942,7 @@ const bottomActionBar: React.CSSProperties = {
   justifyContent: "space-between",
   gap: "8px",
   padding: "12px 0 0",
-  backgroundColor: "#e5e7eb",
+  backgroundColor: "#ffffff",
   flexShrink: 0,
 };
 
@@ -897,4 +962,52 @@ const backbutton: React.CSSProperties = {
   cursor: "pointer",
   color: "#333333",
   backgroundColor: "rgb(243, 243, 243)",
+};
+
+const modalOverlay: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.4)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const modal: React.CSSProperties = {
+  background: "#ffffff",
+  padding: "18px",
+  borderRadius: "8px",
+  maxWidth: "480px",
+  width: "90%",
+  boxSizing: "border-box",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+};
+
+const modalMessage: React.CSSProperties = {
+  margin: 0,
+  marginBottom: "12px",
+};
+
+const modalActions: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "8px",
+};
+
+const modalBackButton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #000000",
+  borderRadius: "6px",
+  cursor: "pointer",
+  backgroundColor: "#f3f3f3",
+};
+
+const modalDeleteButton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #b30000",
+  borderRadius: "6px",
+  cursor: "pointer",
+  backgroundColor: "#ffdddd",
+  color: "#b30000",
 };

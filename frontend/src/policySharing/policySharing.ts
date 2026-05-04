@@ -27,6 +27,8 @@ export interface ExportedPolicy {
   issuers: string[];
   validAfter: number; //maximum days since certificate issue
   validFor: number; //days remaining until expiration
+  SANs: string[]; //DELETE THIS
+  SCT: boolean; //DELETE THIS
 }
 
 type RawPolicy = {
@@ -41,6 +43,8 @@ type RawPolicy = {
   validIssuers?: string[];
   minCertificateDaysLeft?: number;
   minCertificateLifespan?: number;
+  validSans?: string[];//DELETE THIS
+  needsSct?: boolean;//DELETE THIS
 };
 
 const MAX_TEXT_LENGTH = 50;
@@ -145,6 +149,9 @@ function parseImportedPolicy(iPolicy: string): ExportedPolicy {
     issuers: parseStringArrayField(parsedValue, "issuers"),
     validAfter: parseNumberField(parsedValue, "validAfter"),
     validFor: parseNumberField(parsedValue, "validFor"),
+
+    SANs: parseStringArrayField(parsedValue, "SANs"),//DELETE THIS
+    SCT: parseBooleanField(parsedValue, "SCT"),//DELETE THIS
   };
 }
 
@@ -153,13 +160,15 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
     name: policy.name,
     description: policy.description,
     //active: policy.active,
-    domains: policy.domains,
+    //domains: policy.domains,
     validProtocols: policy.protocols,
     validCiphers: policy.ciphers,
     validSubjects: policy.subjects,
     validIssuers: policy.issuers,
     minCertificateDaysLeft: policy.validFor,
     minCertificateLifespan: policy.validAfter,
+    validSans: [],//DELETE THIS
+    needsSct: false,//DELETE THIS
   };
 }
 
@@ -201,6 +210,8 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
     issuers: cPolicy.issuers,
     validAfter: cPolicy.validAfter,
     validFor: cPolicy.validFor,
+    SANs: [],
+    SCT: false
   }
   const ePolicy: string = JSON.stringify(sPolicy, null, 2);
   const blob = new Blob([ePolicy], { type: "application/json" });
@@ -266,9 +277,10 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
 export async function storeNewPolicy(
   policy: SecurityPolicy,
 ): Promise<SecurityPolicy | null> {
-  console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
+  console.log("sending this", mapPolicyToBackendPayload(policy));
   try {
     const accessToken = await getStoredAccessToken();
+    console.log(accessToken);
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
