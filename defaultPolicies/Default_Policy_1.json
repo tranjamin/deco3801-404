@@ -1,0 +1,20 @@
+{
+  "name": "Default Policy 1",
+  "description": "This is a testing default policy",
+  "active": true,
+  "domains": [],
+  "protocols": [
+    "tls 1.0",
+    "tls 1.1",
+    "tls 1.2"
+  ],
+  "ciphers": [],
+  "subjects": [],
+  "issuers": [
+    "amazon"
+  ],
+  "validAfter": 14,
+  "validFor": 100,
+  "SANs": [],
+  "SCT": false
+}

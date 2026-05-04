@@ -3,12 +3,12 @@ import { type  SecurityPolicy, activatePolicy, deactivatePolicy } from "../../po
 
 type PolicyStubProps = {
     policy: SecurityPolicy;
-    onSelect: (policy: SecurityPolicy) => void;
+    onSelect: (policy: SecurityPolicy, isDefault?: boolean) => void;
     isSelected: boolean;
+    isDefault?: boolean;
 };
 
-export default function PolicyStub({ policy, onSelect, isSelected }: PolicyStubProps) {
-
+export default function PolicyStub({ policy, onSelect, isSelected, isDefault }: PolicyStubProps) {
     const handleActivate = async () => {
         console.log("sending activated policy to API");
         await activatePolicy(policy.id);
@@ -21,7 +21,7 @@ export default function PolicyStub({ policy, onSelect, isSelected }: PolicyStubP
         window.location.reload();
     }
     return (
-                <div style={{ ...stub, ...(isSelected ? selectedStub : {}) }} onClick={() => onSelect(policy)}>
+                <div style={{ ...stub, ...(isSelected ? selectedStub : {}) }} onClick={() => onSelect(policy, !!isDefault)}>
             <div style={rowofthings}>
                 <div style={rowofthings}>
                     {policy.active === true ? (

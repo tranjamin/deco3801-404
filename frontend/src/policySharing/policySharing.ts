@@ -7,29 +7,28 @@ export interface SecurityPolicy {
   name: string;
   description: string;
   active: boolean;
+  domains: string[];
   protocols: string[];
   ciphers: string[];
   subjects: string[];
-  SANs: string[];
   issuers: string[];
   validAfter: number; //maximum days since certificate issue
   validFor: number; //days remaining until expiration
-  hasSCT: boolean;
-  //transparencyCompliance: boolean;
 }
 
 export interface ExportedPolicy {
   name: string;
   description: string;
   active: boolean;
+  domains: string[];
   protocols: string[];
   ciphers: string[];
   subjects: string[];
-  SANs: string[];
   issuers: string[];
   validAfter: number; //maximum days since certificate issue
   validFor: number; //days remaining until expiration
-  hasSCT: boolean;
+  SANs: string[]; //DELETE THIS
+  SCT: boolean; //DELETE THIS
 }
 
 type RawPolicy = {
@@ -37,30 +36,139 @@ type RawPolicy = {
   name?: string;
   description?: string;
   active?: boolean;
+  domains?: string[];
   validProtocols?: string[];
   validCiphers?: string[];
   validSubjects?: string[];
-  validSans?: string[];
   validIssuers?: string[];
   minCertificateDaysLeft?: number;
   minCertificateLifespan?: number;
-  needsSct?: boolean;
-  domain?: string;
+  validSans?: string[];//DELETE THIS
+  needsSct?: boolean;//DELETE THIS
 };
+
+const MAX_TEXT_LENGTH = 50;
+const MAX_DESCRIPTION_LENGTH = 255;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseStringField(
+  obj: Record<string, unknown>,
+  fieldName: string,
+  maxLength: number,
+): string {
+  const value = obj[fieldName];
+
+  if (typeof value !== "string") {
+    throw new Error(`'${fieldName}' must be a string.`);
+  }
+
+  if (value.length > maxLength) {
+    throw new Error(`'${fieldName}' must be ${maxLength} characters or less.`);
+  }
+
+  return value;
+}
+
+function parseStringArrayField(
+  obj: Record<string, unknown>,
+  fieldName: string,
+): string[] {
+  const value = obj[fieldName];
+
+  if (!Array.isArray(value)) {
+    throw new Error(`'${fieldName}' must be an array of strings.`);
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    const item = value[index];
+
+    if (typeof item !== "string") {
+      throw new Error(
+        `'${fieldName}[${index}]' must be a string (all values in '${fieldName}' must be strings).`,
+      );
+    }
+
+    if (item.length > MAX_TEXT_LENGTH) {
+      throw new Error(
+        `'${fieldName}[${index}]' must be ${MAX_TEXT_LENGTH} characters or less.`,
+      );
+    }
+  }
+
+  return value;
+}
+
+function parseBooleanField(obj: Record<string, unknown>, fieldName: string): boolean {
+  const value = obj[fieldName];
+
+  if (typeof value !== "boolean") {
+    throw new Error(`'${fieldName}' must be a boolean.`);
+  }
+
+  return value;
+}
+
+function parseNumberField(obj: Record<string, unknown>, fieldName: string): number {
+  const value = obj[fieldName];
+
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    throw new Error(`'${fieldName}' must be a number.`);
+  }
+
+  return value;
+}
+
+function parseImportedPolicy(iPolicy: string): ExportedPolicy {
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(iPolicy);
+  } catch {
+    throw new Error("Policy file is not valid JSON.");
+  }
+
+  if (!isRecord(parsedValue)) {
+    throw new Error("Policy file must contain a JSON object.");
+  }
+
+  return {
+    name: parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
+    description: parseStringField(
+      parsedValue,
+      "description",
+      MAX_DESCRIPTION_LENGTH,
+    ),
+    active: parseBooleanField(parsedValue, "active"),
+    domains: parseStringArrayField(parsedValue, "domains"),
+    protocols: parseStringArrayField(parsedValue, "protocols"),
+    ciphers: parseStringArrayField(parsedValue, "ciphers"),
+    subjects: parseStringArrayField(parsedValue, "subjects"),
+    issuers: parseStringArrayField(parsedValue, "issuers"),
+    validAfter: parseNumberField(parsedValue, "validAfter"),
+    validFor: parseNumberField(parsedValue, "validFor"),
+
+    SANs: parseStringArrayField(parsedValue, "SANs"),//DELETE THIS
+    SCT: parseBooleanField(parsedValue, "SCT"),//DELETE THIS
+  };
+}
 
 function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"> {
   return {
     name: policy.name,
     description: policy.description,
     //active: policy.active,
+    //domains: policy.domains,
     validProtocols: policy.protocols,
     validCiphers: policy.ciphers,
     validSubjects: policy.subjects,
-    validSans: policy.SANs,
     validIssuers: policy.issuers,
     minCertificateDaysLeft: policy.validFor,
     minCertificateLifespan: policy.validAfter,
-    needsSct: policy.hasSCT,
+    validSans: [],//DELETE THIS
+    needsSct: false,//DELETE THIS
   };
 }
 
@@ -69,20 +177,19 @@ export const DefaultPolicy1: SecurityPolicy = {
   name: "My Policy",
   description: "Default 1",
   active: true,
+  domains: [],
   protocols: ["1.2", "1.3"],
   ciphers: [],
   subjects: [],
-  SANs: [],
   issuers: [],
   validAfter: 50,
   validFor: 10,
-  hasSCT: true,
 };
 
 //Need to include 2 more default policies and update the above to be industry standard
 
 export async function importPolicy(iPolicy: string) {
-  const exportedPolicy: ExportedPolicy = JSON.parse(iPolicy);
+  const exportedPolicy = parseImportedPolicy(iPolicy);
   const cPolicy: SecurityPolicy = {
     id: 0,
     ...exportedPolicy,
@@ -96,14 +203,15 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
     name: cPolicy.name,
     description: cPolicy.description,
     active: cPolicy.active,
+    domains: cPolicy.domains,
     protocols: cPolicy.protocols,
     ciphers: cPolicy.ciphers,
     subjects: cPolicy.subjects,
-    SANs: cPolicy.SANs,
     issuers: cPolicy.issuers,
     validAfter: cPolicy.validAfter,
     validFor: cPolicy.validFor,
-    hasSCT: cPolicy.hasSCT,
+    SANs: [],
+    SCT: false
   }
   const ePolicy: string = JSON.stringify(sPolicy, null, 2);
   const blob = new Blob([ePolicy], { type: "application/json" });
@@ -169,9 +277,10 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
 export async function storeNewPolicy(
   policy: SecurityPolicy,
 ): Promise<SecurityPolicy | null> {
-  console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
+  console.log("sending this", mapPolicyToBackendPayload(policy));
   try {
     const accessToken = await getStoredAccessToken();
+    console.log(accessToken);
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -342,13 +451,12 @@ export function mapJSONtoPolicies(jsonInput: RawPolicy[]): SecurityPolicy[] {
     name: policy.name ?? "Unnamed Policy",
     description: policy.description ?? "",
     active: policy.active ?? false,
+    domains: policy.domains ?? [],
     protocols: policy.validProtocols ?? [],
     ciphers: policy.validCiphers ?? [],
     subjects: policy.validSubjects ?? [],
-    SANs: policy.validSans ?? [],
     issuers: policy.validIssuers ?? [],
     validAfter: policy.minCertificateLifespan ?? 0,
     validFor: policy.minCertificateDaysLeft ?? 0,
-    hasSCT: policy.needsSct ?? false,
   }));
 }
