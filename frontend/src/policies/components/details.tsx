@@ -284,6 +284,7 @@ export default function Details({
       await handleDelete();
     } else {
       //add code here for deleting the policy in the default folder
+      await handleDelete();
     }
   };
 
