@@ -1,9 +1,14 @@
 console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
+let attachedTabId: number | null
 
 const BACKEND_BASE_URL = "http://localhost:5000";
-const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`
+const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
+
+/**
+ * Need to create a filter that only allows 
+ */
 
 /**
  * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the 
@@ -41,6 +46,15 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
   }
 }
 
+async function detachFromTab(tabId: number): Promise<void> {
+  try {
+    await chrome.debugger.detach({tabId: tabId});
+    console.log(`Detached debugger from tab ${tabId}.`);
+  } catch (error) {
+    console.error("Failed to detach debugger:", error);
+  }
+}
+
 /**
  * Writes the TLS Security Details to the console when the event, Network.responseReceived, 
  * is received through chrome.debugger.onEvent, and the hostname of the selected
@@ -56,7 +70,7 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
  * the payload contains fields including requestId, loaderId, timestamp, etc.
  */
 async function handleDebuggerEvent(
-  _source: chrome.debugger.Debuggee,
+  source: chrome.debugger.Debuggee,
   method: string,
   params?: any
 ): Promise<void> {
@@ -111,6 +125,12 @@ async function handleDebuggerEvent(
         console.log(JSON.stringify(payload, null, 2));
 
         await sendCertToBackend(payload);
+
+        if (source.tabId !== undefined) {
+          await detachFromTab(source.tabId);
+          attachedTabId = null;
+        }
+        
         return;
     }
 
@@ -126,11 +146,50 @@ async function handleDebuggerEvent(
  * with when recording TLS metadata.
  * @param tab (chrome.tabs.Tab object)
  */
-function handleActionClick(tab: chrome.tabs.Tab): void {
-  console.log("Extension icon clicked.");
+
+// function handleActionClick(tab: chrome.tabs.Tab): void {
+//   console.log("Extension icon clicked.");
+//   selectedTab = tab;
+//   attachToTab(tab);
+// }
+
+/**
+ * 
+ * @returns the current tab that the user is currently on
+ */
+//async function getCurrentTab() {
+  //let queryOptions = {active: true, lastFocusedWindow: true};
+  //let [tab] = await chrome.tabs.query(queryOptions);
+  //return tab;
+//}
+
+function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: chrome.tabs.Tab): void {
+  if (!changeInfo.url) {
+    return;
+  }
+  if (!changeInfo.url.startsWith("https://")) {
+    return;
+  }
+  if (!tab.active) {
+    return;
+  }
+  if (tab.id === undefined) {
+    return;
+  }
+
+  if (attachedTabId !== null) {
+    console.log("Debugger already attached - waiting for current capture to finish.");
+    return;
+  }
+  
   selectedTab = tab;
-  attachToTab(tab);
+  attachedTabId = tab.id;
+  console.log("tls_retriever is listening.");
+  attachToTab(selectedTab);
+
 }
+
+
 
 /**
  * Sends a POST request to the backend, with JSON headers and a JSON body containing the
@@ -174,4 +233,6 @@ chrome.debugger.onEvent.addListener(handleDebuggerEvent);
 // runs the attachToTab function, requesting the Network to send events through the debugger
 // API. These events then fire the handleDebuggerEvent function, which then records the 
 // securityDetails from specific events in console.
-chrome.action.onClicked.addListener(handleActionClick);
+//chrome.action.onClicked.addListener(handleActionClick);
+
+chrome.tabs.onUpdated.addListener(handleOnUpdate);
