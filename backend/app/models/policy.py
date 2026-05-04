@@ -7,6 +7,11 @@ from sqlalchemy.dialects.postgresql import ARRAY
 
 from app.models.utils import Protocols
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
 POLICY_NAME_MAXLEN = 50
 POLICY_DESC_MAXLEN = 255
 POLICY_SUBJ_MAXLEN = 50
@@ -55,6 +60,9 @@ class CertificatePolicy(db.Model):
     
     min_certificate_lifespan: Mapped[int] = db.Column(db.Integer, nullable=False)
     min_certificate_days_left: Mapped[int] = db.Column(db.Integer, nullable=False)
+
+    user_id: Mapped[int] = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user: Mapped[User] = db.relationship("User", back_populates="policies")
     
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from typing import List, Dict, Any, Literal
 
 from app import db
@@ -41,6 +42,7 @@ def get_one(policy_id: int):
     return jsonify(policy.to_dict()), 200
 
 @policy_bp.route("/<int:policy_id>/active", methods=["PUT"])
+@jwt_required()
 def update_active(policy_id: int):
     """
     API endpoint which sets a certificate policy to be active or inactive by ID
@@ -62,6 +64,7 @@ def update_active(policy_id: int):
     return jsonify({"message": f"Updated to {policy.active}"}), 200
 
 @policy_bp.route("/", methods=["POST"])
+@jwt_required()
 def create():
     """
     API endpoint which stores a certificate policy
@@ -82,12 +85,16 @@ def create():
     if policy is None:
         return jsonify({"error": "Request cannot be formatted as a certificate policy"}), 400
 
+    user_id: int = int(get_jwt_identity())
+    policy.user_id = user_id
+    
     db.session.add(policy)
     db.session.commit()
     return jsonify(policy.to_dict()), 201
 
 
 @policy_bp.route("/<int:policy_id>", methods=["DELETE"])
+@jwt_required()
 def delete(policy_id: int):
     """
     API endpoint which deletes a certificate policy by ID
@@ -106,6 +113,7 @@ def delete(policy_id: int):
     return jsonify({"message": "Deleted"}), 200
 
 @policy_bp.route("/<int:policy_id>/update", methods=["PUT"])
+@jwt_required()
 def update_policy(policy_id: int):
     """
     API endpoint which modifies a certificate policy by ID
