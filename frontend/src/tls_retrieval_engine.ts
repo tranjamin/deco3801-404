@@ -1,7 +1,7 @@
 console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
-let attachedTabId: number | null;
+let attachedTabId: number | null = null;
 
 const BACKEND_BASE_URL = "http://localhost:5000";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
@@ -62,7 +62,7 @@ async function detachFromTab(tabId: number): Promise<void> {
  * payload in the format expected by the backend, and logs that payload as a formatted JSON, 
  * before sending the formatted JSON to the backend via sendCertToBackend().
  * 
- * @param _source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
+ * @param source, target tab, which is of object type chrome.debugger.Debuggee (tabId)
  * for this use case
  * @param method, which is of a string type (which is required by the callback parameter)
  * and is a CDP event name. 
@@ -108,17 +108,13 @@ async function handleDebuggerEvent(
           url: response.url,
           protocol: securityDetails.protocol,
           cipher: securityDetails.cipher ?? "",
-
-
           subjectName: securityDetails.subjectName ?? "",
           sanList: securityDetails.sanList ?? [],
           issuer: securityDetails.issuer ?? "",
           validFrom: Math.trunc(securityDetails.validFrom),
           validTo: Math.trunc(securityDetails.validTo),
-
           certificateTransparencyCompliance:
-            securityDetails.certificateTransparencyCompliance ?? "unknown",
-
+            securityDetails.certificateTransparencyCompliance ?? "unknown"
         };
 
         console.log("TLS certificate payload captured.");
@@ -163,7 +159,11 @@ async function handleDebuggerEvent(
   //return tab;
 //}
 
-async function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: chrome.tabs.Tab): Promise <void> {
+async function handleOnUpdate(
+  _tabId: number, 
+  changeInfo: {url?: string}, 
+  tab: chrome.tabs.Tab
+): Promise <void> {
   if (!changeInfo.url) {
     return;
   }
@@ -189,8 +189,9 @@ async function handleOnUpdate(_tabId: number, changeInfo: {url?: string}, tab: c
   
   selectedTab = tab;
   attachedTabId = tab.id;
+  
   console.log("tls_retriever is listening.");
-  attachToTab(selectedTab);
+  await attachToTab(selectedTab);
 
 }
 
