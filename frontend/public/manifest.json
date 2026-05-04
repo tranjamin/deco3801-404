@@ -5,5 +5,15 @@
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["activeTab", "tabs", "storage"]
+  "permissions": ["activeTab", "tabs", "debugger", "storage"],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "http://127.0.0.1:5000/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "tls_retrieval_engine.js",
+    "type": "module"
+  }
+  
 }

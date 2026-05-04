@@ -12,24 +12,24 @@ type DetailsProps = {
   policy: SecurityPolicy | null;
   startInEditMode?: boolean;
   isNewPolicy?: boolean;
-  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void;
+  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void,
+  isDefaultPolicy?: boolean;
 };
 
 type PolicyFormData = {
   name: string;
   description: string;
   active: string;
+  domains: string[];
   protocols: string[];
   ciphers: string[];
   subjects: string[];
-  SANs: string[];
   issuers: string[];
   validFor: string;
   validAfter: string;
-  hasSCT: string;
 };
 
-type ArrayFieldName = "protocols" | "ciphers" | "subjects" | "SANs" | "issuers";
+type ArrayFieldName = "domains" | "protocols" | "ciphers" | "subjects" | "issuers";
 
 type ArrayListEditorProps = {
   label: string;
@@ -65,14 +65,13 @@ const emptyFormData: PolicyFormData = {
   name: "",
   description: "",
   active: "",
+  domains: [],
   protocols: [],
   ciphers: [],
   subjects: [],
-  SANs: [],
   issuers: [],
   validFor: "0",
   validAfter: "0",
-  hasSCT: "",
 };
 
 function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
@@ -84,16 +83,15 @@ function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
     name: policy.name,
     description: policy.description,
     active: String(policy.active),
+    domains: [...policy.domains],
     protocols: AVAILABLE_PROTOCOLS.filter((protocol) =>
       protocolSet.has(protocol),
     ),
     ciphers: [...policy.ciphers],
     subjects: [...policy.subjects],
-    SANs: [...policy.SANs],
     issuers: [...policy.issuers],
     validFor: String(policy.validFor),
     validAfter: String(policy.validAfter),
-    hasSCT: String(policy.hasSCT),
   };
 }
 
@@ -106,14 +104,13 @@ function mapFormDataToPolicy(
     name: formData.name,
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
+    domains: [...formData.domains],
     protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
-    SANs: [...formData.SANs],
     issuers: [...formData.issuers],
     validAfter: Number(formData.validAfter) || 0,
     validFor: Number(formData.validFor) || 0,
-    hasSCT: formData.hasSCT === "true",
   };
 }
 
@@ -204,28 +201,34 @@ export default function Details({
   startInEditMode = false,
   isNewPolicy = false,
   onSaveNewPolicy,
+  isDefaultPolicy,
 }: DetailsProps) {
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<PolicyFormData>(emptyFormData);
   const [arrayDrafts, setArrayDrafts] = useState<
     Record<ArrayFieldName, string>
   >({
+    domains: "",
     protocols: "",
     ciphers: "",
     subjects: "",
-    SANs: "",
     issuers: "",
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+
   useEffect(() => {
+    console.log("default?:", isDefaultPolicy);
     if (policy) {
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
       setArrayDrafts({
+        domains: "",
         protocols: "",
         ciphers: "",
         subjects: "",
-        SANs: "",
         issuers: "",
       });
       return;
@@ -234,10 +237,10 @@ export default function Details({
     setIsEditing(false);
     setFormData(emptyFormData);
     setArrayDrafts({
+      domains: "",
       protocols: "",
       ciphers: "",
       subjects: "",
-      SANs: "",
       issuers: "",
     });
   }, [policy, startInEditMode]);
@@ -273,6 +276,16 @@ export default function Details({
     //setIsEditing(true);
     await deletePolicy(policy.id);
     window.location.reload();
+  };
+
+  const confirmDelete = async (isDefaultPolicy: boolean) => {
+    // call existing delete logic; keep it centralized
+    if (!isDefaultPolicy) {
+      await handleDelete();
+    } else {
+      //add code here for deleting the policy in the default folder
+      await handleDelete();
+    }
   };
 
   const handleInputChange = (field: keyof PolicyFormData, value: string) => {
@@ -465,6 +478,21 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <ArrayListEditor
+                    label="Domains"
+                    inputId="policy-domains"
+                    items={formData.domains}
+                    draftValue={arrayDrafts.domains}
+                    onDraftChange={(value) =>
+                      handleArrayDraftChange("domains", value)
+                    }
+                    onAdd={() => handleArrayAdd("domains")}
+                    onRemove={(index) => handleArrayRemove("domains", index)}
+                    tooltip="Domains where this policy should apply"
+                  />
+                </div>
+
+                <div style={fieldGroup}>
+                  <ArrayListEditor
                     label="Ciphers"
                     inputId="policy-ciphers"
                     items={formData.ciphers}
@@ -490,21 +518,6 @@ export default function Details({
                     onAdd={() => handleArrayAdd("subjects")}
                     onRemove={(index) => handleArrayRemove("subjects", index)}
                     tooltip="Valid certificate subject names"
-                  />
-                </div>
-
-                <div style={fieldGroup}>
-                  <ArrayListEditor
-                    label="SANs"
-                    inputId="policy-sans"
-                    items={formData.SANs}
-                    draftValue={arrayDrafts.SANs}
-                    onDraftChange={(value) =>
-                      handleArrayDraftChange("SANs", value)
-                    }
-                    onAdd={() => handleArrayAdd("SANs")}
-                    onRemove={(index) => handleArrayRemove("SANs", index)}
-                    tooltip="Valid Subject Alternative Names on certificates"
                   />
                 </div>
 
@@ -571,27 +584,6 @@ export default function Details({
                   />
                 </div>
 
-                <div style={fieldGroup}>
-                  <label
-                    style={checkboxLabel}
-                    htmlFor="policy-has-sct"
-                    title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
-                  >
-                    <input
-                      id="policy-has-sct"
-                      type="checkbox"
-                      checked={formData.hasSCT === "true"}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "hasSCT",
-                          e.currentTarget.checked ? "true" : "false",
-                        )
-                      }
-                      title="Whether the certificate must include a Signed Certificate Timestamp (SCT)"
-                    />
-                    Has SCT
-                  </label>
-                </div>
               </div>
             ) : (
               <>
@@ -603,6 +595,9 @@ export default function Details({
                   {policy.active ? "Active" : "Inactive"}
                 </p>
                 <p>
+                  <strong>Domains:</strong> {policy.domains.join(", ")}
+                </p>
+                <p>
                   <strong>Protocols:</strong> {policy.protocols.join(", ")}
                 </p>
                 <p>
@@ -610,9 +605,6 @@ export default function Details({
                 </p>
                 <p>
                   <strong>Subjects:</strong> {policy.subjects.join(", ")}
-                </p>
-                <p>
-                  <strong>SANs:</strong> {policy.SANs.join(", ")}
                 </p>
                 <p>
                   <strong>Valid Certificate Authorities:</strong>{" "}
@@ -628,9 +620,6 @@ export default function Details({
                   </strong>{" "}
                   {policy.validAfter}
                 </p>
-                <p>
-                  <strong>Has SCT?:</strong> {policy.hasSCT ? "True" : "False"}
-                </p>
               </>
             )}
           </div>
@@ -641,7 +630,14 @@ export default function Details({
               <button type="button" style={editbutton} onClick={handleEdit}>
                 Edit
               </button>
-              <button type="button" style={deletebutton} onClick={handleDelete}>
+              <button
+                type="button"
+                style={deletebutton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+              >
                 Delete
               </button>
               </>
@@ -664,6 +660,48 @@ export default function Details({
               </>
             )}
           </div>
+          {showDeleteConfirm && (
+            <div
+              style={modalOverlay}
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              <div style={modal} onClick={(e) => e.stopPropagation()}>
+                <p style={modalMessage}>
+                  {policy
+                    ? (isDefaultPolicy === true || (typeof isDefaultPolicy === 'undefined'))
+                      ? `This is a default policy bundled with the app. Deleting it will remove the local copy. Are you sure you want to delete "${policy.name}"?`
+                      : `Are you sure you want to permanently delete "${policy.name}"? This action cannot be undone.`
+                    : "No policy selected."
+                  }
+                </p>
+
+                <div style={modalActions}>
+                  <button
+                    type="button"
+                    style={modalBackButton}
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    style={modalDeleteButton}
+                    onClick={async () => {
+                      if (typeof isDefaultPolicy != 'undefined') {
+                        await confirmDelete(isDefaultPolicy);
+                      } else {
+                        await confirmDelete(false);
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <p>Select a policy from the left pane to view details.</p>
@@ -823,12 +861,6 @@ const sliderInput: React.CSSProperties = {
   display: "block",
 };
 
-const checkboxLabel: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-};
-
 const listBox: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -911,7 +943,7 @@ const bottomActionBar: React.CSSProperties = {
   justifyContent: "space-between",
   gap: "8px",
   padding: "12px 0 0",
-  backgroundColor: "#e5e7eb",
+  backgroundColor: "#ffffff",
   flexShrink: 0,
 };
 
@@ -931,4 +963,52 @@ const backbutton: React.CSSProperties = {
   cursor: "pointer",
   color: "#333333",
   backgroundColor: "rgb(243, 243, 243)",
+};
+
+const modalOverlay: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.4)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const modal: React.CSSProperties = {
+  background: "#ffffff",
+  padding: "18px",
+  borderRadius: "8px",
+  maxWidth: "480px",
+  width: "90%",
+  boxSizing: "border-box",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+};
+
+const modalMessage: React.CSSProperties = {
+  margin: 0,
+  marginBottom: "12px",
+};
+
+const modalActions: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "8px",
+};
+
+const modalBackButton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #000000",
+  borderRadius: "6px",
+  cursor: "pointer",
+  backgroundColor: "#f3f3f3",
+};
+
+const modalDeleteButton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #b30000",
+  borderRadius: "6px",
+  cursor: "pointer",
+  backgroundColor: "#ffdddd",
+  color: "#b30000",
 };
