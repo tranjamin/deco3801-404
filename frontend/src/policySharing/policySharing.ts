@@ -256,11 +256,15 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
 export async function addDummyPolicy(): Promise<{ message: string } | null> {
   //console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
     const response = await fetch(`${baseUrl}/api/policies/create_dummy`, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: headers,
       //body: JSON.stringify(mapPolicyToBackendPayload(policy)),
     });
     if (!response.ok) {
@@ -409,11 +413,15 @@ export async function deletePolicy(policyID: number) {
 
 export async function getPolicy(policyID: number) {
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
     const response = await fetch(`${baseUrl}/api/policies/${policyID}`, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: headers,
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -428,11 +436,15 @@ export async function getPolicy(policyID: number) {
 
 export async function getAllPolicies() {
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
     const response = await fetch(`${baseUrl}/api/policies/`, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: headers,
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
