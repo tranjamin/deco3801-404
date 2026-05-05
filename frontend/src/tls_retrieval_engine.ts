@@ -1,4 +1,4 @@
-import { setCurrentCertificateData} from "./api/storage";
+import { setCurrentCertificateData, getStoredAccessToken} from "./api/storage";
 
 console.log("TLS Retrieval Engine service worker loaded.");
 
@@ -133,7 +133,7 @@ async function handleDebuggerEvent(
         return;
     }
 
-    console.log("TLS security details received, but hostname did not match.");
+    console.log(`TLS security details received, but hostname did not match. Response Hostname is ${responseHostname} but select hostname is ${selectedHostname}`);
 
     //console.log(securityDetails);
   
@@ -213,11 +213,15 @@ async function handleOnUpdate(
 async function sendCertToBackend(payload: object): Promise<void> {
   storeCurrentCert(payload);
   try {
+    const accessToken = await getStoredAccessToken();
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    };
     const response = await fetch(CERTIFICATE_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: headers,
       body: JSON.stringify(payload)
     });
 
