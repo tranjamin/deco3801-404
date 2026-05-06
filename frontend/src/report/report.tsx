@@ -12,7 +12,7 @@ import {
 } from "./utils/tableUtils";
 import type { TLSCertificateTransformed } from "../sharedComponent/types";
 
-const BACKEND_BASE_URL = "http://localhost:5000";
+const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 
 type BackendVisit = {
@@ -195,3 +195,4 @@ const errorStyle: React.CSSProperties = {
   color: "#b42318",
   fontWeight: 700,
 };
+

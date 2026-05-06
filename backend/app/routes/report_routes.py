@@ -9,6 +9,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import desc
 
 report_bp = Blueprint("report_bp", __name__)
+DUPLICATE_VISIT_WINDOW_SECONDS = 60
 
 
 def _visit_has_issues(visit: DomainVisit) -> bool:
@@ -41,9 +42,28 @@ def log_visit():
         if user.username != "master" and cert.user_id != user_id:
             return jsonify({"error": "certificate does not belong to user"}), 403
 
+    now = time.time()
+    duplicate_visit = (
+        DomainVisit.query.filter(
+            DomainVisit.user_id == user_id,
+            DomainVisit.domain == domain,
+            DomainVisit.visited_at >= now - DUPLICATE_VISIT_WINDOW_SECONDS,
+        )
+        .order_by(desc(DomainVisit.visited_at))
+        .first()
+    )
+    if duplicate_visit:
+        return jsonify(
+            {
+                "visit_id": duplicate_visit.id,
+                "logged_at": duplicate_visit.visited_at,
+                "duplicate": True,
+                "message": "Visit already logged recently",
+            }
+        ), 200
+
     evaluation_result = {"pass": True, "issues": [], "days_until_expiry": None}
     if cert:
-        now = time.time()
         days_until_expiry = (cert.valid_to - now) / 86400
         issues = []
 
@@ -228,3 +248,5 @@ def get_domain_stats():
             "issue_breakdown": issue_counts,
         }
     ), 200
+
+
