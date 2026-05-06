@@ -26,12 +26,6 @@ class DomainVisit(db.Model):
     certificate_id: Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("tls_certificates.id"), nullable=True
     )
-    protocol: Mapped[str | None] = db.Column(db.String(50), nullable=True)
-    cipher: Mapped[str | None] = db.Column(db.String(100), nullable=True)
-    issuer: Mapped[str | None] = db.Column(db.String(255), nullable=True)
-    subject_name: Mapped[str | None] = db.Column(db.String(255), nullable=True)
-    valid_from: Mapped[float | None] = db.Column(db.Float, nullable=True)
-    valid_to: Mapped[float | None] = db.Column(db.Float, nullable=True)
 
     evaluation_passed: Mapped[bool] = db.Column(
         db.Boolean, nullable=False, default=False
@@ -46,24 +40,28 @@ class DomainVisit(db.Model):
     user_agent: Mapped[str | None] = db.Column(db.Text, nullable=True)
     tab_id: Mapped[int | None] = db.Column(db.Integer, nullable=True)
 
-    certificate: Mapped["TLSCertificate"] = db.relationship(
+    certificate: Mapped["TLSCertificate | None"] = db.relationship(
         "TLSCertificate", backref="visits"
     )
     user: Mapped["User"] = db.relationship("User", backref="domain_visits")
 
     def to_dict(self) -> dict[str, Any]:
+        cert = self.certificate
+        fallback_domain = cert.san_list[0] if cert and cert.san_list else None
+        display_domain = self.domain or fallback_domain
+
         return {
             "id": self.id,
-            "domain": self.domain,
+            "domain": display_domain,
             "visited_at": self.visited_at,
             "user_id": self.user_id,
             "certificate_id": self.certificate_id,
-            "protocol": self.protocol,
-            "cipher": self.cipher,
-            "issuer": self.issuer,
-            "subject_name": self.subject_name,
-            "valid_from": self.valid_from,
-            "valid_to": self.valid_to,
+            "protocol": cert.protocol if cert else None,
+            "cipher": cert.cipher if cert else None,
+            "issuer": cert.issuer if cert else None,
+            "subject_name": cert.subject_name if cert else None,
+            "valid_from": cert.valid_from if cert else None,
+            "valid_to": cert.valid_to if cert else None,
             "evaluation_passed": self.evaluation_passed,
             "issues_found": self.issues_found,
             "days_until_expiry": self.days_until_expiry,
@@ -87,12 +85,6 @@ class DomainVisit(db.Model):
             domain=domain,
             visited_at=time.time(),
             certificate_id=cert.id if cert else None,
-            protocol=cert.protocol if cert else None,
-            cipher=cert.cipher if cert else None,
-            issuer=cert.issuer if cert else None,
-            subject_name=cert.subject_name if cert else None,
-            valid_from=cert.valid_from if cert else None,
-            valid_to=cert.valid_to if cert else None,
             evaluation_passed=evaluation_result.get("pass", False),
             issues_found=evaluation_result.get("issues", []),
             days_until_expiry=evaluation_result.get("days_until_expiry"),
