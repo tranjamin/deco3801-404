@@ -5,7 +5,7 @@ console.log("TLS Retrieval Engine service worker loaded.");
 let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
-const BACKEND_BASE_URL = "http://localhost:5000";
+const BACKEND_BASE_URL = "https://deco3801-404.onrender.com/";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 //const CUR_CERT_STORAGE_KEY = "currentCert";
 
@@ -46,6 +46,7 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
     console.log("Network tracking enabled.");
   } catch (error) {
     console.error("Failed during attach / enable:", error);
+  
   }
 }
 
@@ -172,6 +173,12 @@ async function handleOnUpdate(
   }
   if (!changeInfo.url.startsWith("https://")) {
     return;
+  }
+  if (changeInfo.url.startsWith("https://www.google.com/")) {
+    console.log("Google search detected - ignoring to prevent excessive captures.");
+    return;
+  } else {
+    console.log("Tab URL updated to:", changeInfo.url);
   }
   if (!tab.active) {
     return;
