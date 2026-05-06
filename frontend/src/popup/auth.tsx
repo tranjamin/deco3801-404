@@ -1,111 +1,122 @@
 import { useState } from "react";
-import { setStoredAccessToken } from "../api/storage"; 
+import { setStoredAccessToken } from "../api/storage";
+import "./auth.css";
 
 export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
+type AuthMode = "login" | "register";
+
 export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [loginUsername, setLoginUsername] = useState("");
-    const [loginPassword, setLoginPassword] = useState("");
-    const [regUsername, setRegUsername] = useState("");
-    const [regPassword, setRegPassword] = useState("");
-    
-    const [error, setError] = useState("");
+  const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-    const handleLogin = async (event: React.SubmitEvent) => {
-        event.preventDefault(); 
-        setError("");
+    try {
+      const endpoint = mode === "login" ? "login" : "register";
+      const res = await fetch(`${baseUrl}api/auth/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-        try {
-            const res = await fetch(`${baseUrl}api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: loginUsername, password: loginPassword }),
-            });
+      const data = await res.json();
 
-            const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+            (mode === "login" ? "Login failed" : "Registration failed"),
+        );
+      }
 
-            if (!res.ok) {
-                throw new Error(data.error || "Login failed");
+      await setStoredAccessToken(data.accessToken);
+      onAuthSuccess();
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const changeMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setError("");
+  };
+
+  const submitLabel = mode === "login" ? "Login" : "Register";
+
+  return (
+    <div className="auth-shell">
+      <section className="auth-panel" aria-label="TLS Certificate Checker auth">
+        <h1 className="auth-title">TLS Certificate Checker</h1>
+
+        <form className="auth-card" onSubmit={submitAuth}>
+          <h2 className="auth-heading">
+            {mode === "login" ? "Sign in" : "Create account"}
+          </h2>
+
+          <div className="auth-tabs" role="tablist" aria-label="Auth mode">
+            <button
+              type="button"
+              className={`auth-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => changeMode("login")}
+              aria-selected={mode === "login"}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={`auth-tab ${mode === "register" ? "active" : ""}`}
+              onClick={() => changeMode("register")}
+              aria-selected={mode === "register"}
+            >
+              Register
+            </button>
+          </div>
+
+          <label className="auth-label" htmlFor="auth-username">
+            Username
+          </label>
+          <input
+            id="auth-username"
+            className="auth-input"
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            autoComplete="username"
+            required
+          />
+
+          <label className="auth-label" htmlFor="auth-password">
+            Password
+          </label>
+          <input
+            id="auth-password"
+            className="auth-input"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
             }
+            required
+          />
 
-            await setStoredAccessToken(data.accessToken); 
-            onAuthSuccess();
+          {error && <p className="auth-error">{error}</p>}
 
-        } catch (err) {
-            if (err instanceof Error) setError(err.message);
-        }
-    };
-
-    const handleRegister = async (event: React.SubmitEvent) => {
-        event.preventDefault();
-        setError("");
-
-        try {
-            const res = await fetch(`${baseUrl}api/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: regUsername, password: regPassword }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || "Registration failed");
-            }
-
-            await setStoredAccessToken(data.accessToken);
-            onAuthSuccess();
-
-        } catch (err) {
-            if (err instanceof Error) setError(err.message);
-        }
-    };
-
-    return (
-        <div>
-            <h1>TLS Checker</h1>
-            <h2>Get started with a new account or an existing account</h2>
-            
-            {error && <p style={{ color: "red" }}>{error}</p>}
-
-            <h3>Register</h3>
-            <form onSubmit={handleRegister}>
-                <input 
-                    type="text" 
-                    placeholder="Username" 
-                    value={regUsername}
-                    onChange={(error) => setRegUsername(error.target.value)}
-                    required 
-                />
-                <input 
-                    type="password" 
-                    placeholder="Password" 
-                    value={regPassword}
-                    onChange={(error) => setRegPassword(error.target.value)}
-                    required 
-                />
-                <button type="submit">Register</button>
-            </form>
-
-            <h3>Sign In</h3>
-            <form onSubmit={handleLogin}>
-                <input 
-                    type="text" 
-                    placeholder="Username" 
-                    value={loginUsername}
-                    onChange={(error) => setLoginUsername(error.target.value)}
-                    required 
-                />
-                <input 
-                    type="password" 
-                    placeholder="Password" 
-                    value={loginPassword}
-                    onChange={(error) => setLoginPassword(error.target.value)}
-                    required 
-                />
-                <button type="submit">Sign In</button>
-            </form>
-        </div>
-    );
+          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Please wait..." : submitLabel}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
 }
