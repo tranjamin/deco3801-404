@@ -1,0 +1,141 @@
+.auth-shell {
+  box-sizing: border-box;
+  width: 360px;
+  min-height: 520px;
+  margin: 0;
+  padding: 2px;
+  background: #ffffff;
+  color: #24272f;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.auth-panel {
+  box-sizing: border-box;
+  min-height: 516px;
+  padding: 24px 18px 18px;
+  border: 3px solid #5368d5;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.auth-title {
+  margin: 0 0 24px;
+  color: #050505;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: underline;
+}
+
+.auth-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 18px 16px 16px;
+  border: 2px solid #d5dbe3;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.18);
+}
+
+.auth-heading {
+  margin: 0 0 14px;
+  color: #050505;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.auth-tab,
+.auth-submit {
+  min-height: 46px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.auth-tab {
+  border: 2px solid #d2d8e0;
+  background: #fafbfc;
+  color: #2b2e36;
+}
+
+.auth-tab.active {
+  border-color: #5368d5;
+  background: #5368d5;
+  color: #ffffff;
+}
+
+.auth-label {
+  display: block;
+  margin: 0 0 6px;
+  color: #2b2e36;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.auth-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 50px;
+  margin: 0 0 16px;
+  padding: 0 14px;
+  border: 2px solid #d2d8e0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2b2e36;
+  font: inherit;
+  font-size: 22px;
+  letter-spacing: 0;
+  outline: none;
+}
+
+.auth-input::placeholder {
+  color: #7a7d84;
+}
+
+.auth-input:focus {
+  border-color: #5368d5;
+  box-shadow: 0 0 0 3px rgba(83, 104, 213, 0.18);
+}
+
+.auth-error {
+  margin: -4px 0 12px;
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.auth-submit {
+  width: 100%;
+  border: 2px solid #24272f;
+  background: #ffffff;
+  color: #2b2e36;
+}
+
+.auth-submit:hover:not(:disabled),
+.auth-submit:focus-visible {
+  background: #f5f7fb;
+}
+
+.auth-submit:disabled {
+  cursor: default;
+  opacity: 0.7;
+}

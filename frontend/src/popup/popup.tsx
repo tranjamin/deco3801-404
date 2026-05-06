@@ -6,50 +6,53 @@ import { getStoredAccessToken } from "../api/storage";
 export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
 export default function Popup() {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-    useEffect(() => {
-        const verifyUser = async () => {
-            try {
-                const accessToken = await getStoredAccessToken();
-                
-                if (!accessToken) {
-                    setIsAuthenticated(false);
-                    return;
-                }
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const accessToken = await getStoredAccessToken();
 
-                const res = await fetch(`${baseUrl}api/auth/check`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                });
-                
-                if (!res.ok) {
-                    setIsAuthenticated(false);
-                    return;
-                }
-                
-                const data = await res.json();
-                setIsAuthenticated(!!data.authenticated);
+        if (!accessToken) {
+          setIsAuthenticated(false);
+          return;
+        }
 
-            } catch (error) {
-                console.error("Auth process failed:", error);
-                setIsAuthenticated(false); 
-            }
-        };
+        const res = await fetch(`${baseUrl}api/auth/check`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-        verifyUser();
-    }, []);
+        if (!res.ok) {
+          setIsAuthenticated(false);
+          return;
+        }
 
-    if (isAuthenticated === null) {
-        return <div>Loading...</div>;
-    }
+        const data = await res.json();
+        setIsAuthenticated(!!data.authenticated);
+      } catch (error) {
+        console.error("Auth process failed:", error);
+        setIsAuthenticated(false);
+      }
+    };
 
-    return (
-        <>
-            {isAuthenticated ? <Home /> : <Auth onAuthSuccess={() => setIsAuthenticated(true)} />}
-        </>
-    );
+    verifyUser();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <>
+      {isAuthenticated ? (
+        <Home />
+      ) : (
+        <Auth onAuthSuccess={() => setIsAuthenticated(true)} />
+      )}
+    </>
+  );
 }
