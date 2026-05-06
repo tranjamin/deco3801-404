@@ -129,7 +129,8 @@ def create_app():
     from app.routes.policy_routes import policy_bp
     from app.routes.evaluation_routes import evaluation_bp 
     from app.routes.auth_routes import auth_bp   
-    
+    from app.routes.report_routes import report_bp
+    from app.models import domain_visit  # noqa: F401
     # initialise database schema
     with app.app_context():
         db.create_all()
@@ -139,5 +140,7 @@ def create_app():
     app.register_blueprint(policy_bp, url_prefix="/api/policies/")
     app.register_blueprint(evaluation_bp, url_prefix="/api/evaluate")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(report_bp, url_prefix="/api/reports")
 
     return app
+

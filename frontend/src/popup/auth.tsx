@@ -120,3 +120,5 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     </div>
   );
 }
+
+
