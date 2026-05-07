@@ -1,5 +1,8 @@
 from __future__ import annotations
-import enum
+
+import time
+from urllib.parse import urlparse
+
 from app import db
 from sqlalchemy.orm import Mapped
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -38,6 +41,7 @@ class TLSCertificate(db.Model):
         issuer (string[50]): the issuer of the certificate
         valid_from (float): the timestamp that the certificate was issued
         valid_to (float): the timestamp that the certificate expires at
+        visited_at (float): the timestamp when this certificate was captured by the extension
         certificate_transparency_compliance (enum): whether the certificate was marked as compliant or not
 
     Inherits from:
@@ -58,6 +62,7 @@ class TLSCertificate(db.Model):
     issuer: Mapped[str] = db.Column(db.String(CERT_ISSU_MAXLEN), nullable=False)
     valid_from: Mapped[float] = db.Column(db.Float, nullable=False)
     valid_to: Mapped[float] = db.Column(db.Float, nullable=False)
+    visited_at: Mapped[float] = db.Column(db.Float, nullable=False, default=time.time, index=True)
     certificate_transparency_compliance: Mapped[CertificateTransparencyCompliance] = db.Column(
         db.Enum(CertificateTransparencyCompliance),
         nullable=False,
@@ -68,6 +73,15 @@ class TLSCertificate(db.Model):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
+
+    def domain_name(self) -> str:
+        """Return the best display domain for report rows."""
+        hostname = urlparse(self.url).hostname
+        if hostname:
+            return hostname
+        if self.san_list:
+            return self.san_list[0]
+        return self.subject_name
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the data from an SQL table to a dictionary"""
@@ -82,7 +96,29 @@ class TLSCertificate(db.Model):
             "issuer": self.issuer,
             "validFrom": self.valid_from,
             "validTo": self.valid_to,
+            "visitedAt": self.visited_at,
             "certificateTransparencyCompliance": self.certificate_transparency_compliance.value,
+        }
+
+    def to_report_dict(self) -> dict[str, Any]:
+        """Converts a certificate row to the report table API shape."""
+        issues = Flags.decode(self.issues)
+        days_until_expiry = round((self.valid_to - time.time()) / 86400, 1)
+        return {
+            "id": self.id,
+            "domain": self.domain_name(),
+            "visited_at": self.visited_at,
+            "user_id": self.user_id,
+            "certificate_id": self.id,
+            "protocol": self.protocol,
+            "cipher": self.cipher,
+            "issuer": self.issuer,
+            "subject_name": self.subject_name,
+            "valid_from": self.valid_from,
+            "valid_to": self.valid_to,
+            "evaluation_passed": len(issues) == 0,
+            "issues_found": issues,
+            "days_until_expiry": days_until_expiry,
         }
         
     def evaluate_against_policies_and_store(self, policies: List[CertificatePolicy]):
@@ -165,6 +201,7 @@ class TLSCertificate(db.Model):
             issuer=data.get("issuer", ""),
             valid_from=data.get("validFrom", 0.0),
             valid_to=data.get("validTo", 0.0),
+            visited_at=time.time(),
             certificate_transparency_compliance=CertificateTransparencyCompliance(
                 data.get("certificateTransparencyCompliance", "unknown")
             ),
