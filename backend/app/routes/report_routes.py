@@ -1,112 +1,23 @@
 import time
 
-from app import db
 from app.models.certificate import TLSCertificate
-from app.models.domain_visit import DomainVisit
 from app.models.user import User
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import desc
 
 report_bp = Blueprint("report_bp", __name__)
-DUPLICATE_VISIT_WINDOW_SECONDS = 60
 
 
-def _visit_has_issues(visit: DomainVisit) -> bool:
-    policy_failed = any(
-        not result.get("pass", True) for result in (visit.policy_results or [])
-    )
-    return (not visit.evaluation_passed) or bool(visit.issues_found) or policy_failed
+def _certificate_has_issues(cert: TLSCertificate) -> bool:
+    return bool(cert.issues)
 
 
-@report_bp.route("/visits", methods=["POST"])
-@jwt_required()
-def log_visit():
-    data = request.get_json(force=True)
-
-    if not data.get("domain"):
-        return jsonify({"error": "domain is required"}), 400
-
-    user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
-    domain = data["domain"]
-    certificate_id = data.get("certificate_id")
-    user_agent = data.get("user_agent")
-    tab_id = data.get("tab_id")
-
-    cert = None
-    if certificate_id:
-        cert = TLSCertificate.query.get(certificate_id)
-        if cert is None:
-            return jsonify({"error": "certificate not found"}), 404
-        if user.username != "master" and cert.user_id != user_id:
-            return jsonify({"error": "certificate does not belong to user"}), 403
-
-    now = time.time()
-    duplicate_visit = (
-        DomainVisit.query.filter(
-            DomainVisit.user_id == user_id,
-            DomainVisit.domain == domain,
-            DomainVisit.visited_at >= now - DUPLICATE_VISIT_WINDOW_SECONDS,
-        )
-        .order_by(desc(DomainVisit.visited_at))
-        .first()
-    )
-    if duplicate_visit:
-        return jsonify(
-            {
-                "visit_id": duplicate_visit.id,
-                "logged_at": duplicate_visit.visited_at,
-                "duplicate": True,
-                "message": "Visit already logged recently",
-            }
-        ), 200
-
-    evaluation_result = {"pass": True, "issues": [], "days_until_expiry": None}
-    if cert:
-        days_until_expiry = (cert.valid_to - now) / 86400
-        issues = []
-
-        if cert.valid_to < now:
-            issues.append("expired")
-        elif days_until_expiry < 30:
-            issues.append("expiring_soon")
-
-        weak_protocols = {"SSL 2.0", "SSL 3.0", "TLS 1.0", "TLS 1.1"}
-        weak_ciphers = {"RC4", "DES", "3DES", "NULL", "EXPORT", "MD5"}
-
-        if cert.protocol in weak_protocols:
-            issues.append("weak_protocol")
-
-        if any(weak in cert.cipher.upper() for weak in weak_ciphers):
-            issues.append("weak_cipher")
-
-        evaluation_result = {
-            "pass": len(issues) == 0,
-            "issues": issues,
-            "days_until_expiry": round(days_until_expiry, 1),
-        }
-
-    visit = DomainVisit.from_certificate_evaluation(
-        user_id=user_id,
-        domain=domain,
-        cert=cert,
-        evaluation_result=evaluation_result,
-        user_agent=user_agent,
-        tab_id=tab_id,
-    )
-
-    db.session.add(visit)
-    db.session.commit()
-
-    return jsonify(
-        {
-            "visit_id": visit.id,
-            "logged_at": visit.visited_at,
-            "evaluation": evaluation_result,
-            "policy_results": visit.policy_results,
-        }
-    ), 201
+def _get_certificate_query_for_user(user: User, user_id: int):
+    query = TLSCertificate.query
+    if user.username != "master":
+        query = query.filter(TLSCertificate.user_id == user_id)
+    return query
 
 
 @report_bp.route("/visits", methods=["GET"])
@@ -121,59 +32,61 @@ def get_visit_history():
     user_id = int(get_jwt_identity())
     user = User.query.get_or_404(user_id)
 
-    query = DomainVisit.query
-    if user.username != "master":
-        query = query.filter(DomainVisit.user_id == user_id)
-
-    if domain_filter:
-        query = query.filter(DomainVisit.domain.ilike(f"%{domain_filter}%"))
+    query = _get_certificate_query_for_user(user, user_id)
 
     if start_date:
         try:
-            query = query.filter(DomainVisit.visited_at >= float(start_date))
+            query = query.filter(TLSCertificate.visited_at >= float(start_date))
         except ValueError:
             return jsonify({"error": "Invalid start_date format"}), 400
 
     if end_date:
         try:
-            query = query.filter(DomainVisit.visited_at <= float(end_date))
+            query = query.filter(TLSCertificate.visited_at <= float(end_date))
         except ValueError:
             return jsonify({"error": "Invalid end_date format"}), 400
 
-    query = query.order_by(desc(DomainVisit.visited_at))
+    query = query.order_by(desc(TLSCertificate.visited_at))
+    certs = query.all()
+
+    if domain_filter:
+        domain_filter_lower = domain_filter.lower()
+        certs = [
+            cert
+            for cert in certs
+            if domain_filter_lower in cert.domain_name().lower()
+            or domain_filter_lower in cert.subject_name.lower()
+            or domain_filter_lower in cert.issuer.lower()
+        ]
 
     if has_issues is not None:
         has_issues_bool = has_issues.lower() == "true"
-        matching_visits = [
-            visit for visit in query.all() if _visit_has_issues(visit) == has_issues_bool
-        ]
-        total_count = len(matching_visits)
-        visits = matching_visits[offset : offset + limit]
-    else:
-        total_count = query.count()
-        visits = query.offset(offset).limit(limit).all()
+        certs = [cert for cert in certs if _certificate_has_issues(cert) == has_issues_bool]
+
+    total_count = len(certs)
+    paged_certs = certs[offset : offset + limit]
 
     return jsonify(
         {
             "total": total_count,
             "limit": limit,
             "offset": offset,
-            "visits": [visit.to_dict() for visit in visits],
+            "visits": [cert.to_report_dict() for cert in paged_certs],
         }
     ), 200
 
 
-@report_bp.route("/visits/<int:visit_id>", methods=["GET"])
+@report_bp.route("/visits/<int:certificate_id>", methods=["GET"])
 @jwt_required()
-def get_visit_detail(visit_id: int):
+def get_visit_detail(certificate_id: int):
     user_id = int(get_jwt_identity())
     user = User.query.get_or_404(user_id)
-    visit = DomainVisit.query.get_or_404(visit_id)
+    cert = TLSCertificate.query.get_or_404(certificate_id)
 
-    if user.username != "master" and visit.user_id != user_id:
-        return jsonify({"error": "visit does not belong to user"}), 403
+    if user.username != "master" and cert.user_id != user_id:
+        return jsonify({"error": "certificate does not belong to user"}), 403
 
-    return jsonify(visit.to_dict()), 200
+    return jsonify(cert.to_report_dict()), 200
 
 
 @report_bp.route("/domains/stats", methods=["GET"])
@@ -199,31 +112,32 @@ def get_domain_stats():
         except ValueError:
             return jsonify({"error": "Invalid end_date"}), 400
 
-    query = DomainVisit.query
-    if user.username != "master":
-        query = query.filter(DomainVisit.user_id == user_id)
+    certs = (
+        _get_certificate_query_for_user(user, user_id)
+        .filter(
+            TLSCertificate.visited_at >= start_date,
+            TLSCertificate.visited_at <= end_date,
+        )
+        .all()
+    )
 
-    visits = query.filter(
-        DomainVisit.visited_at >= start_date,
-        DomainVisit.visited_at <= end_date,
-    ).all()
-
-    total_visits = len(visits)
-    unique_domains = len({visit.domain for visit in visits})
-    visits_with_issues = sum(1 for visit in visits if _visit_has_issues(visit))
+    total_visits = len(certs)
+    unique_domains = len({cert.domain_name() for cert in certs})
+    visits_with_issues = sum(1 for cert in certs if _certificate_has_issues(cert))
     clean_visits = total_visits - visits_with_issues
 
     domain_counts: dict[str, int] = {}
-    for visit in visits:
-        domain_counts[visit.domain] = domain_counts.get(visit.domain, 0) + 1
+    for cert in certs:
+        domain = cert.domain_name() or "unknown"
+        domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
     top_domains = sorted(domain_counts.items(), key=lambda item: item[1], reverse=True)[
         :10
     ]
 
     issue_counts: dict[str, int] = {}
-    for visit in visits:
-        for issue in visit.issues_found:
+    for cert in certs:
+        for issue in cert.to_report_dict()["issues_found"]:
             issue_counts[issue] = issue_counts.get(issue, 0) + 1
 
     return jsonify(
@@ -248,5 +162,3 @@ def get_domain_stats():
             "issue_breakdown": issue_counts,
         }
     ), 200
-
-

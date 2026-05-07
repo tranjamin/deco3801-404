@@ -130,7 +130,6 @@ def create_app():
     from app.routes.evaluation_routes import evaluation_bp 
     from app.routes.auth_routes import auth_bp   
     from app.routes.report_routes import report_bp
-    from app.models import domain_visit  # noqa: F401
     # initialise database schema
     with app.app_context():
         db.create_all()
