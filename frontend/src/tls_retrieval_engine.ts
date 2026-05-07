@@ -46,7 +46,6 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
     console.log("Network tracking enabled.");
   } catch (error) {
     console.error("Failed during attach / enable:", error);
-  
   }
 }
 
