@@ -5,7 +5,7 @@ console.log("TLS Retrieval Engine service worker loaded.");
 let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com/";
+const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 //const CUR_CERT_STORAGE_KEY = "currentCert";
 
