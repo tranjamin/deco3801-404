@@ -73,18 +73,14 @@ export default function Home() {
     // code to handle logout here
   };
 
-  // const handleOKClick = () => {
+  const openReportWithStatus = (status: "ok" | "warning" | "expired") => {
+    const reportUrl = chrome.runtime.getURL(`report.html?status=${status}`);
+    chrome.tabs.create({ url: reportUrl });
+  };
 
-  // };
-
-  // const handleWarningClick = () => {
-
-  // };
-
-  // const handleExpiredClick = () => {
-
-  // };
-
+  const handleOKClick = () => openReportWithStatus("ok");
+  const handleWarningClick = () => openReportWithStatus("warning");
+  const handleExpiredClick = () => openReportWithStatus("expired");
 
   return (
     <div style={homeContainer}>
@@ -104,7 +100,12 @@ export default function Home() {
         )}
 
         {/* TLS certificate log section */}
-        <TLSLog stats={stats} />
+        <TLSLog 
+          stats={stats}
+          onOpenOK={handleOKClick}
+          onOpenWarning={handleWarningClick}
+          onOpenExpired={handleExpiredClick}
+        />
 
         {/* buttons */}
         <ActionButtons
