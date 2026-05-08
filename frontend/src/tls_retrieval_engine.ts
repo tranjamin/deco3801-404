@@ -174,6 +174,12 @@ async function handleOnUpdate(
   if (!changeInfo.url.startsWith("https://")) {
     return;
   }
+  if (changeInfo.url.startsWith("https://www.google.com/")) {
+    console.log("Google search detected - ignoring to prevent excessive captures.");
+    return;
+  } else {
+    console.log("Tab URL updated to:", changeInfo.url);
+  }
   if (!tab.active) {
     return;
   }
