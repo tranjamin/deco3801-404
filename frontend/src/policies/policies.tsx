@@ -9,6 +9,7 @@ export default function Policies() {
 
   const [sidebarOpen] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
+  const [selectedIsDefault, setSelectedIsDefault] = useState<boolean>(false);
   const [isCreatingPolicy, setIsCreatingPolicy] = useState(false);
 
   const emptyPolicy: SecurityPolicy = {
@@ -16,19 +17,19 @@ export default function Policies() {
     name: "",
     description: "",
     active: false,
+    domains: [],
     protocols: [],
     ciphers: [],
     subjects: [],
-    SANs: [],
     issuers: [],
     validAfter: 0,
     validFor: 0,
-    hasSCT: false,
   };
 
-  const handleSelectPolicy = (policy: SecurityPolicy) => {
+  const handleSelectPolicy = (policy: SecurityPolicy, isDefault?: boolean) => {
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
+    setSelectedIsDefault(Boolean(isDefault));
   };
 
   const handleAddPolicy = () => {
@@ -42,7 +43,7 @@ export default function Policies() {
     // await addDummyPolicy();
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
-    //window.location.reload();
+    window.location.reload();
   };
 
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now
@@ -72,6 +73,7 @@ export default function Policies() {
             startInEditMode={isCreatingPolicy}
             isNewPolicy={isCreatingPolicy}
             onSaveNewPolicy={handleSaveNewPolicy}
+            isDefaultPolicy={selectedIsDefault}
           />
         </div>
       </div>
@@ -118,7 +120,7 @@ const split: React.CSSProperties = {
 };
 
 const left: React.CSSProperties = {
-  background: "#e5e7eb",
+  background: "#ffffff",
   color: "#000000",
   borderRight: "3px solid #000000",
   overflow: "auto",
@@ -126,7 +128,7 @@ const left: React.CSSProperties = {
 };
 
 const right: React.CSSProperties = {
-  background: "#e5e7eb",
+  background: "#ffffff",
   color: "#111",
   borderLeft: "3px solid #000000"
 };

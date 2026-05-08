@@ -86,7 +86,8 @@ const navBarStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
     left: 0,
-    boxShadow: "2px 0 10px rgba(0, 0, 0, 0.6)"
+    boxShadow: "2px 0 10px rgba(0, 0, 0, 0.6)",
+    zIndex: 1000
 };
 
 

@@ -9,7 +9,11 @@ export default defineConfig({
         popup: "popup.html",
         report: "report.html",
         settings: "settings.html",
-        policies: "policies.html"
+        policies: "policies.html",
+        tls_retrieval_engine: "src/tls_retrieval_engine.ts"
+      },
+      output: {
+        entryFileNames: "[name].js"
       }
     }
   }

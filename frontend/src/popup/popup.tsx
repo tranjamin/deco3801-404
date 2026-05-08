@@ -1,81 +1,60 @@
-/// <reference types="chrome" />
-// import { useState } from "react";
-import { CurrentSiteSummary } from "./components/currentSiteSummary";
-import { TLSLog } from "./components/TLSLog";
-import { ActionButtons } from "./components/actionButtons";
-import { countStatus, transformCertificates, transformSingleCert } from "../sharedComponent/utils";
-import { mockTLSData } from "../sharedComponent/mockData";
+import { useEffect, useState } from "react";
+import Home from "./home";
+import Auth from "./auth";
+import { getStoredAccessToken } from "../api/storage";
+
+export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
 export default function Popup() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-    // temporary data current site
-    const data = mockTLSData[3]
-    const transformedData = transformSingleCert(data);
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const accessToken = await getStoredAccessToken();
 
-    // temporary log data
-    const allDataTransformed = transformCertificates(mockTLSData);
-    const stats = countStatus(allDataTransformed);
+        if (!accessToken) {
+          setIsAuthenticated(false);
+          return;
+        }
 
-    const handleOpenReport = () => {
-        // finds the report.html file in root dir
-        const reportUrl = chrome.runtime.getURL("report.html");
+        const res = await fetch(`${baseUrl}api/auth/check`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-        // opens new tab of report.html
-        chrome.tabs.create({ url:reportUrl });
-    }
+        if (!res.ok) {
+          setIsAuthenticated(false);
+          return;
+        }
 
-    const handleOpenPolicies = () => {
-        const policiesUrl = chrome.runtime.getURL("policies.html");
-        chrome.tabs.create({ url:policiesUrl });
-    }
+        const data = await res.json();
+        setIsAuthenticated(!!data.authenticated);
+      } catch (error) {
+        console.error("Auth process failed:", error);
+        setIsAuthenticated(false);
+      }
+    };
 
-    const handleOpenSettings = () => {
-        const settingsUrl = chrome.runtime.getURL("settings.html");
-        chrome.tabs.create({ url:settingsUrl });
-    }
+    verifyUser();
+  }, []);
 
-    return (
-        <div style={popupContainer}>
-            
-            <div style={headerStyle}>
-                <h3><u>TLS Certificate Checker</u></h3>
-            </div>
-            
-            {/* layout */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12}}>
-                {/* current domain summary view */}
-                <CurrentSiteSummary data={transformedData} />
-        
-                {/* TLS certificate log section */}
-                <TLSLog stats={stats} />
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
+  }
 
-                {/* buttons */}
-                <ActionButtons 
-                    onOpenReport={handleOpenReport}
-                    onOpenPolicies={handleOpenPolicies}
-                    onOpenSettings={handleOpenSettings}
-                />
-            </div>            
-        </div>
-    );
+  return (
+    <>
+      {isAuthenticated ? (
+        <Home />
+      ) : (
+        <Auth onAuthSuccess={() => setIsAuthenticated(true)} />
+      )}
+    </>
+  );
 }
 
-// frame around the popup
-const popupContainer: React.CSSProperties = {
-    width: "300px",
-    height: "auto",
-    backgroundColor: "#ffffff", // Your actual UI background
-    border: "2px solid #3367d6", // A professional blue frame (Chrome's signature blue)
-    borderRadius: "8px",        // Rounded corners for the frame
-    padding: "12px",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.2)", // Extra depth
-    margin: "1px",              // Prevents the border from clipping against the browser edge
-};
 
-
-const headerStyle: React.CSSProperties = {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10
-};

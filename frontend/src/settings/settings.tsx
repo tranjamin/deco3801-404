@@ -1,6 +1,8 @@
 /// <reference types="chrome" />
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../sharedComponent/navbar";
+
+const SETTINGS_STORAGE_KEY = "allowedDomains";
 
 type SettingsFormData = {
   allowedDomains: string[];
@@ -66,12 +68,37 @@ function SettingsListEditor({
 }
 
 export default function Settings() {
+  const defaultAllowedDomains = ["portal.my.uq.edu.au", "my.uq.edu.au"];
   const [formData, setFormData] = useState<SettingsFormData>({
-    allowedDomains: ["portal.my.uq.edu.au", "my.uq.edu.au"],
+    allowedDomains: defaultAllowedDomains,
   });
+  const [lastSavedAllowedDomains, setLastSavedAllowedDomains] = useState<string[]>(
+    defaultAllowedDomains,
+  );
   const [domainDraft, setDomainDraft] = useState("");
 
-  
+  useEffect(() => {
+    try {
+      const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (!rawValue) {
+        return;
+      }
+
+      const parsedValue = JSON.parse(rawValue);
+      if (Array.isArray(parsedValue)) {
+        setFormData({
+          allowedDomains: parsedValue,
+        });
+        setLastSavedAllowedDomains(parsedValue);
+      }
+    } catch (error) {
+      console.error("Failed to load settings from localStorage:", error);
+    }
+  }, []);
+
+  const hasUnsavedChanges =
+    JSON.stringify(formData.allowedDomains) !==
+    JSON.stringify(lastSavedAllowedDomains);
 
   const handleDomainAdd = () => {
     const value = domainDraft.trim();
@@ -94,9 +121,17 @@ export default function Settings() {
     }));
   };
 
-  const handleSave = () => {
-    console.log("saving settings", formData);
-    window.location.reload();
+  const handleSave = async () => {
+    try {
+      window.localStorage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify(formData.allowedDomains),
+      );
+      setLastSavedAllowedDomains([...formData.allowedDomains]);
+      console.log("Value is set");
+    } catch (error) {
+      console.error("Failed to save settings to localStorage:", error);
+    }
   };
 
   return (
@@ -118,7 +153,15 @@ export default function Settings() {
             />
 
             <div style={footerActions}>
-              <button type="button" style={saveButton} onClick={handleSave}>
+              <button
+                type="button"
+                style={{
+                  ...saveButton,
+                  ...(hasUnsavedChanges ? {} : saveButtonDisabled),
+                }}
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges}
+              >
                 Save
               </button>
             </div>
@@ -131,7 +174,7 @@ export default function Settings() {
 
 const page: React.CSSProperties = {
   minHeight: "100vh",
-  background: "#e5e7eb",
+  background: "#ffffff",
 };
 
 const content: React.CSSProperties = {
@@ -247,4 +290,9 @@ const saveButton: React.CSSProperties = {
   cursor: "pointer",
   color: "#047e00",
   backgroundColor: "rgb(243, 243, 243)",
+};
+
+const saveButtonDisabled: React.CSSProperties = {
+  cursor: "not-allowed",
+  opacity: 0.5,
 };
