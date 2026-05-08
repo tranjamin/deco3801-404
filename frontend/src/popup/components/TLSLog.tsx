@@ -32,7 +32,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     onClick={onOpenOK}
                     title="Open OK report log"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenOK}
                 >
                     <img src="/check.svg" width={24} height={24} />
@@ -46,7 +46,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     onClick={onOpenWarning}
                     title="Open OK report log"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenWarning}
                 >
                     <img src="/warning.svg" width={24} height={24} />
@@ -59,7 +59,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     onClick={onOpenExpired}
                     title="Open OK report log"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenExpired}
                 >
                     <img src="/error.svg" width={24} height={24} />
