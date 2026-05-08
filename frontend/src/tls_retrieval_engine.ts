@@ -73,8 +73,8 @@ async function detachFromTab(tabId: number): Promise<void> {
  * @param params, is the payload object for an event, e.g., for Network.responseReceived,
  * the payload contains fields including requestId, loaderId, timestamp, etc.
  */
-function handleDebuggerEvent(
-  _source: chrome.debugger.Debuggee,
+async function handleDebuggerEvent(
+  source: chrome.debugger.Debuggee,
   method: string,
   params?: any,
 ): Promise<void> {

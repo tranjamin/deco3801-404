@@ -2,52 +2,67 @@ type Props = {
     onOpenReport: () => void;
     onOpenPolicies: () => void;
     onOpenSettings: () => void;
+    onLogout: () => void;
 }
 
 export function ActionButtons({
-    onOpenReport, onOpenPolicies, onOpenSettings
+    onOpenReport, onOpenPolicies, onOpenSettings, onLogout
 }: Props) {
 
     return(
         <div style={buttonContainer}>
+            <div style={leftButtonsStyle}>
+                {/* report button */}
+                <div
+                    role="button"
+                    style={buttonStyle}
+                    onClick={onOpenReport}
+                    title="Open report log"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenReport}
+                >
+                    <img src="/view-details.svg" width={24} height={24} />
+                </div>
 
-            {/* report button */}
-            <div
-                role="button"
-                style={buttonStyle}
-                onClick={onOpenReport}
-                title="Open report log"
-                onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
-                onKeyDown={(e) => e.key === 'Enter' && onOpenReport}
-            >
-                <img src="/view-details.svg" width={24} height={24} />
+                {/* policies button */}
+                <div
+                    role="button"
+                    style={buttonStyle}
+                    onClick={onOpenPolicies}
+                    title="Open policies page"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenPolicies}
+                >
+                    <img src="/policies.svg" width={24} height={24} />
+                </div>
+
+                {/* settings button */}
+                <div
+                    role="button"
+                    style={buttonStyle}
+                    onClick={onOpenSettings}
+                    title="Open settings page"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenSettings}
+                >
+                    <img src="/settings.svg" width={24} height={24} />
+                </div>
             </div>
 
-            {/* policies button */}
+            {/* logout button */}
             <div
                 role="button"
                 style={buttonStyle}
-                onClick={onOpenPolicies}
-                title="Open policies page"
+                onClick={onLogout}
+                title="Log out of the account"
                 onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                 onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
-                onKeyDown={(e) => e.key === 'Enter' && onOpenPolicies}
+                onKeyDown={(e) => e.key === 'Enter' && onLogout}
             >
-                <img src="/policies.svg" width={24} height={24} />
-            </div>
-
-            {/* settings button */}
-            <div
-                role="button"
-                style={buttonStyle}
-                onClick={onOpenSettings}
-                title="Open settings page"
-                onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
-                onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
-                onKeyDown={(e) => e.key === 'Enter' && onOpenSettings}
-            >
-                <img src="/settings.svg" width={24} height={24} />
+                <img src="/logout.svg" width={24} height={24} />
             </div>
         </div>
     );
@@ -57,10 +72,18 @@ export function ActionButtons({
 
 // Shared style to keep buttons consistent
 const buttonContainer: React.CSSProperties = {
-    display: "flex", // flexbox to align buttons
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    padding: 8,
+    boxSizing: "border-box",
+};
+
+const leftButtonsStyle: React.CSSProperties = {
+    display: "flex",
     gap: "4px",
     alignItems: "center",
-    padding: 8
 };
 
 
