@@ -165,11 +165,24 @@ export default function Settings() {
                 Save
               </button>
             </div>
+            <div style={logoutDiv}>
+              <button type="button" style={logoutButton} onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
             </div>
         </div>
       </main>
     </div>
   );
+}
+
+import { clearStorage } from "../api/storage";
+
+function handleLogout() {
+  clearStorage().then(() => {
+    window.close();
+  });
 }
 
 const page: React.CSSProperties = {
@@ -295,4 +308,19 @@ const saveButton: React.CSSProperties = {
 const saveButtonDisabled: React.CSSProperties = {
   cursor: "not-allowed",
   opacity: 0.5,
+};
+
+const logoutButton: React.CSSProperties = {
+  padding: "8px 12px",
+  border: "1px solid #b00020",
+  borderRadius: "6px",
+  cursor: "pointer",
+  color: "#b00020",
+  backgroundColor: "#fff0f2",
+};
+
+const logoutDiv: React.CSSProperties = {
+  marginTop: "12px",
+  display: "flex",
+  justifyContent: "flex-start",
 };
