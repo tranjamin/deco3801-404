@@ -47,7 +47,7 @@ type ProtocolSelectorProps = {
   onProtocolChange: (protocol: string, checked: boolean) => void;
 };
 
-const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"];
+const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3", "QUIC"];
 
 function normalizeProtocol(protocol: string): string {
   return protocol.trim().toLowerCase().replace(/^tls\s+/, "");

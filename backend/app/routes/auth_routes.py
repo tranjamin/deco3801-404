@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from werkzeug.security import check_password_hash, generate_password_hash
 from typing import Dict, Any
 
 from app import db
@@ -87,3 +88,36 @@ def check():
     User.query.get_or_404(int(user_id))
     
     return jsonify({"authenticated": True}), 200
+
+@auth_bp.route("/change_password", methods=["POST"])
+@jwt_required()
+def change_password():
+    """
+    API endpoint which changes a user's password.
+
+    URL:
+        /check
+    Methods Supported:
+        POST
+    Requires:
+        JSON data with the following fields: "current_password", "new_password"
+    Returns:
+        On success: A JSON with an 'authenticated' boolean, Error code 200
+        On failure: Error code 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
+    """
+    data: Dict[str, Any] = request.get_json(force=True)
+    current_password: str = str(data.get("current_password", ""))
+    new_password: str = str(data.get("current_password", ""))
+
+    # checks if JWT token is authenticated
+    user_id: str = get_jwt_identity()
+    user: User = User.query.get_or_404(int(user_id))
+    
+    # checks if current password is correct
+    if not check_password_hash(user.password_hash, current_password):
+        return jsonify({"error": "unauthorised"}), 401
+    
+    # updates password
+    user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
+    
+    return jsonify({"password_updated": True}), 200
