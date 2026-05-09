@@ -4,7 +4,7 @@ import { getStoredAccessToken } from "../api/storage";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
-import GenerateReport from "./components/reportForm";
+import GenerateReport from "./components/reportform";
 import {
   filterCertificates,
   searchCertificates,
