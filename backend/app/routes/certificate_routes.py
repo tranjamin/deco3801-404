@@ -55,17 +55,19 @@ def get_one(cert_id: int):
         GET
     Returns:
         On success: A JSON containing the requested TLS certificate in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
-        On failure: Error code 404
+        On failure: {"message": "Certificate not found"}, 404 
     """
     # get the user
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
 
     # returns 404 if failed
-    cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+    cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
-    if user.username != "master" and cert.user_id != user_id:
-        return 404
+    if user is None or cert is None:
+        return {"message": "Certificate not found"}, 404 
+    elif user.username != "master" and cert.user_id != user_id:
+        return {"message": "Certificate not found"}, 404 
 
     return jsonify(cert.to_dict()), 200
 
@@ -116,25 +118,25 @@ def create():
         TLSCertificate.url == cert.url,
         # TLSCertificate.protocol == cert.protocol,
         # TLSCertificate.cipher == cert.cipher,
-        TLSCertificate.subject_name == TLSCertificate.subject_name,
-        TLSCertificate.san_list == TLSCertificate.san_list,
+        TLSCertificate.subject_name == cert.subject_name,
+        TLSCertificate.san_list == cert.san_list,
         # TLSCertificate.issuer == TLSCertificate.issuer,
         # TLSCertificate.valid_from == cert.valid_from,
         # TLSCertificate.valid_to == cert.valid_to
     ) # type: ignore
 
     # let's update the first retrieved one and delete the rest
-    print("ADDING A CERT")
     if existing_certificates.count():
-        print("Existing")
+        print("Found an existing certificate")
         existing_certificates[0].update_certificate(cert)
         for i in range(1, existing_certificates.count()):
             db.session.delete(existing_certificates[i])
+        db.session.commit()
+        return jsonify(existing_certificates[0].to_dict()), 201
     else:
         db.session.add(cert)
-    
-    db.session.commit()
-    return jsonify(cert.to_dict()), 201
+        db.session.commit()
+        return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/create_dummy", methods=["GET"])
 @jwt_required()
@@ -192,18 +194,20 @@ def delete(cert_id: int):
     Methods Supported:
         DELETE
     Returns:
-        On success: A JSON with a 'message' field, Error code 200
-        On failure: Error code 404
+        On success: {"message": "Deleted"}, 200
+        On failure: {"message": "Certificate not found"}, 404 
     """
     # get the user
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
 
     # automatically handles any errors
-    cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+    cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
-    if user.username != "master" and cert.user_id != user_id:
-        return 404
+    if user is None or cert is None:
+        return jsonify({"message": "Certificate not found"}),  404
+    elif user.username != "master" and cert.user_id != user_id:
+        return jsonify({"message": "Certificate not found"}), 404
 
     db.session.delete(cert)
     db.session.commit()
