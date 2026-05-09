@@ -3,6 +3,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from typing import List, Dict, Any
 
+from flask_sqlalchemy.query import Query
+
 from app import db
 from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
 from app.models.evaluation import evaluate_against_policy, satisfies_domain
@@ -109,7 +111,8 @@ def create():
     cert.evaluate_against_policies_and_store(applicable_policies)
 
     # now we check if an existing certificate exists. we need to decide how to replace (e.g. what if they update the protocol?)
-    existing_certificates: List[TLSCertificate] = TLSCertificate.query.filter(
+    existing_certificates: Query = TLSCertificate.query.filter(
+        TLSCertificate.user_id == cert.user_id,
         TLSCertificate.url == cert.url,
         # TLSCertificate.protocol == cert.protocol,
         # TLSCertificate.cipher == cert.cipher,
@@ -122,10 +125,10 @@ def create():
 
     # let's update the first retrieved one and delete the rest
     print("ADDING A CERT")
-    if len(existing_certificates):
+    if existing_certificates.count():
         print("Existing")
         existing_certificates[0].update_certificate(cert)
-        for i in range(1, len(existing_certificates)):
+        for i in range(1, existing_certificates.count()):
             db.session.delete(existing_certificates[i])
     else:
         db.session.add(cert)
