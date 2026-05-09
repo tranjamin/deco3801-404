@@ -1,6 +1,15 @@
 import { getStoredAccessToken } from "../api/storage";
 import { BACKEND_BASE_URL } from "../base_url";
 
+/**
+ * Represents a security policy used by the frontend UI and backend API.
+ *
+ * Fields mirror the policy model used by the backend with frontend-friendly
+ * names. This interface is used throughout the UI to present and edit
+ * policies.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export interface SecurityPolicy {
   id: number;
   name: string;
@@ -15,6 +24,13 @@ export interface SecurityPolicy {
   validFor: number; //days remaining until expiration
 }
 
+/**
+ * Shape of the policy when exported to or imported from a JSON file.
+ *
+ * This excludes `id` (created by backend)
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export interface ExportedPolicy {
   name: string;
   description: string;
@@ -30,6 +46,12 @@ export interface ExportedPolicy {
   SCT: boolean; //DELETE THIS
 }
 
+/**
+ * Raw policy shape received from/sent to the backend API. This is looser
+ * than the frontend `SecurityPolicy` and uses backend naming conventions.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 type RawPolicy = {
   id: number;
   name?: string;
@@ -47,10 +69,23 @@ type RawPolicy = {
 const MAX_TEXT_LENGTH = 50;
 const MAX_DESCRIPTION_LENGTH = 255;
 
+/**
+ * Type guard that returns true when the provided value is a plain object.
+ * Used to validate parsed JSON before extracting expected fields.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Parse and validate a string field from a generic object.
+ * Throws descriptive errors when validation fails so callers can report
+ * meaningful messages to the user.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function parseStringField(
   obj: Record<string, unknown>,
   fieldName: string,
@@ -69,6 +104,13 @@ function parseStringField(
   return value;
 }
 
+/**
+ * Parse and validate an array-of-strings field.
+ * Each element is checked to be a string and to not exceed `MAX_TEXT_LENGTH`.
+ * Detailed errors include the failing index to aid debugging.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function parseStringArrayField(
   obj: Record<string, unknown>,
   fieldName: string,
@@ -82,12 +124,14 @@ function parseStringArrayField(
   for (let index = 0; index < value.length; index += 1) {
     const item = value[index];
 
+    // Ensure each entry is a string - this comment was made with GPT-5 mini on 2026-05-09
     if (typeof item !== "string") {
       throw new Error(
         `'${fieldName}[${index}]' must be a string (all values in '${fieldName}' must be strings).`,
       );
     }
 
+    // Enforce a reasonable length limit to avoid extremely long inputs - this comment was made with GPT-5 mini on 2026-05-09
     if (item.length > MAX_TEXT_LENGTH) {
       throw new Error(
         `'${fieldName}[${index}]' must be ${MAX_TEXT_LENGTH} characters or less.`,
@@ -98,6 +142,11 @@ function parseStringArrayField(
   return value;
 }
 
+/**
+ * Parse and validate a boolean field.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function parseBooleanField(obj: Record<string, unknown>, fieldName: string): boolean {
   const value = obj[fieldName];
 
@@ -108,6 +157,11 @@ function parseBooleanField(obj: Record<string, unknown>, fieldName: string): boo
   return value;
 }
 
+/**
+ * Parse and validate a numeric field. Rejects NaN and non-number types.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function parseNumberField(obj: Record<string, unknown>, fieldName: string): number {
   const value = obj[fieldName];
 
@@ -118,10 +172,18 @@ function parseNumberField(obj: Record<string, unknown>, fieldName: string): numb
   return value;
 }
 
+/**
+ * Parse a policy JSON string that was exported from the UI (or manually
+ * created). This function performs shape validation and returns a
+ * canonical `ExportedPolicy` object or throws detailed errors.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function parseImportedPolicy(iPolicy: string): ExportedPolicy {
   let parsedValue: unknown;
 
   try {
+    // Parse JSON and validate that the top-level value is an object - this comment was made with GPT-5 mini on 2026-05-09
     parsedValue = JSON.parse(iPolicy);
   } catch {
     throw new Error("Policy file is not valid JSON.");
@@ -132,6 +194,7 @@ function parseImportedPolicy(iPolicy: string): ExportedPolicy {
   }
 
   return {
+    // Validate all required fields using the helper parsers above - this comment was made with GPT-5 mini on 2026-05-09
     name: parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
     description: parseStringField(
       parsedValue,
@@ -146,16 +209,22 @@ function parseImportedPolicy(iPolicy: string): ExportedPolicy {
     issuers: parseStringArrayField(parsedValue, "issuers"),
     validAfter: parseNumberField(parsedValue, "validAfter"),
     validFor: parseNumberField(parsedValue, "validFor"),
-
     SANs: parseStringArrayField(parsedValue, "SANs"),//DELETE THIS
     SCT: parseBooleanField(parsedValue, "SCT"),//DELETE THIS
   };
 }
 
+/**
+ * Map frontend `SecurityPolicy` to the backend `RawPolicy` shape expected by
+ * the API. Note: `id` is omitted because it is assigned by the backend.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"> {
   return {
     name: policy.name,
     description: policy.description,
+
     //active: policy.active,
     domains: policy.domains,
     validProtocols: policy.protocols,
@@ -167,22 +236,13 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
   };
 }
 
-export const DefaultPolicy1: SecurityPolicy = {
-  id: 12312,
-  name: "My Policy",
-  description: "Default 1",
-  active: true,
-  domains: [],
-  protocols: ["1.2", "1.3"],
-  ciphers: [],
-  subjects: [],
-  issuers: [],
-  validAfter: 50,
-  validFor: 10,
-};
-
-//Need to include 2 more default policies and update the above to be industry standard
-
+/**
+ * Import a policy JSON string and store it as a new policy via the backend
+ * API. Returns the created `SecurityPolicy` (with `id` filled by backend)
+ * or throws on validation/network errors.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function importPolicy(iPolicy: string) {
   const exportedPolicy = parseImportedPolicy(iPolicy);
   const cPolicy: SecurityPolicy = {
@@ -193,6 +253,12 @@ export async function importPolicy(iPolicy: string) {
   return cPolicy;
 }
 
+/**
+ * Export a policy to a JSON file and trigger browser download. The filename
+ * is sanitized based on the policy name to be filesystem-safe.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function exportPolicy(cPolicy: SecurityPolicy) {
   const sPolicy: ExportedPolicy = {
     name: cPolicy.name,
@@ -212,10 +278,12 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
   const blob = new Blob([ePolicy], { type: "application/json" });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
+  // Sanitize policy name to remove special characters for safe filename - this comment was made with GPT-5 mini on 2026-05-09
   const safeName = (cPolicy.name || "policy")
     .trim()
     .replace(/[^a-zA-Z0-9_-]+/g, "_");
 
+  // Create a temporary download link and trigger browser download - this comment was made with GPT-5 mini on 2026-05-09
   link.href = objectUrl;
   link.download = `${safeName || "policy"}.json`;
   document.body.appendChild(link);
@@ -226,30 +294,13 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
   return ePolicy;
 }
 
-// export async function storeNewPolicy(policy: SecurityPolicy) {
-//   var existingEntries;
-//   chrome.storage.local.get(["policies"]).then((policiesString) => {
-//     existingEntries = policiesString.key;
-//   });
-//   if (existingEntries == null) existingEntries = "";
-//   var existingJSONEntries: SecurityPolicy[] = JSON.parse(existingEntries);
-//   var newPolicyID = 0;
-//   chrome.storage.local.get(["numPolicies"]).then((numPolicies) => {
-//     if (typeof numPolicies.key === "number") {
-//       newPolicyID = numPolicies.key + 1;
-//     }
-//   });
-//   existingJSONEntries.push(policy);
-//   chrome.storage.local.set({ policies: existingJSONEntries }).then(() => {
-//     console.log("Value is set");
-//   });
-//   chrome.storage.local.set({ numPolicies: newPolicyID }).then(() => {
-//     console.log("Value is set");
-//   });
-// }
-
+/**
+ * Create a dummy policy on the backend. Returns a message object on
+ * success or `null` on error.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function addDummyPolicy(): Promise<{ message: string } | null> {
-  //console.log("sending this", JSON.stringify(mapPolicyToBackendPayload(policy)));
   try {
     const accessToken = await getStoredAccessToken();
     const headers = {
@@ -260,7 +311,6 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
     const response = await fetch(`${BACKEND_BASE_URL}/api/policies/create_dummy`, {
       method: "GET",
       headers: headers,
-      //body: JSON.stringify(mapPolicyToBackendPayload(policy)),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -273,6 +323,12 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
   }
 }
 
+/**
+ * Create a new policy record via the backend API and return the created
+ * `SecurityPolicy` (mapped from backend response). Returns `null` on error.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function storeNewPolicy(
   policy: SecurityPolicy,
 ): Promise<SecurityPolicy | null> {
@@ -283,6 +339,7 @@ export async function storeNewPolicy(
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
+      // Include auth token if available for authenticated requests - this comment was made with GPT-5 mini on 2026-05-09
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
@@ -302,6 +359,12 @@ export async function storeNewPolicy(
   }
 }
 
+/**
+ * Set the policy active flag to `true` via the API. Returns a message on
+ * success or `null` on failure.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function activatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
@@ -329,6 +392,12 @@ export async function activatePolicy(
   }
 }
 
+/**
+ * Set the policy active flag to `false` via the API. Returns a message on
+ * success or `null` on failure.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function deactivatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
@@ -356,6 +425,12 @@ export async function deactivatePolicy(
   }
 }
 
+/**
+ * Update a policy's fields via the backend API. Returns parsed response or
+ * `null` on failure.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
   console.log(policy, policyID);
   try {
@@ -382,6 +457,12 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
   }
 }
 
+/**
+ * Delete a policy by id via the backend API. Returns parsed response or
+ * `null` on failure.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function deletePolicy(policyID: number) {
   console.log(policyID);
   try {
@@ -406,6 +487,12 @@ export async function deletePolicy(policyID: number) {
   }
 }
 
+/**
+ * Fetch a single policy by id and map the backend response to frontend
+ * `SecurityPolicy` representation. Returns `null` on error.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function getPolicy(policyID: number) {
   try {
     const accessToken = await getStoredAccessToken();
@@ -429,6 +516,12 @@ export async function getPolicy(policyID: number) {
   }
 }
 
+/**
+ * Fetch all policies from the backend and return them as an array of
+ * `SecurityPolicy` objects. Returns `null` on error.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export async function getAllPolicies() {
   try {
     const accessToken = await getStoredAccessToken();
@@ -452,7 +545,15 @@ export async function getAllPolicies() {
   }
 }
 
+/**
+ * Map backend `RawPolicy` records to frontend `SecurityPolicy` objects.
+ * Applies safe defaults for missing fields to prevent undefined values in the UI.
+ *
+ * this docstring was made with GPT-5 mini on 2026-05-09
+ */
 export function mapJSONtoPolicies(jsonInput: RawPolicy[]): SecurityPolicy[] {
+  // Transform each raw policy from backend to frontend representation,
+  // remapping field names and providing defaults for optional fields - this comment was made with GPT-5 mini on 2026-05-09
   return jsonInput.map((policy) => ({
     id: policy.id,
     name: policy.name ?? "Unnamed Policy",

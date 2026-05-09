@@ -303,18 +303,12 @@ async function logVisitToBackend(
   }
 }
 
+/**
+ * Takes a certificate security details payload and modifies the
+ * format to be compatible with the extension popup component
+ */
 async function prepCurrentCertForDisplay(payload: object) {
   console.log(payload);
-  // const tempVar = {
-  //   id: "1",
-  //   protocol: "TLS 1.3",
-  //   cipher: "TLS_AES_256_GCM_SHA384",
-  //   subjectName: "example.com",
-  //   sanList: ["example.com", "www.example.com"],
-  //   issuer: "Let's Encrypt",
-  //   validFrom: "2025-01-01T00:00:00Z",
-  //   validTo: "2026-01-01T00:00:00Z"
-  // }
   const p = payload as Record<string, unknown>;
   const readStr = (key: string, fallback = "") =>
     typeof p[key] === "string" ? (p[key] as string) : fallback;
@@ -333,6 +327,9 @@ async function prepCurrentCertForDisplay(payload: object) {
   return tempVar;
 }
 
+/**
+ * Stores a certificate security details payload in local storage
+ */
 async function storeCurrentCert(payload: object) {
   console.log("storing cert");
   const formattedCert = JSON.stringify(
