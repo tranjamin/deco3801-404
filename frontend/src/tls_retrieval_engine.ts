@@ -168,6 +168,11 @@ async function handleOnUpdate(
   changeInfo: { url?: string },
   tab: chrome.tabs.Tab,
 ): Promise<void> {
+  const accessToken = await getStoredAccessToken();
+  if (!accessToken) {
+     console.log("User is not signed in. Skipping TLS retrieval.");
+     return;
+  }
   if (!changeInfo.url) {
     return;
   }
