@@ -7,7 +7,7 @@ export default function GenerateReport() {
             <div style={buttonContainer}>
                 <div 
                     style={buttonStyle}
-                    onClick={noop}
+                    onClick={noop} // enter function here
                     title="Open settings page"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                     onMouseOut={(e) => (e.currentTarget.style.background = "#f8f9fa")}
