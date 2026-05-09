@@ -36,7 +36,7 @@ def get_all():
     else:
         certs: List[CertificatePolicy] = CertificatePolicy.query.filter(
             CertificatePolicy.user_id == user_id
-        )
+        ) # type: ignore
 
     return jsonify([c.to_dict() for c in certs]), 200
 
@@ -113,6 +113,7 @@ def create():
         On failure: JSON with an 'error' field, Error code 400
     """
     data: Dict[str, Any] = request.get_json(force=True)
+    print(data)
     policy: CertificatePolicy | None = CertificatePolicy.from_dict(data)
 
     if policy is None:
@@ -187,9 +188,9 @@ def update_policy(policy_id: int):
     policy.name = new_policy.name
     policy.valid_protocols = new_policy.valid_protocols
     policy.valid_subjects = new_policy.valid_subjects
-    policy.valid_sans = new_policy.valid_sans
     policy.valid_issuers = new_policy.valid_issuers
     policy.valid_ciphers = new_policy.valid_ciphers
+    policy.valid_domains = new_policy.valid_domains
     policy.min_certificate_lifespan = new_policy.min_certificate_lifespan
     policy.min_certificate_days_left = new_policy.min_certificate_days_left
 
@@ -258,8 +259,8 @@ def create_dummy_data():
         valid_protocols=Protocols.encode(["tls 1.0", "tls 1.1"]),
         valid_subjects=["Dummy subject 1", "Dummy subject 2"],
         valid_issuers=["Dummy issuer 1", "Dummy issuer 2"],
-        valid_sans=["www.san1.dummy.com", "www.san2.dummy.com"],
         valid_ciphers=["Dummy cipher 1", "Dummy cipher 2"],
+        valid_domains=[".uq.edu.au", ".google.com"],
         
         min_certificate_lifespan=45,
         min_certificate_days_left=7,

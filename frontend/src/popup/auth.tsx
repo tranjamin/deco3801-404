@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { setStoredAccessToken } from "../api/storage";
+import { BACKEND_BASE_URL } from "../base_url";
 import "./auth.css";
-
-export const baseUrl: string = "https://deco3801-404.onrender.com/";
 
 type AuthMode = "login" | "register";
 
@@ -20,7 +19,7 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
 
     try {
       const endpoint = mode === "login" ? "login" : "register";
-      const res = await fetch(`${baseUrl}api/auth/${endpoint}`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/auth/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

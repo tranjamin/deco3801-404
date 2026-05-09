@@ -1,6 +1,5 @@
 import { getStoredAccessToken } from "../api/storage";
-
-export const baseUrl: string = "https://deco3801-404.onrender.com/";
+import { BACKEND_BASE_URL } from "../base_url";
 
 export interface SecurityPolicy {
   id: number;
@@ -43,8 +42,6 @@ type RawPolicy = {
   validIssuers?: string[];
   minCertificateDaysLeft?: number;
   minCertificateLifespan?: number;
-  validSans?: string[];//DELETE THIS
-  needsSct?: boolean;//DELETE THIS
 };
 
 const MAX_TEXT_LENGTH = 50;
@@ -160,15 +157,13 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
     name: policy.name,
     description: policy.description,
     //active: policy.active,
-    //domains: policy.domains,
+    domains: policy.domains,
     validProtocols: policy.protocols,
     validCiphers: policy.ciphers,
     validSubjects: policy.subjects,
     validIssuers: policy.issuers,
     minCertificateDaysLeft: policy.validFor,
     minCertificateLifespan: policy.validAfter,
-    validSans: [],//DELETE THIS
-    needsSct: false,//DELETE THIS
   };
 }
 
@@ -262,7 +257,7 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
-    const response = await fetch(`${baseUrl}/api/policies/create_dummy`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/create_dummy`, {
       method: "GET",
       headers: headers,
       //body: JSON.stringify(mapPolicyToBackendPayload(policy)),
@@ -291,7 +286,7 @@ export async function storeNewPolicy(
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
-    const response = await fetch(`${baseUrl}/api/policies/`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/`, {
       method: "POST",
       headers,
       body: JSON.stringify(mapPolicyToBackendPayload(policy)),
@@ -318,7 +313,7 @@ export async function activatePolicy(
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
-    const response = await fetch(`${baseUrl}/api/policies/${policyID}/active`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/${policyID}/active`, {
       method: "PUT",
       headers,
       body: JSON.stringify({ active: true }),
@@ -345,7 +340,7 @@ export async function deactivatePolicy(
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
-    const response = await fetch(`${baseUrl}/api/policies/${policyID}/active`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/${policyID}/active`, {
       method: "PUT",
       headers,
       body: JSON.stringify({ active: false }),
@@ -371,7 +366,7 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
-    const response = await fetch(`${baseUrl}/api/policies/${policyID}/update`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/${policyID}/update`, {
       method: "PUT",
       headers,
       body: JSON.stringify(mapPolicyToBackendPayload(policy)),
@@ -396,7 +391,7 @@ export async function deletePolicy(policyID: number) {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
 
-    const response = await fetch(`${baseUrl}/api/policies/${policyID}`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/${policyID}`, {
       method: "DELETE",
       headers,
     });
@@ -419,7 +414,7 @@ export async function getPolicy(policyID: number) {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
-    const response = await fetch(`${baseUrl}/api/policies/${policyID}`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/${policyID}`, {
       method: "GET",
       headers: headers,
     });
@@ -442,7 +437,7 @@ export async function getAllPolicies() {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     };
-    const response = await fetch(`${baseUrl}/api/policies/`, {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/policies/`, {
       method: "GET",
       headers: headers,
     });

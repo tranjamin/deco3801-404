@@ -1,11 +1,11 @@
-import { setCurrentCertificateData, getStoredAccessToken } from "./api/storage";
+import { setCurrentCertificateData, getStoredAccessToken} from "./api/storage";
+import { BACKEND_BASE_URL } from "./base_url";
 
 console.log("TLS Retrieval Engine service worker loaded.");
 
 let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 //const CUR_CERT_STORAGE_KEY = "currentCert";
