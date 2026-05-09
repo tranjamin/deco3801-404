@@ -4,7 +4,7 @@ import { getStoredAccessToken } from "../api/storage";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
-import GenerateReport from "./components/reportform";
+import GenerateReport from "./components/reportForm";
 import {
   filterCertificates,
   searchCertificates,
@@ -80,6 +80,19 @@ function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
   };
 }
 
+
+const getInitialStatusFilter = () => {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get("status");
+
+  if (status === "ok" || status === "warning" || status === "expired") {
+    return [status];
+  }
+
+  return [];
+}
+
+
 export default function Report() {
   const [sidebarOpen] = useState(true);
   const sidebarWidth = sidebarOpen ? 220 : 0;
@@ -90,7 +103,7 @@ export default function Report() {
 
   const [sortBy, setSortBy] = useState("default");
   const [filters, setFilters] = useState({
-    status: [] as string[],
+    status: getInitialStatusFilter(),
     protocol: [] as string[],
   });
   const [searchQuery, setSearchQuery] = useState("");

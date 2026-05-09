@@ -51,7 +51,7 @@ export default function ReportTable({ data }: Props) {
                                     <td style={cipherCellStyle}>{cert.cipher}</td>
                                     <td style={dateCellStyle}>{cert.validFrom}</td>
                                     <td style={dateCellStyle}>{cert.validTo}</td>
-                                    <td style={cellStyle}>{cert.desc}</td>
+                                    <td style={descCellStyle}>{cert.desc}</td>
                                 </tr>
                             );
                         })
@@ -109,34 +109,48 @@ const headerCellStyle: React.CSSProperties = {
 
 const domainCellStyle: React.CSSProperties = {
     ...cellStyle,
-    width: "120px"
+    minWidth: "120px",
+    maxWidth: "120px",
 };
 
 
 const issuerCellStyle: React.CSSProperties = {
     ...cellStyle,
-    width: "300px",
+    minWidth: "300px",
+    maxWidth: "300px",
 };
 
 
 const protocolCellStyle: React.CSSProperties = {
     ...cellStyle,
+    minWidth: "80px",
+    maxWidth: "80px",
 };
 
 
 const statusCellStyle: React.CSSProperties = {
     ...cellStyle,
-    width: "120px",
+    minWidth: "120px",
+    maxWidth: "120px",
 };
 
 
 const cipherCellStyle: React.CSSProperties = {
     ...cellStyle,
-    width: "240px",
+    minWidth: "200px",
+    maxWidth: "200px",
 };
 
 
 const dateCellStyle: React.CSSProperties = {
     ...cellStyle,
-    width: "80px",
+    minWidth: "80px",
+    maxWidth: "80px",
+};
+
+
+const descCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    minWidth: "220px",
+    maxWidth: "220px",
 };
