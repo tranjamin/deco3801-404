@@ -5,14 +5,12 @@ console.log("TLS Retrieval Engine service worker loaded.");
 let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
+const processingCerts = new Set<string>();
+const completedCerts = new Set<string>();
+
 const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
-//const CUR_CERT_STORAGE_KEY = "currentCert";
-
-/**
- * Need to create a filter that only allows
- */
 
 /**
  * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the
@@ -24,16 +22,16 @@ const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
  * @param tab (chrome.tabs.Tab object)
  * @returns N/A
  */
-async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
+async function attachToTab(tab: chrome.tabs.Tab): Promise<boolean> {
   try {
     if (tab.id === undefined) {
       console.error("Tab has no id.");
-      return;
+      return false;
     }
 
     if (!tab.url || !tab.url.startsWith("http")) {
       console.error("Tab is not a normal web page:", tab.url);
-      return;
+      return false;
     }
 
     const target: chrome.debugger.Debuggee = {
@@ -45,17 +43,43 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<void> {
 
     await chrome.debugger.sendCommand(target, "Network.enable");
     console.log("Network tracking enabled.");
+
+    return true;
   } catch (error) {
     console.error("Failed during attach / enable:", error);
+    return false;
   }
 }
 
 async function detachFromTab(tabId: number): Promise<void> {
   try {
-    await chrome.debugger.detach({ tabId: tabId });
+    await chrome.debugger.detach({tabId});
     console.log(`Detached debugger from tab ${tabId}.`);
   } catch (error) {
-    console.error("Failed to detach debugger:", error);
+    console.warn("Failed to detach debugger:", error);
+  } finally {
+    if (attachedTabId === tabId) {
+      attachedTabId = null;
+      selectedTab = null;
+    }
+
+    clearCertStateForTab(tabId);
+  }
+}
+
+function clearCertStateForTab(tabId: number): void {
+  const prefix = `${tabId}:`;
+
+  for (const key of processingCerts) {
+    if (key.startsWith(prefix)) {
+      processingCerts.delete(key);
+    }
+  }
+
+  for (const key of completedCerts) {
+    if (key.startsWith(prefix)) {
+      completedCerts.delete(key);
+    }
   }
 }
 
@@ -78,9 +102,18 @@ async function handleDebuggerEvent(
   method: string,
   params?: any,
 ): Promise<void> {
+
   if (method !== "Network.responseReceived") {
     return;
   }
+
+  const tabId = source.tabId;
+  
+  if (tabId === undefined) {
+    return;
+  }
+
+  const sourceTab = await chrome.tabs.get(tabId);
 
   console.log("A Network.responseReceived event was received.");
 
@@ -98,70 +131,62 @@ async function handleDebuggerEvent(
     return;
   }
 
-  if (!selectedTab?.url) {
+  if (!sourceTab?.url) {
     console.log("No selected tab stored.");
     return;
   }
 
   const responseHostname = new URL(response.url).hostname;
-  const selectedHostname = new URL(selectedTab.url).hostname;
-
-  if (responseHostname === selectedHostname) {
-    const payload = {
-      url: response.url,
-      protocol: securityDetails.protocol,
-      cipher: securityDetails.cipher ?? "",
-      subjectName: securityDetails.subjectName ?? "",
-      sanList: securityDetails.sanList ?? [],
-      issuer: securityDetails.issuer ?? "",
-      validFrom: Math.trunc(securityDetails.validFrom),
-      validTo: Math.trunc(securityDetails.validTo),
-      certificateTransparencyCompliance:
-        securityDetails.certificateTransparencyCompliance ?? "unknown",
-    };
-
-    console.log("TLS certificate payload captured.");
-    console.log(JSON.stringify(payload, null, 2));
-
-    await sendCertToBackend(payload);
-
-    if (source.tabId !== undefined) {
-      await detachFromTab(source.tabId);
-      attachedTabId = null;
-    }
-
+  const sourceTabHostname = new URL(sourceTab.url).hostname;
+  
+  if (responseHostname !== sourceTabHostname) {
+    console.log(`TLS security details received, but hostname did not match. Response hostname is ${responseHostname},
+      source tab hostname is ${sourceTabHostname}.`);
     return;
   }
 
-  console.log(
-    `TLS security details received, but hostname did not match. Response Hostname is ${responseHostname} but select hostname is ${selectedHostname}`,
-  );
+  const certKey = `${tabId}:${sourceTabHostname}`;
 
-  //console.log(securityDetails);
-}
+  if (processingCerts.has(certKey) || completedCerts.has(certKey)) {
+    console.log(`TLS certificate already handled for ${certKey}. Skipping duplicate.`);
+    return;
+  }
 
-/**
- * Writes to console that the extension has been clicked, and runs the attachToTab method.
- * It also selects the tab, which will determine the selectedHostname to be compared
- * with when recording TLS metadata.
- * @param tab (chrome.tabs.Tab object)
- */
+  processingCerts.add(certKey);
 
-// function handleActionClick(tab: chrome.tabs.Tab): void {
-//   console.log("Extension icon clicked.");
-//   selectedTab = tab;
-//   attachToTab(tab);
-// }
+  if (source.tabId === undefined) {
+    console.log("No tabId found for debugger event.");
+    return;
+  }
 
-/**
- *
- * @returns the current tab that the user is currently on
- */
-//async function getCurrentTab() {
-//let queryOptions = {active: true, lastFocusedWindow: true};
-//let [tab] = await chrome.tabs.query(queryOptions);
-//return tab;
-//}
+  const payload = {
+        url: response.url,
+        protocol: securityDetails.protocol,
+        cipher: securityDetails.cipher ?? "",
+        subjectName: securityDetails.subjectName ?? "",
+        sanList: securityDetails.sanList ?? [],
+        issuer: securityDetails.issuer ?? "",
+        validFrom: Math.trunc(securityDetails.validFrom),
+        validTo: Math.trunc(securityDetails.validTo),
+        certificateTransparencyCompliance:
+          securityDetails.certificateTransparencyCompliance ?? "unknown",
+      };
+
+      try {
+        console.log("TLS certificate payload captured.");
+        console.log(JSON.stringify(payload, null, 2)); 
+
+        await sendCertToBackend(payload);
+
+        completedCerts.add(certKey);
+        console.log(`TLS certificate sent successfully for ${certKey}.`)
+      } catch (error) {
+        console.error("Failed to send to backend:", error);
+      } finally {
+        processingCerts.delete(certKey);
+      }   
+
+  }
 
 async function handleOnUpdate(
   _tabId: number,
@@ -169,6 +194,7 @@ async function handleOnUpdate(
   tab: chrome.tabs.Tab,
 ): Promise<void> {
   const accessToken = await getStoredAccessToken();
+
   if (!accessToken) {
      console.log("User is not signed in. Skipping TLS retrieval.");
      return;
@@ -189,26 +215,38 @@ async function handleOnUpdate(
     return;
   }
 
-  const window = await chrome.windows.get(tab.windowId);
+  const currentWindow = await chrome.windows.get(tab.windowId);
 
-  if (!window.focused) {
+  if (!currentWindow.focused) {
     return;
   }
   if (tab.id === undefined) {
     return;
   }
-  if (attachedTabId !== null) {
+  if (attachedTabId === tab.id) {
+    console.log("Debugger already attached to this tab.");
+    selectedTab = tab;
+    return;
+  }
+  if (attachedTabId !== null && attachedTabId !== tab.id) {
     console.log(
-      "Debugger already attached - waiting for current capture to finish.",
+      `Debugger currently attached to tab ${attachedTabId}. Detaching before switching to tab ${tab.id}.`
     );
+
+    await detachFromTab(attachedTabId);
+  }
+
+  console.log("tls_retriever is listening.");
+
+  const attached = await attachToTab(tab);
+
+  if (!attached) {
     return;
   }
 
   selectedTab = tab;
   attachedTabId = tab.id;
 
-  console.log("tls_retriever is listening.");
-  await attachToTab(selectedTab);
 }
 
 /**
@@ -310,16 +348,7 @@ async function logVisitToBackend(
 
 async function prepCurrentCertForDisplay(payload: object) {
   console.log(payload);
-  // const tempVar = {
-  //   id: "1",
-  //   protocol: "TLS 1.3",
-  //   cipher: "TLS_AES_256_GCM_SHA384",
-  //   subjectName: "example.com",
-  //   sanList: ["example.com", "www.example.com"],
-  //   issuer: "Let's Encrypt",
-  //   validFrom: "2025-01-01T00:00:00Z",
-  //   validTo: "2026-01-01T00:00:00Z"
-  // }
+
   const p = payload as Record<string, unknown>;
   const readStr = (key: string, fallback = "") =>
     typeof p[key] === "string" ? (p[key] as string) : fallback;
