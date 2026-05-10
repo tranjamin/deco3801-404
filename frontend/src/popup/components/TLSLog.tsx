@@ -30,7 +30,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     role="button"
                     style={itemStyle}
                     onClick={onOpenOK}
-                    title="Open OK report log"
+                    title="Open OK reports"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                     onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenOK}
@@ -44,7 +44,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     role="button"
                     style={itemStyle}
                     onClick={onOpenWarning}
-                    title="Open OK report log"
+                    title="Open warning reports"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                     onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenWarning}
@@ -57,7 +57,7 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                     role="button"
                     style={itemStyle}
                     onClick={onOpenExpired}
-                    title="Open OK report log"
+                    title="Open expired reports"
                     onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
                     onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
                     onKeyDown={(e) => e.key === 'Enter' && onOpenExpired}
