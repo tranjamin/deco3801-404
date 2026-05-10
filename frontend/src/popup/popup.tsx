@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import Home from "./home";
 import Auth from "./auth";
 import { getStoredAccessToken } from "../api/storage";
-
-export const baseUrl: string = "https://deco3801-404.onrender.com/";
+import { BACKEND_BASE_URL } from "../base_url";
 
 export default function Popup() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -18,7 +17,7 @@ export default function Popup() {
           return;
         }
 
-        const res = await fetch(`${baseUrl}api/auth/check`, {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/auth/check`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

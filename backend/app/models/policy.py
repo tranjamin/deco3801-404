@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 POLICY_NAME_MAXLEN = 50
 POLICY_DESC_MAXLEN = 255
 POLICY_SUBJ_MAXLEN = 50
-POLICY_SANS_MAXLEN = 50
 POLICY_ISSU_MAXLEN = 50
 POLICY_CIPH_MAXLEN = 50
-POLICY_MAX_ARRAY_SIZE = 20
+POLICY_DOMA_MAXLEN = 50
+POLICY_MAX_ARRAY_SIZE = 50
 
 class CertificatePolicy(db.Model):
     """
@@ -33,9 +33,9 @@ class CertificatePolicy(db.Model):
         
         valid_protocols (integer): the protocols which are considered valid, encoded as a bitvector
         valid_subjects (ARRAY(string[50])): subjects which are considered valid
-        valid_sans (ARRAY(string[50])): sans for this policy
         valid_issuers (ARRAY(string[50])): certificate authorities which are considered valid
         valid_ciphers (ARRAY(string[50])): ciphers which are valid
+        valid_domains (string[50]): the domains this policy applies to
         
         min_certificate_lifespan (integer): the minimum number of days certificates can be valid for
         min_certificate_days_left (integer): minimum number of days remaining a certificate must be valid for
@@ -54,15 +54,15 @@ class CertificatePolicy(db.Model):
     
     valid_protocols: Mapped[int] = db.Column(db.Integer, nullable=False)
     valid_subjects: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_SUBJ_MAXLEN)), nullable=False)
-    valid_sans: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_SANS_MAXLEN)), nullable=False)
     valid_issuers: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_ISSU_MAXLEN)), nullable=False)
     valid_ciphers: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_CIPH_MAXLEN)), nullable=False)
+    valid_domains: Mapped[List[str]] = db.Column(ARRAY(db.String(POLICY_DOMA_MAXLEN)), nullable=False)
     
     min_certificate_lifespan: Mapped[int] = db.Column(db.Integer, nullable=False)
     min_certificate_days_left: Mapped[int] = db.Column(db.Integer, nullable=False)
 
     user_id: Mapped[int] = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    user: Mapped[User] = db.relationship("User", back_populates="policies")
+    user: Mapped[User] = db.relationship("User", back_populates="policies") # type: ignore
     
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -78,8 +78,8 @@ class CertificatePolicy(db.Model):
             "validProtocols": Protocols.decode(self.valid_protocols),
             "validSubjects": self.valid_subjects,
             "validIssuers": self.valid_issuers,
-            "validSans": self.valid_sans,
-            "validCiphers": self.valid_ciphers,            
+            "validCiphers": self.valid_ciphers,
+            "domains": self.valid_domains,
             
             "minCertificateLifespan": self.min_certificate_lifespan,
             "minCertificateDaysLeft": self.min_certificate_days_left,
@@ -90,7 +90,8 @@ class CertificatePolicy(db.Model):
         """
         Creates a TLSCertificate instance from a dictionary. Returns None if dictionary is invalid, on the following conditions:
             - Fields have the incorrect data type (lists can be parsed from strings)
-            - Some required fields are missing (validProtocols, validSubjects)
+            - All missing data is allowed and replaced with defaults
+            - Lifespan data is <0
         """
 
         # trim down all strings to their required length. modifies the data
@@ -98,56 +99,54 @@ class CertificatePolicy(db.Model):
         
         ## 
         if isinstance(data.get("name", ""), str):
-            data["name"] = data["name"][:POLICY_NAME_MAXLEN]
+            data["name"] = data.get("name", "")[:POLICY_NAME_MAXLEN]
         else:
             return None
         
         ##
         if isinstance(data.get("description", ""), str):
-            data["description"] = data["description"][:POLICY_DESC_MAXLEN]
+            data["description"] = data.get("description","")[:POLICY_DESC_MAXLEN]
         else:
             return None
         
         ##
         if isinstance(data.get("validProtocols"), str):
             data["validProtocols"] = [data["validProtocols"]]
-        elif not isinstance(data.get("validProtocols"), list):
+        elif not isinstance(data.get("validProtocols", []), list):
             return None 
         protocol_bv: int = Protocols.encode(data.get("validProtocols", []))
-        if not protocol_bv:
-            return None
         
         ##
         if isinstance(data.get("validSubjects"), str):
             data["validSubjects"] = [data["validSubjects"][:POLICY_SUBJ_MAXLEN]]
-        elif not isinstance(data.get("validSubjects"), list):
+        elif not isinstance(data.get("validSubjects", []), list):
             return None
         else:
-            data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data["validSubjects"]][:POLICY_MAX_ARRAY_SIZE]
+            data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data.get("validSubjects", [])][:POLICY_MAX_ARRAY_SIZE]
         
         ##
         if isinstance(data.get("validIssuers"), str):
             data["validIssuers"] = [data["validIssuers"][:POLICY_ISSU_MAXLEN]]
-        elif not isinstance(data.get("validIssuers"), list):
+        elif not isinstance(data.get("validIssuers", []), list):
             return None
         else:
-            data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data["validIssuers"]][:POLICY_MAX_ARRAY_SIZE]
-            
-        ##
-        if isinstance(data.get("validSans"), str):
-            data["validSans"] = [data["validSans"][:POLICY_SANS_MAXLEN]]
-        elif not isinstance(data.get("validSans"), list):
-            return None
-        else:
-            data["validSans"] = [i[:POLICY_SANS_MAXLEN] for i in data["validSans"]][:POLICY_MAX_ARRAY_SIZE]
+            data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data.get("validIssuers", [])][:POLICY_MAX_ARRAY_SIZE]
             
         ##
         if isinstance(data.get("validCiphers"), str):
             data["validCiphers"] = [data["validCiphers"][:POLICY_CIPH_MAXLEN]]
-        elif not isinstance(data.get("validCiphers"), list):
+        elif not isinstance(data.get("validCiphers", []), list):
             return None
         else:
-            data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data["validCiphers"]][:POLICY_MAX_ARRAY_SIZE]
+            data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data.get("validCiphers", [])][:POLICY_MAX_ARRAY_SIZE]
+        
+        ##
+        if isinstance(data.get("domains"), str):
+            data["domains"] = [data["domains"][:POLICY_DOMA_MAXLEN]]
+        elif not isinstance(data.get("domains", []), list):
+            return None
+        else:
+            data["domains"] = [i[:POLICY_DOMA_MAXLEN] for i in data.get("domains", [])][:POLICY_MAX_ARRAY_SIZE]
         
         ##
         if not isinstance(data.get("minCertificateLifespan", 0), int):
@@ -161,10 +160,6 @@ class CertificatePolicy(db.Model):
         elif data.get("minCertificateDaysLeft", 0) < 0:
             return None
         
-        ##
-        if not isinstance(data.get("needsSct", False), bool):
-            return None
-        
         # extraneous fields are ignored
         # any other errors are simply ignored or replaced by defaults in the constructor
         policy = CertificatePolicy(
@@ -174,8 +169,8 @@ class CertificatePolicy(db.Model):
             valid_protocols=protocol_bv,
             valid_subjects=data.get("validSubjects", []),
             valid_issuers=data.get("validIssuers", []),
-            valid_sans=data.get("validSans", []),
             valid_ciphers=data.get("validCiphers", []),
+            valid_domains=data.get("domains", []),
             
             min_certificate_lifespan=data.get("minCertificateLifespan", 0),
             min_certificate_days_left=data.get("minCertificateDaysLeft", 0),

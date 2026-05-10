@@ -1,6 +1,10 @@
 import React from "react";
 import { type  SecurityPolicy, activatePolicy, deactivatePolicy } from "../../policySharing/policySharing";
 
+/**
+ * Props for PolicyStub component that displays a policy summary card.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type PolicyStubProps = {
     policy: SecurityPolicy;
     onSelect: (policy: SecurityPolicy, isDefault?: boolean) => void;
@@ -8,13 +12,26 @@ type PolicyStubProps = {
     isDefault?: boolean;
 };
 
+/**
+ * Component displaying a policy as a selectable card with name, description, and status.
+ * Allows quick activation/deactivation via buttons.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 export default function PolicyStub({ policy, onSelect, isSelected, isDefault }: PolicyStubProps) {
+    /**
+     * Activate policy and reload page to show updated state.
+     * this comment was made with GPT-5 mini on 2026-05-09
+     */
     const handleActivate = async () => {
         console.log("sending activated policy to API");
         await activatePolicy(policy.id);
         window.location.reload();
     }
 
+    /**
+     * Deactivate policy and reload page to show updated state.
+     * this comment was made with GPT-5 mini on 2026-05-09
+     */
     const handleDeactivate = async () => {
         console.log("sending deactivated policy to API");
          await deactivatePolicy(policy.id);
@@ -65,8 +82,8 @@ const stub: React.CSSProperties = {
 };
 
 const selectedStub: React.CSSProperties = {
-    border: "3px solid #000",   // thicker border
-    boxShadow: "0 0 0 1px #00000020", // optional subtle emphasis
+    border: "3px solid #000",   
+    boxShadow: "0 0 0 1px #00000020",
     
 };
 

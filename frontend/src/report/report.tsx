@@ -80,6 +80,19 @@ function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
   };
 }
 
+
+const getInitialStatusFilter = () => {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get("status");
+
+  if (status === "ok" || status === "warning" || status === "expired") {
+    return [status];
+  }
+
+  return [];
+}
+
+
 export default function Report() {
   const [sidebarOpen] = useState(true);
   const sidebarWidth = sidebarOpen ? 220 : 0;
@@ -90,7 +103,7 @@ export default function Report() {
 
   const [sortBy, setSortBy] = useState("default");
   const [filters, setFilters] = useState({
-    status: [] as string[],
+    status: getInitialStatusFilter(),
     protocol: [] as string[],
   });
   const [searchQuery, setSearchQuery] = useState("");

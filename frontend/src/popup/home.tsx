@@ -35,6 +35,8 @@ export default function Home() {
     console.log(tempData);
     if (tempData) {
       setTransformedData(transformSingleCert(JSON.parse(tempData)));
+
+      // mockTLSData -> all certs
       const allDataTransformed = transformCertificates(mockTLSData);
       setStats(countStatus(allDataTransformed));
     }
@@ -66,6 +68,20 @@ export default function Home() {
     chrome.tabs.create({ url: settingsUrl });
   };
 
+  const handleLogout = () => {
+    // does nothing currently
+    // code to handle logout here
+  };
+
+  const openReportWithStatus = (status: "ok" | "warning" | "expired") => {
+    const reportUrl = chrome.runtime.getURL(`report.html?status=${status}`);
+    chrome.tabs.create({ url: reportUrl });
+  };
+
+  const handleOKClick = () => openReportWithStatus("ok");
+  const handleWarningClick = () => openReportWithStatus("warning");
+  const handleExpiredClick = () => openReportWithStatus("expired");
+
   return (
     <div style={homeContainer}>
       <div style={headerStyle}>
@@ -84,13 +100,19 @@ export default function Home() {
         )}
 
         {/* TLS certificate log section */}
-        <TLSLog stats={stats} />
+        <TLSLog 
+          stats={stats}
+          onOpenOK={handleOKClick}
+          onOpenWarning={handleWarningClick}
+          onOpenExpired={handleExpiredClick}
+        />
 
         {/* buttons */}
         <ActionButtons
           onOpenReport={handleOpenReport}
           onOpenPolicies={handleOpenPolicies}
           onOpenSettings={handleOpenSettings}
+          onLogout={handleLogout}
         />
       </div>
     </div>
@@ -99,7 +121,7 @@ export default function Home() {
 
 // frame around the home
 const homeContainer: React.CSSProperties = {
-  width: "300px",
+  width: "320px",
   height: "auto",
   backgroundColor: "#ffffff", // Your actual UI background
   border: "2px solid #3367d6", // A professional blue frame (Chrome's signature blue)

@@ -20,7 +20,7 @@ def _get_certificate_query_for_user(user: User, user_id: int):
     return query
 
 
-@report_bp.route("/visits", methods=["GET"])
+@report_bp.route("/visits", methods=["POST"])
 @jwt_required()
 def get_visit_history():
     domain_filter = request.args.get("domain")

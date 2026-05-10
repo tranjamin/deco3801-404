@@ -6,9 +6,13 @@ type Props = {
         warning: number; 
         expired: number 
     };
+
+    onOpenOK: () => void;
+    onOpenWarning: () => void;
+    onOpenExpired: () => void;
 };
 
-export function TLSLog({ stats } : Props) {
+export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props) {
 
     return (
         <div style={cardStyle}>
@@ -22,18 +26,42 @@ export function TLSLog({ stats } : Props) {
             <div style={gridStyle}>
                 {/* future log entries */}
 
-                <div style={itemStyle}>
+                <div 
+                    role="button"
+                    style={itemStyle}
+                    onClick={onOpenOK}
+                    title="Open OK report log"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenOK}
+                >
                     <img src="/check.svg" width={24} height={24} />
                     <p style={{ margin: 5 }}>{stats.ok}</p>
                     {/* instead of number, function to grab total number */}
                 </div>
 
-                <div style={itemStyle}>
+                <div
+                    role="button"
+                    style={itemStyle}
+                    onClick={onOpenWarning}
+                    title="Open OK report log"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenWarning}
+                >
                     <img src="/warning.svg" width={24} height={24} />
                     <p style={{ margin: 5 }}>{stats.warning}</p>
                 </div>
 
-                <div style={itemStyle}>
+                <div
+                    role="button"
+                    style={itemStyle}
+                    onClick={onOpenExpired}
+                    title="Open OK report log"
+                    onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+                    onMouseOut={(e) => (e.currentTarget.style.background = "#fff")}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpenExpired}
+                >
                     <img src="/error.svg" width={24} height={24} />
                     <p style={{ margin: 5 }}>{stats.expired}</p>
                 </div>
@@ -78,5 +106,7 @@ const itemStyle: React.CSSProperties = {
     border: "1px solid #d1d9e0",
     borderRadius: 6,
     boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
-    background: "#fff"
+    background: "#fff",
+    cursor: "pointer",
+    userSelect: "none",
 }

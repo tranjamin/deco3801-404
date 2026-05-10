@@ -8,9 +8,9 @@ type Props = {
 export function CurrentSiteSummary({ data }: Props) {
     const getStatusColor = () => {
         // checks for current domain days remaining of tls
-        if (data.daysRemaining < 3) return "#d81b1bda";
-        if (data.daysRemaining < 15) return "#f1c120";
-        return "green";
+        if (data.daysRemaining < 3) return "#ff4c4cda";
+        if (data.daysRemaining < 15) return "#e4bc2e";
+        return "#3edd4c";
     };
 
     return (
@@ -28,11 +28,11 @@ export function CurrentSiteSummary({ data }: Props) {
                     <div style={{
                         padding: 14,
                         background: getStatusColor(),
-                        color: "white",
+                        color: "#000000",
                         borderRadius: 6,
                         border: "1px solid #d1d9e0",
                     }}>
-                        <p style={{ margin: 0, WebkitTextStroke: "0.5px #414141" }}><b>Days left</b></p>
+                        <p style={{ margin: 0 }}><b>Days left</b></p>
                         <p style={{ margin: 0 }}>{data.daysRemaining}</p>
                     </div>
 
@@ -56,7 +56,7 @@ export function CurrentSiteSummary({ data }: Props) {
                         
                     <div style={{ padding: 3 }}>
                         <p style= {{ margin: 0 }}><b>Valid Date</b></p>
-                        <p style= {{ margin: 0, fontSize: "10.5px" }}>{data.validFrom} - {data.validTo}</p>
+                        <p style= {{ margin: 0 }}>{data.validFrom} - {data.validTo}</p>
                     </div>
                 </div>
             </div>

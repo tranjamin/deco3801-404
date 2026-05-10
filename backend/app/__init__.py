@@ -100,8 +100,10 @@ def create_app():
             On success: TODO
             On failure: TODO
         """
-        # TODO: handle any errors
-        db.drop_all()
+        db.session.execute(sqlalchemy.text(f"DROP TABLE tls_certificates CASCADE;"))
+        db.session.execute(sqlalchemy.text("DROP TABLE certificate_policies CASCADE;"))
+        db.session.commit()
+        # db.drop_all()
         return "Success", 200
 
     # convert environment variables to a URL

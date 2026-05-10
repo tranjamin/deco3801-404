@@ -8,6 +8,10 @@ import {
   updatePolicy
 } from "../../policySharing/policySharing";
 
+/**
+ * Props for the Details component that displays and edits a single policy.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type DetailsProps = {
   policy: SecurityPolicy | null;
   startInEditMode?: boolean;
@@ -16,6 +20,11 @@ type DetailsProps = {
   isDefaultPolicy?: boolean;
 };
 
+/**
+ * Form representation of a policy, with all numeric and boolean fields as strings
+ * for easier input handling in form controls.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type PolicyFormData = {
   name: string;
   description: string;
@@ -29,8 +38,16 @@ type PolicyFormData = {
   validAfter: string;
 };
 
+/**
+ * Union type for the names of array fields in PolicyFormData.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type ArrayFieldName = "domains" | "protocols" | "ciphers" | "subjects" | "issuers";
 
+/**
+ * Props for editing a list of strings (domains, ciphers, etc.).
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type ArrayListEditorProps = {
   label: string;
   inputId: string;
@@ -42,21 +59,37 @@ type ArrayListEditorProps = {
   tooltip?: string;
 };
 
+/**
+ * Props for the protocol selector component that displays available TLS versions.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type ProtocolSelectorProps = {
   selectedProtocols: string[];
   onProtocolChange: (protocol: string, checked: boolean) => void;
 };
 
-const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3"];
+const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3", "QUIC"];
 
+/**
+ * Normalize protocol string by removing 'TLS' prefix and converting to lowercase.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function normalizeProtocol(protocol: string): string {
   return protocol.trim().toLowerCase().replace(/^tls\s+/, "");
 }
 
+/**
+ * Format protocol for UI display (e.g., 'tls 1.2' -> 'TLS 1.2').
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function toDisplayProtocol(protocol: string): string {
   return `TLS ${normalizeProtocol(protocol)}`;
 }
 
+/**
+ * Format protocol for backend API (e.g., 'TLS 1.2' -> 'tls 1.2').
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function toBackendProtocol(protocol: string): string {
   return `tls ${normalizeProtocol(protocol)}`;
 }
@@ -74,7 +107,12 @@ const emptyFormData: PolicyFormData = {
   validAfter: "0",
 };
 
+/**
+ * Convert a SecurityPolicy to form-editable PolicyFormData with string representations.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
+  // Create a set of display-formatted protocols for quick lookup during filtering
   const protocolSet = new Set(
     policy.protocols.map((protocol) => toDisplayProtocol(protocol)),
   );
@@ -95,6 +133,11 @@ function mapPolicyToFormData(policy: SecurityPolicy): PolicyFormData {
   };
 }
 
+/**
+ * Convert form data back to a SecurityPolicy for API submission.
+ * Converts string fields back to their proper types.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function mapFormDataToPolicy(
   formData: PolicyFormData,
   existingId?: number,
@@ -114,6 +157,10 @@ function mapFormDataToPolicy(
   };
 }
 
+/**
+ * Component for selecting which TLS protocol versions are allowed.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function ProtocolSelector({
   selectedProtocols,
   onProtocolChange,
@@ -142,6 +189,11 @@ function ProtocolSelector({
   );
 }
 
+/**
+ * Generic component for editing a list of strings (domains, ciphers, subjects, etc.).
+ * Provides input field, add button, and removable list items.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 function ArrayListEditor({
   label,
   inputId,
@@ -196,6 +248,11 @@ function ArrayListEditor({
   );
 }
 
+/**
+ * Main Details component: displays a policy's information in read or edit mode.
+ * Handles policy activation/deactivation, editing, deletion, import/export, and creation.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 export default function Details({
   policy,
   startInEditMode = false,
@@ -279,7 +336,6 @@ export default function Details({
   };
 
   const confirmDelete = async (isDefaultPolicy: boolean) => {
-    // call existing delete logic; keep it centralized
     if (!isDefaultPolicy) {
       await handleDelete();
     } else {
