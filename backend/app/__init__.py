@@ -69,13 +69,14 @@ HELP_STRING = """
 <br> "pass": bool, True if all checks passed
 """
 
-# load in any environment variables from .env
-load_dotenv()
-
 db: SQLAlchemy = SQLAlchemy()
 jwt: JWTManager = JWTManager()
 
-def create_app():
+def create_app(test=False):
+    if not test:
+        # load in any environment variables from .env
+        load_dotenv()
+
     # create app
     app: Flask = Flask(__name__)
     
@@ -107,6 +108,7 @@ def create_app():
         return "Success", 200
 
     # convert environment variables to a URL
+    # print("Creating database URL...")
     db_url = sqlalchemy.URL(
         "postgresql+psycopg2", 
         username=os.environ["DB_USERNAME"],
@@ -116,6 +118,7 @@ def create_app():
         port=int(os.environ["DB_PORT"]),
         query={}, # type: ignore
     )
+    # print(f"Created database URL {db_url.render_as_string(hide_password=True)}")
 
     # set database uri and additional configs
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url.render_as_string(hide_password=False)
