@@ -7,7 +7,6 @@ let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
-const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 //const CUR_CERT_STORAGE_KEY = "currentCert";
 
 /**
@@ -248,58 +247,8 @@ async function sendCertToBackend(payload: object): Promise<void> {
     console.log("TLS certificate saved to backend:");
     console.log(savedCertificate);
 
-    await logVisitToBackend(payload, savedCertificate, headers);
   } catch (error) {
     console.error("Failed to send TLS certificate to backend:", error);
-  }
-}
-
-async function logVisitToBackend(
-  payload: object,
-  savedCertificate: { id?: number | string },
-  headers: Record<string, string>,
-): Promise<void> {
-  try {
-    const p = payload as Record<string, unknown>;
-    const url = typeof p.url === "string" ? p.url : "";
-    const domain = url
-      ? new URL(url).hostname
-      : selectedTab?.url
-        ? new URL(selectedTab.url).hostname
-        : "";
-
-    if (!domain) {
-      console.error("Cannot log report visit without a domain.");
-      return;
-    }
-
-    const reportPayload = {
-      domain,
-      certificate_id: savedCertificate.id,
-      user_agent: navigator.userAgent,
-      tab_id: selectedTab?.id,
-    };
-
-    const response = await fetch(REPORT_VISITS_ENDPOINT, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(reportPayload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        "Backend rejected report visit:",
-        response.status,
-        errorText,
-      );
-      return;
-    }
-
-    console.log("Report visit logged to backend:");
-    console.log(await response.json());
-  } catch (error) {
-    console.error("Failed to log report visit:", error);
   }
 }
 
