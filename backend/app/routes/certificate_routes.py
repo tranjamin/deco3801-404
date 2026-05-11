@@ -105,29 +105,29 @@ def create():
         ) # type: ignore
     
     # only keep policies this certificate applies to
+    print(f"Testing for policies")
     applicable_policies: List[CertificatePolicy] = []
     for policy in policies:
         if satisfies_domain(cert.domain_name(), policy.valid_domains):
             applicable_policies.append(policy)
+            print(f"Policy match: {policy.to_dict()}")
 
+    if not len(applicable_policies):
+        print(f"No policies... continuing")
+        # return jsonify({"message": "no matching policies found"}), 404
     cert.evaluate_against_policies_and_store(applicable_policies)
 
     # now we check if an existing certificate exists. we need to decide how to replace (e.g. what if they update the protocol?)
     existing_certificates: Query = TLSCertificate.query.filter(
         TLSCertificate.user_id == cert.user_id,
         TLSCertificate.url == cert.url,
-        # TLSCertificate.protocol == cert.protocol,
-        # TLSCertificate.cipher == cert.cipher,
         TLSCertificate.subject_name == cert.subject_name,
         TLSCertificate.san_list == cert.san_list,
-        # TLSCertificate.issuer == TLSCertificate.issuer,
-        # TLSCertificate.valid_from == cert.valid_from,
-        # TLSCertificate.valid_to == cert.valid_to
     ) # type: ignore
 
     # let's update the first retrieved one and delete the rest
     if existing_certificates.count():
-        print("Found an existing certificate")
+        print(f"Found an existing certificate")
         existing_certificates[0].update_certificate(cert)
         for i in range(1, existing_certificates.count()):
             db.session.delete(existing_certificates[i])
@@ -176,12 +176,16 @@ def create_dummy():
     for policy in policies:
         if satisfies_domain(cert.domain_name(), policy.valid_domains):
             applicable_policies.append(policy)
+        print(f"Policy match: {policy.to_dict()}")
 
-    cert.evaluate_against_policies_and_store(applicable_policies)
+    if len(applicable_policies):
+        cert.evaluate_against_policies_and_store(applicable_policies)
 
-    db.session.add(cert)
-    db.session.commit()
-    return jsonify(cert.to_dict()), 201
+        db.session.add(cert)
+        db.session.commit()
+        return jsonify(cert.to_dict()), 201
+    else:
+        return jsonify({"message": "no matching policies found"}), 404
 
 @certificate_bp.route("/<int:cert_id>", methods=["DELETE"])
 @jwt_required()
