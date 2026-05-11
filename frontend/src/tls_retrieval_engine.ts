@@ -2,15 +2,37 @@ import { setCurrentCertificateData, getStoredAccessToken } from "./api/storage";
 
 console.log("TLS Retrieval Engine service worker loaded.");
 
+const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
+const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
+const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
+
 let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
 const processingCerts = new Set<string>();
 const completedCerts = new Set<string>();
 
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
-const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
-const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
+/**
+ * Clears the sets used to store certs that came from URLs within a once-attached-tab,
+ * upon the debugger detaching from the tab.
+ * 
+ * @param tabId 
+ */
+function clearCertStateForTab(tabId: number): void {
+  const prefix = `${tabId}:`;
+
+  for (const key of processingCerts) {
+    if (key.startsWith(prefix)) {
+      processingCerts.delete(key);
+    }
+  }
+
+  for (const key of completedCerts) {
+    if (key.startsWith(prefix)) {
+      completedCerts.delete(key);
+    }
+  }
+}
 
 /**
  * Constructs a chrome.debugger.Debuggee from the tabID, and attaches the
@@ -19,8 +41,8 @@ const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
  * attachToTab is also asynchronous. It then enables the network to send
  * events to the debugger.
  *
- * @param tab (chrome.tabs.Tab object)
- * @returns N/A
+ * @param tab The Chrome tab to attach the debugger to.
+ * @returns true if the debugger was attached and Network events were enabled
  */
 async function attachToTab(tab: chrome.tabs.Tab): Promise<boolean> {
   try {
@@ -51,6 +73,13 @@ async function attachToTab(tab: chrome.tabs.Tab): Promise<boolean> {
   }
 }
 
+/**
+ * Receives a chrome.debugger.Debugge (tabId), and detaches the debugger from the 
+ * debuggee. Upon detaching, the sets used to track the certs being processed or
+ * completed, are cleared, for the next tab.
+ * 
+ * @param tabId The chrome.debugger.Debuggee the debugger attaches to.
+ */
 async function detachFromTab(tabId: number): Promise<void> {
   try {
     await chrome.debugger.detach({tabId});
@@ -67,20 +96,82 @@ async function detachFromTab(tabId: number): Promise<void> {
   }
 }
 
-function clearCertStateForTab(tabId: number): void {
-  const prefix = `${tabId}:`;
+/**
+ * After receiving user authentication, starts passively listening to all URLs,
+ * in all tabs, in all windows, of a Chrome session, before filtering for only
+ * the active tab the user is on.
+ * 
+ * Excepts any websites with the google domain, as networkEvents cannot be
+ * retrieved from websites with the google domain.
+ * 
+ * Detaches debugger from the old active tab if a new active tab is detected.
+ * 
+ * Attaches debugger to the new active tab.
+ * 
+ * @param _tabId 
+ * @param changeInfo 
+ * @param tab 
+ * @returns void
+ */
+async function handleOnUpdate(
+  _tabId: number,
+  changeInfo: { url?: string },
+  tab: chrome.tabs.Tab,
+): Promise<void> {
+  const accessToken = await getStoredAccessToken();
 
-  for (const key of processingCerts) {
-    if (key.startsWith(prefix)) {
-      processingCerts.delete(key);
-    }
+  if (!accessToken) {
+     console.log("User is not signed in. Skipping TLS retrieval.");
+     return;
+  }
+  if (!changeInfo.url) {
+    return;
+  }
+  if (!changeInfo.url.startsWith("https://")) {
+    return;
+  }
+  if (changeInfo.url.startsWith("https://www.google.com/")) {
+    console.log("Google search detected - ignoring to prevent excessive captures.");
+    return;
+  } else {
+    console.log("Tab URL updated to:", changeInfo.url);
+  }
+  if (!tab.active) {
+    return;
   }
 
-  for (const key of completedCerts) {
-    if (key.startsWith(prefix)) {
-      completedCerts.delete(key);
-    }
+  const currentWindow = await chrome.windows.get(tab.windowId);
+
+  if (!currentWindow.focused) {
+    return;
   }
+  if (tab.id === undefined) {
+    return;
+  }
+  if (attachedTabId === tab.id) {
+    console.log("Debugger already attached to this tab.");
+    selectedTab = tab;
+    return;
+  }
+  if (attachedTabId !== null && attachedTabId !== tab.id) {
+    console.log(
+      `Debugger currently attached to tab ${attachedTabId}. Detaching before switching to tab ${tab.id}.`
+    );
+
+    await detachFromTab(attachedTabId);
+  }
+
+  console.log("tls_retriever is listening.");
+
+  const attached = await attachToTab(tab);
+
+  if (!attached) {
+    return;
+  }
+
+  selectedTab = tab;
+  attachedTabId = tab.id;
+
 }
 
 /**
@@ -188,74 +279,15 @@ async function handleDebuggerEvent(
 
   }
 
-async function handleOnUpdate(
-  _tabId: number,
-  changeInfo: { url?: string },
-  tab: chrome.tabs.Tab,
-): Promise<void> {
-  const accessToken = await getStoredAccessToken();
-
-  if (!accessToken) {
-     console.log("User is not signed in. Skipping TLS retrieval.");
-     return;
-  }
-  if (!changeInfo.url) {
-    return;
-  }
-  if (!changeInfo.url.startsWith("https://")) {
-    return;
-  }
-  if (changeInfo.url.startsWith("https://www.google.com/")) {
-    console.log("Google search detected - ignoring to prevent excessive captures.");
-    return;
-  } else {
-    console.log("Tab URL updated to:", changeInfo.url);
-  }
-  if (!tab.active) {
-    return;
-  }
-
-  const currentWindow = await chrome.windows.get(tab.windowId);
-
-  if (!currentWindow.focused) {
-    return;
-  }
-  if (tab.id === undefined) {
-    return;
-  }
-  if (attachedTabId === tab.id) {
-    console.log("Debugger already attached to this tab.");
-    selectedTab = tab;
-    return;
-  }
-  if (attachedTabId !== null && attachedTabId !== tab.id) {
-    console.log(
-      `Debugger currently attached to tab ${attachedTabId}. Detaching before switching to tab ${tab.id}.`
-    );
-
-    await detachFromTab(attachedTabId);
-  }
-
-  console.log("tls_retriever is listening.");
-
-  const attached = await attachToTab(tab);
-
-  if (!attached) {
-    return;
-  }
-
-  selectedTab = tab;
-  attachedTabId = tab.id;
-
-}
-
 /**
  * Sends a POST request to the backend, with JSON headers and a JSON body containing the
  * TLS certificate metadata payload, using fetch(). The backend's reply is then sent back,
  * as a Response object. If the TLS certificate metadata was accepted, then the saved
- * Certificate sent, will be recorded in the console. Otherwise, the Certificate will be
+ * certificate sent, will be recorded in the console. Otherwise, the certificate will be
  * rejected by the backend, or if the TLS certificate was not sent at all, these errors
  * will be logged.
+ * 
+ * Stores the current cert locally for Chrome to access for the popup.
  * @param payload
  * @returns void
  */
@@ -297,6 +329,18 @@ async function sendCertToBackend(payload: object): Promise<void> {
   }
 }
 
+/**
+ * After a TLS Certificate is saved, a "report visit" is logged to the backend,
+ * via a POST request, containing the visited domain, the saved certificate id,
+ * the user agent, and the tab.id active when visiting the domain.
+ * 
+ * @param payload The TLS Certificate payload originally sent to the backend.
+ * Is used to extract the visited domain from the certificate URL.
+ * @param savedCertificate The certificate record returned by the backend after
+ * saving the TLS certificate, whereby its id is linked to the report visit.
+ * @param headers The request headers to use when sending the report visit
+ * @returns null
+ */
 async function logVisitToBackend(
   payload: object,
   savedCertificate: { id?: number | string },
@@ -367,6 +411,13 @@ async function prepCurrentCertForDisplay(payload: object) {
   return tempVar;
 }
 
+/**
+ * Formats the certificate into JSON for the currently active tab into the expected UI 
+ * display format and saved in local Chrome/extension storage via setCurrentCertificateData,
+ * granting the UI Popup quick access to the TLS Certificate details for the current tab.
+ * 
+ * @param payload The TLS certificate payload captured from Chrome securityDetails.
+ */
 async function storeCurrentCert(payload: object) {
   console.log("storing cert");
   const formattedCert = JSON.stringify(
