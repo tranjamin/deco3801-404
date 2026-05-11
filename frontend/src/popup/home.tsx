@@ -1,58 +1,101 @@
 /// <reference types="chrome" />
-// import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
-import {
-  countStatus,
-  transformCertificates,
-  transformSingleCert,
-} from "../sharedComponent/utils";
-import { mockTLSData } from "../sharedComponent/mockData";
-import { getCurrentCertificateData } from "../api/storage";
-import type {
-  TLSCertificateTransformed,
-} from "../sharedComponent/types";
-import React, { useEffect, useState } from "react";
+import { transformSingleCert } from "../sharedComponent/utils";
+import { getCurrentCertificateData, getStoredAccessToken } from "../api/storage";
+import { BACKEND_BASE_URL } from "../base_url";
+import type { TLSCertificateTransformed } from "../sharedComponent/types";
+
+type Stats = {
+  ok: number;
+  warning: number;
+  expired: number;
+};
+
+type BackendVisit = {
+  evaluation_passed: boolean;
+  issues_found: string[];
+  days_until_expiry: number | null;
+  valid_to: number | null;
+};
+
+type VisitsResponse = {
+  visits: BackendVisit[];
+};
+
+const emptyStats: Stats = {
+  ok: 0,
+  warning: 0,
+  expired: 0,
+};
+
+function getVisitStatus(visit: BackendVisit): keyof Stats {
+  const isExpired =
+    visit.issues_found.includes("expired") ||
+    (visit.days_until_expiry !== null && visit.days_until_expiry <= 0) ||
+    (visit.valid_to !== null && visit.valid_to * 1000 <= Date.now());
+
+  if (isExpired) return "expired";
+  if (!visit.evaluation_passed || visit.issues_found.length > 0) return "warning";
+  return "ok";
+}
+
+function countVisitStatuses(visits: BackendVisit[]): Stats {
+  return visits.reduce<Stats>((acc, visit) => {
+    acc[getVisitStatus(visit)] += 1;
+    return acc;
+  }, { ...emptyStats });
+}
 
 export default function Home() {
-  // temporary data current site
-  //const data = mockTLSData[3]
   const [transformedData, setTransformedData] =
     useState<TLSCertificateTransformed>();
-  const [stats, setStats] = useState<{
-    ok: number;
-    warning: number;
-    expired: number;
-  }>({
-    ok: 0,
-    warning: 0,
-    expired: 0,
-  });
-  const fetchAll = async () => {
+  const [stats, setStats] = useState<Stats>(emptyStats);
+
+  const fetchCurrentCertificate = async () => {
     const tempData = await getCurrentCertificateData();
-    console.log("got here");
-    console.log(tempData);
     if (tempData) {
       setTransformedData(transformSingleCert(JSON.parse(tempData)));
-      const allDataTransformed = transformCertificates(mockTLSData);
-      setStats(countStatus(allDataTransformed));
+    }
+  };
+
+  const fetchReportStats = async () => {
+    const accessToken = await getStoredAccessToken();
+    if (!accessToken) {
+      setStats(emptyStats);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/reports/visits`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        setStats(emptyStats);
+        return;
+      }
+
+      const result = (await response.json()) as VisitsResponse;
+      setStats(countVisitStatuses(result.visits ?? []));
+    } catch (error) {
+      console.error("Failed to fetch report stats:", error);
+      setStats(emptyStats);
     }
   };
 
   useEffect(() => {
-    fetchAll();
+    fetchCurrentCertificate();
+    fetchReportStats();
   }, []);
-  //const data = await getCurrentCertificateData();
-  //const transformedData = transformSingleCert(data);
-
-  // temporary log data
 
   const handleOpenReport = () => {
-    // finds the report.html file in root dir
     const reportUrl = chrome.runtime.getURL("report.html");
-
-    // opens new tab of report.html
     chrome.tabs.create({ url: reportUrl });
   };
 
@@ -66,6 +109,20 @@ export default function Home() {
     chrome.tabs.create({ url: settingsUrl });
   };
 
+  const handleLogout = () => {
+    // does nothing currently
+    // code to handle logout here
+  };
+
+  const openReportWithStatus = (status: "ok" | "warning" | "expired") => {
+    const reportUrl = chrome.runtime.getURL(`report.html?status=${status}`);
+    chrome.tabs.create({ url: reportUrl });
+  };
+
+  const handleOKClick = () => openReportWithStatus("ok");
+  const handleWarningClick = () => openReportWithStatus("warning");
+  const handleExpiredClick = () => openReportWithStatus("expired");
+
   return (
     <div style={homeContainer}>
       <div style={headerStyle}>
@@ -74,39 +131,40 @@ export default function Home() {
         </h3>
       </div>
 
-      {/* layout */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* current domain summary view */}
         {transformedData ? (
           <CurrentSiteSummary data={transformedData} />
         ) : (
           <p>Loading certificate...</p>
         )}
 
-        {/* TLS certificate log section */}
-        <TLSLog stats={stats} />
+        <TLSLog
+          stats={stats}
+          onOpenOK={handleOKClick}
+          onOpenWarning={handleWarningClick}
+          onOpenExpired={handleExpiredClick}
+        />
 
-        {/* buttons */}
         <ActionButtons
           onOpenReport={handleOpenReport}
           onOpenPolicies={handleOpenPolicies}
           onOpenSettings={handleOpenSettings}
+          onLogout={handleLogout}
         />
       </div>
     </div>
   );
 }
 
-// frame around the home
 const homeContainer: React.CSSProperties = {
-  width: "300px",
+  width: "320px",
   height: "auto",
-  backgroundColor: "#ffffff", // Your actual UI background
-  border: "2px solid #3367d6", // A professional blue frame (Chrome's signature blue)
-  borderRadius: "8px", // Rounded corners for the frame
+  backgroundColor: "#ffffff",
+  border: "2px solid #3367d6",
+  borderRadius: "8px",
   padding: "12px",
-  boxShadow: "0 4px 15px rgba(0,0,0,0.2)", // Extra depth
-  margin: "1px", // Prevents the border from clipping against the browser edge
+  boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+  margin: "1px",
 };
 
 const headerStyle: React.CSSProperties = {

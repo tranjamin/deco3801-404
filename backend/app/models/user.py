@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from app.models.policy import CertificatePolicy
 
 USER_NAME_MAXLEN = 80
-USER_PASS_MAXLEN = 255
+USER_PASS_MAXLEN = 255 # removed this because we control the password has size, it cannot be exploited
 
 class User(db.Model):
     """
@@ -34,11 +34,11 @@ class User(db.Model):
     # defines the column tables, refer to docstring for details
     id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = db.Column(db.String(USER_NAME_MAXLEN), nullable=False, unique=True, index=True)
-    password_hash: Mapped[str] = db.Column(db.String(USER_PASS_MAXLEN), nullable=False)
+    password_hash: Mapped[str] = db.Column(db.String(), nullable=False)
 
     # relationships
-    certificates: Mapped[List[TLSCertificate]] = db.relationship("TLSCertificate", back_populates="user")
-    policies: Mapped[List[CertificatePolicy]] = db.relationship("CertificatePolicy", back_populates="user")
+    certificates: Mapped[List[TLSCertificate]] = db.relationship("TLSCertificate", back_populates="user") # type: ignore
+    policies: Mapped[List[CertificatePolicy]] = db.relationship("CertificatePolicy", back_populates="user") # type: ignore
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)

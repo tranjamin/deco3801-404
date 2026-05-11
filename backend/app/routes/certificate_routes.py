@@ -3,9 +3,11 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from typing import List, Dict, Any
 
+from flask_sqlalchemy.query import Query
+
 from app import db
 from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
-from app.models.evaluation import evaluate_against_policy
+from app.models.evaluation import evaluate_against_policy, satisfies_domain
 from app.models.policy import CertificatePolicy
 from app.models.user import User
 
@@ -36,7 +38,7 @@ def get_all():
     else:
         certs: List[TLSCertificate] = TLSCertificate.query.filter(
             TLSCertificate.user_id == user_id
-        )
+        ) # type: ignore
 
     return jsonify([c.to_dict() for c in certs]), 200
 
@@ -53,17 +55,19 @@ def get_one(cert_id: int):
         GET
     Returns:
         On success: A JSON containing the requested TLS certificate in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
-        On failure: Error code 404
+        On failure: {"message": "Certificate not found"}, 404 
     """
     # get the user
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
 
     # returns 404 if failed
-    cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+    cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
-    if user.username != "master" and cert.user_id != user_id:
-        return 404
+    if user is None or cert is None:
+        return {"message": "Certificate not found"}, 404 
+    elif user.username != "master" and cert.user_id != user_id:
+        return {"message": "Certificate not found"}, 404 
 
     return jsonify(cert.to_dict()), 200
 
@@ -96,14 +100,43 @@ def create():
     cert.user_id = user_id
 
     policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
-            CertificatePolicy.user_id == user_id
-        )
+            CertificatePolicy.user_id == user_id,
+            CertificatePolicy.active == True,
+        ) # type: ignore
+    
+    # only keep policies this certificate applies to
+    applicable_policies: List[CertificatePolicy] = []
+    for policy in policies:
+        if satisfies_domain(cert.domain_name(), policy.valid_domains):
+            applicable_policies.append(policy)
 
-    cert.evaluate_against_policies_and_store(policies)
+    cert.evaluate_against_policies_and_store(applicable_policies)
 
-    db.session.add(cert)
-    db.session.commit()
-    return jsonify(cert.to_dict()), 201
+    # now we check if an existing certificate exists. we need to decide how to replace (e.g. what if they update the protocol?)
+    existing_certificates: Query = TLSCertificate.query.filter(
+        TLSCertificate.user_id == cert.user_id,
+        TLSCertificate.url == cert.url,
+        # TLSCertificate.protocol == cert.protocol,
+        # TLSCertificate.cipher == cert.cipher,
+        TLSCertificate.subject_name == cert.subject_name,
+        TLSCertificate.san_list == cert.san_list,
+        # TLSCertificate.issuer == TLSCertificate.issuer,
+        # TLSCertificate.valid_from == cert.valid_from,
+        # TLSCertificate.valid_to == cert.valid_to
+    ) # type: ignore
+
+    # let's update the first retrieved one and delete the rest
+    if existing_certificates.count():
+        print("Found an existing certificate")
+        existing_certificates[0].update_certificate(cert)
+        for i in range(1, existing_certificates.count()):
+            db.session.delete(existing_certificates[i])
+        db.session.commit()
+        return jsonify(existing_certificates[0].to_dict()), 201
+    else:
+        db.session.add(cert)
+        db.session.commit()
+        return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/create_dummy", methods=["GET"])
 @jwt_required()
@@ -136,8 +169,15 @@ def create_dummy():
     
     policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
             CertificatePolicy.user_id == user_id
-        )
-    cert.evaluate_against_policies_and_store(policies)
+        ) # type: ignore
+    
+    # only keep policies this certificate applies to
+    applicable_policies: List[CertificatePolicy] = []
+    for policy in policies:
+        if satisfies_domain(cert.domain_name(), policy.valid_domains):
+            applicable_policies.append(policy)
+
+    cert.evaluate_against_policies_and_store(applicable_policies)
 
     db.session.add(cert)
     db.session.commit()
@@ -154,18 +194,20 @@ def delete(cert_id: int):
     Methods Supported:
         DELETE
     Returns:
-        On success: A JSON with a 'message' field, Error code 200
-        On failure: Error code 404
+        On success: {"message": "Deleted"}, 200
+        On failure: {"message": "Certificate not found"}, 404 
     """
     # get the user
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
 
     # automatically handles any errors
-    cert: TLSCertificate = TLSCertificate.query.get_or_404(cert_id)
+    cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
-    if user.username != "master" and cert.user_id != user_id:
-        return 404
+    if user is None or cert is None:
+        return jsonify({"message": "Certificate not found"}),  404
+    elif user.username != "master" and cert.user_id != user_id:
+        return jsonify({"message": "Certificate not found"}), 404
 
     db.session.delete(cert)
     db.session.commit()

@@ -1,8 +1,8 @@
 import { setCurrentCertificateData, getStoredAccessToken } from "./api/storage";
+import { BACKEND_BASE_URL } from "./base_url";
 
 console.log("TLS Retrieval Engine service worker loaded.");
 
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 
@@ -390,9 +390,12 @@ async function logVisitToBackend(
   }
 }
 
+/**
+ * Takes a certificate security details payload and modifies the
+ * format to be compatible with the extension popup component
+ */
 async function prepCurrentCertForDisplay(payload: object) {
   console.log(payload);
-
   const p = payload as Record<string, unknown>;
   const readStr = (key: string, fallback = "") =>
     typeof p[key] === "string" ? (p[key] as string) : fallback;

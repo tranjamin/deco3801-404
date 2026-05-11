@@ -19,12 +19,20 @@ export default function Navbar({ active }: Props) {
     }
 
     // style settings for items (headers)
-    const items = (name: string) => ({
-        padding: "24px",
+    const navItemStyle = (name: string): React.CSSProperties => ({
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+
+        padding: "18px 24px",
         cursor: "pointer",
+
         background: active === name ? "#b6b6b6" : "transparent",
-        fontSize: "16px"
-    })
+        fontSize: "16px",
+        fontWeight: 500,
+
+        transition: "background 0.2s ease",
+    });
 
     // sidebar user interface
     return (
@@ -32,7 +40,7 @@ export default function Navbar({ active }: Props) {
             <h3 style={{ padding: "20px", fontSize: "14px" }}>TLS Certificate Checker</h3>
 
             <div 
-                style={items("report")} 
+                style={navItemStyle("report")} 
                 onClick={() => navigate("report.html")}
                 onMouseEnter={(e) => {
                     if (active !== "report") e.currentTarget.style.background = "#c5c5c5";
@@ -41,11 +49,11 @@ export default function Navbar({ active }: Props) {
                     if (active !== "report") e.currentTarget.style.background = "transparent";
                 }}
             >
-                Reports
+                <img src="./view-details.svg" width={24} height={24}/><span>Reports</span>
             </div>
 
             <div 
-                style={items("policies")} 
+                style={navItemStyle("policies")} 
                 onClick={() => navigate("policies.html")}
                 onMouseEnter={(e) => {
                     if (active !== "policies") e.currentTarget.style.background = "#c5c5c5";
@@ -54,11 +62,11 @@ export default function Navbar({ active }: Props) {
                     if (active !== "policies") e.currentTarget.style.background = "transparent";
                 }}
             >
-                Policies
+                <img src="./policies.svg" width={24} height={24}/><span>Policies</span>
             </div>
-
+            
             <div 
-                style={items("settings")} 
+                style={navItemStyle("settings")} 
                 onClick={() => navigate("settings.html")}
                 onMouseEnter={(e) => {
                     if (active !== "settings") e.currentTarget.style.background = "#c5c5c5";
@@ -67,7 +75,7 @@ export default function Navbar({ active }: Props) {
                     if (active !== "settings") e.currentTarget.style.background = "transparent";
                 }}
             >
-                Settings
+                <img src="./settings.svg" width={24} height={24}/><span>Settings</span>
             </div>
 
             <div style={versionStyle}>

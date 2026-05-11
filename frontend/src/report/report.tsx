@@ -11,8 +11,7 @@ import {
   sortCertificates,
 } from "./utils/tableUtils";
 import type { TLSCertificateTransformed } from "../sharedComponent/types";
-
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
+import { BACKEND_BASE_URL } from "../base_url";
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 
 type BackendVisit = {
@@ -80,6 +79,19 @@ function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
   };
 }
 
+
+const getInitialStatusFilter = () => {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get("status");
+
+  if (status === "ok" || status === "warning" || status === "expired") {
+    return [status];
+  }
+
+  return [];
+}
+
+
 export default function Report() {
   const [sidebarOpen] = useState(true);
   const sidebarWidth = sidebarOpen ? 220 : 0;
@@ -90,7 +102,7 @@ export default function Report() {
 
   const [sortBy, setSortBy] = useState("default");
   const [filters, setFilters] = useState({
-    status: [] as string[],
+    status: getInitialStatusFilter(),
     protocol: [] as string[],
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,7 +175,7 @@ export default function Report() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <ReportTable data={sortedData} />
-            <GenerateReport />
+            <GenerateReport data={sortedData} />
           </div>
         </div>
       </div>

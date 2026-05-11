@@ -10,7 +10,7 @@ from typing import Any, List
 
 from app.models.utils import Flags, CertificateTransparencyCompliance
 from app.models.policy import CertificatePolicy
-from app.models.evaluation import evaluate_against_policy
+from app.models.evaluation import evaluate_against_policy, satisfies_domain
 
 from typing import TYPE_CHECKING
 
@@ -69,7 +69,7 @@ class TLSCertificate(db.Model):
     )
 
     user_id: Mapped[int] = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    user: Mapped[User] = db.relationship("User", back_populates="certificates")
+    user: Mapped[User] = db.relationship("User", back_populates="certificates") # type: ignore
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -157,13 +157,13 @@ class TLSCertificate(db.Model):
         
         ##
         if isinstance(data.get("cipher", ""), str):
-            data["cipher"] = data["cipher"][:CERT_CIPH_MAXLEN]
+            data["cipher"] = data.get("cipher", "")[:CERT_CIPH_MAXLEN]
         else:
             return None
         
         ##
         if isinstance(data.get("subjectName", ""), str):
-            data["subjectName"] = data["subjectName"][:CERT_SUBJ_MAXLEN]
+            data["subjectName"] = data.get("subjectName", "")[:CERT_SUBJ_MAXLEN]
         else:
             return None
         
@@ -173,7 +173,7 @@ class TLSCertificate(db.Model):
         elif not isinstance(data.get("sanList", []), list):
             return None
         else:
-            data["sanList"] = [i[:CERT_SANS_MAXLEN] for i in data["sanList"]][:CERT_MAX_SANS]
+            data["sanList"] = [i[:CERT_SANS_MAXLEN] for i in data.get("sanList", [])][:CERT_MAX_SANS]
                 
         ##
         if not isinstance(data.get("validFrom", -1), int):
@@ -207,3 +207,39 @@ class TLSCertificate(db.Model):
             ),
         )
         return cert
+    
+    def is_similar(self, other: TLSCertificate) -> bool:
+        """Checks if two certificates are similar"""
+        if self.url != other.url:
+            return False
+        if self.protocol != other.protocol:
+            return False
+        if self.cipher != other.cipher:
+            return False
+        if self.subject_name != other.subject_name:
+            return False
+        if self.san_list != other.san_list: # order is improtant for this
+            return False
+        if self.issuer != other.issuer:
+            return False
+        if self.valid_from != other.valid_from:
+            return False
+        if self.valid_to != other.valid_to:
+            return False
+        if self.certificate_transparency_compliance != other.certificate_transparency_compliance:
+            return False
+        return True
+    
+    def update_certificate(self, other: TLSCertificate) -> None:
+        """Updates a certificate with a new visit"""
+        self.issues = other.issues
+        self.visited_at = other.visited_at
+        self.url = other.url
+        self.cipher = other.cipher
+        self.subject_name = other.subject_name
+        self.san_list = other.san_list
+        self.issuer = other.issuer
+        self.valid_from = other.valid_from
+        self.valid_to = other.valid_to
+        self.certificate_transparency_compliance = other.certificate_transparency_compliance
+        self.protocol = other.protocol
