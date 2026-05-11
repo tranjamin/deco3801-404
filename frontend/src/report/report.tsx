@@ -4,15 +4,14 @@ import { getStoredAccessToken } from "../api/storage";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
-import GenerateReport from "./components/reportForm";
+import GenerateReport from "./components/reportform";
 import {
   filterCertificates,
   searchCertificates,
   sortCertificates,
 } from "./utils/tableUtils";
 import type { TLSCertificateTransformed } from "../sharedComponent/types";
-
-const BACKEND_BASE_URL = "https://deco3801-404.onrender.com";
+import { BACKEND_BASE_URL } from "../base_url";
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 
 type BackendVisit = {
@@ -176,7 +175,7 @@ export default function Report() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <ReportTable data={sortedData} />
-            <GenerateReport />
+            <GenerateReport data={sortedData} />
           </div>
         </div>
       </div>

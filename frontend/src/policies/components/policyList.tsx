@@ -3,12 +3,21 @@ import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policyS
 //import { getAllPolicies } from "../../policySharing/policySharing";
 import PolicyStub from "./policyStub";
 
+/**
+ * Props for PolicyList component that displays all available policies.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 type PolicyListProps = {
   onSelectPolicy: (policy: SecurityPolicy, isDefault?: boolean) => void;
   onAddPolicy: () => void;
   selectedPolicyName: string | null;
 };
 
+/**
+ * Component for listing all policies, separated into active and inactive sections.
+ * Supports adding new policies, importing from JSON files, and loading default policies.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 export default function PolicyList({
   onSelectPolicy,
   onAddPolicy,
@@ -17,121 +26,19 @@ export default function PolicyList({
   const [policies, setPolicies] = useState<SecurityPolicy[]>([]);
   const [defaultPolicyNames, setDefaultPolicies] = useState<string[]>([]);
 
+  /**
+   * Fetch all policies from the backend and load bundled default policies.
+   * Auto-import default policies that don't already exist in the backend.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const GetAllPoliciesFunction = async () => {
-    // this function will call an API endpoint to fetch all the users saved policies
-    //for now just return sample data
     const fetchedPolicies = await getAllPolicies();
     console.log(fetchedPolicies);
     console.log(typeof(fetchedPolicies));
-    //const formattedPolicies = mapJSONtoPolicies(fetchedPolicies);
-    //getAllPolicies();
-    // const DefaultPolicy1: SecurityPolicy = {
-    //   name: "My Policy 1",
-    //   description: "Default 1",
-    //   active: true,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy2: SecurityPolicy = {
-    //   name: "My Policy 2",
-    //   description: "Default 1",
-    //   active: false,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy3: SecurityPolicy = {
-    //   name: "My Policy 3",
-    //   description: "Default 1",
-    //   active: true,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy4: SecurityPolicy = {
-    //   name: "My Policy 4",
-    //   description: "Default 1",
-    //   active: false,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy5: SecurityPolicy = {
-    //   name: "My Policy 5",
-    //   description: "Default 1",
-    //   active: false,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy6: SecurityPolicy = {
-    //   name: "My Policy 6",
-    //   description: "Default 1",
-    //   active: false,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const DefaultPolicy7: SecurityPolicy = {
-    //   name: "My Policy 7",
-    //   description: "Default 1",
-    //   active: false,
-    //   protocols: ["1.2", "1.3"],
-    //   subjects: [],
-    //   SANs: [],
-    //   issuers: [],
-    //   validAfter: 50,
-    //   validFor: 10,
-    //   hasSCT: true,
-    //   ciphers: [],
-    // };
-    // const policies = [
-    //   DefaultPolicy1,
-    //   DefaultPolicy2,
-    //   DefaultPolicy3,
-    //   DefaultPolicy4,
-    //   DefaultPolicy5,
-    //   DefaultPolicy6,
-    //   DefaultPolicy7,
-    // ];
     const backendPolicies = fetchedPolicies ?? [];
     const collectedDefaults: string[] = [];
 
     try {
-      // Load default policies bundled with the app (Vite import.meta.glob)
-
-      
       const modules = import.meta.glob('../../../../defaultPolicies/*.json', {
         eager: true
       }) as Record<string, { default: string }>;
@@ -154,8 +61,8 @@ export default function PolicyList({
 
           collectedDefaults.push(name);
 
+          // Only import if this policy name doesn't already exist in backend
           if (!backendNames.has(name.toLowerCase())) {
-            // importPolicy validates and stores the policy via the API
             console.log("importing a policy")
             await importPolicy(JSON.stringify(fileContent));
             
@@ -180,6 +87,11 @@ export default function PolicyList({
     void GetAllPoliciesFunction();
   }, []);
 
+  /**
+   * Open a file dialog to import a policy JSON file from the user's filesystem.
+   * Parse and store the imported policy via the backend API.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const handleImport = () => {
     const input = document.createElement("input");
     input.type = "file";
@@ -221,6 +133,10 @@ export default function PolicyList({
     input.click();
   };
 
+  /**
+   * Trigger adding a new policy by calling the onAddPolicy callback.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const handleAdd = () => {
     onAddPolicy();
   };

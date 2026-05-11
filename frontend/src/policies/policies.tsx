@@ -5,6 +5,12 @@ import Details from "./components/details";
 import {type SecurityPolicy, storeNewPolicy} from "../policySharing/policySharing";
 import Navbar from "../sharedComponent/navbar";
 
+/**
+ * Main Policies page component. Displays a two-pane layout with the policy list
+ * on the left and detailed policy view on the right.
+ * Manages policy selection, creation, and state updates.
+ * this comment was made with GPT-5 mini on 2026-05-09
+ */
 export default function Policies() {
 
   const [sidebarOpen] = useState(true);
@@ -26,17 +32,31 @@ export default function Policies() {
     validFor: 0,
   };
 
+  /**
+   * Handle policy selection from the list. Updates the selected policy and tracks
+   * whether it is a default policy.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const handleSelectPolicy = (policy: SecurityPolicy, isDefault?: boolean) => {
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
     setSelectedIsDefault(Boolean(isDefault));
   };
 
+  /**
+   * Initiate creation of a new policy by setting an empty policy template
+   * and entering edit mode.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const handleAddPolicy = () => {
     setIsCreatingPolicy(true);
     setSelectedPolicy(emptyPolicy);
   };
 
+  /**
+   * Save a newly created policy via the backend and reload the page.
+   * this comment was made with GPT-5 mini on 2026-05-09
+   */
   const handleSaveNewPolicy = async (policy: SecurityPolicy) => {
     console.log("placeholder: create new policy", policy);
     await storeNewPolicy(policy);
@@ -46,6 +66,7 @@ export default function Policies() {
     window.location.reload();
   };
 
+  // Calculate sidebar width based on state; used for responsive layout adjustment
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now
 
   return (
@@ -85,28 +106,6 @@ const page: React.CSSProperties = {
   minHeight: "100vh", //can get rid of later if find way to stop the jank
   background: "#ffffff",
 };
-
-// const sidebar: React.CSSProperties = {
-//   position: "fixed", //everything breaks without this
-//   top: 0,
-//   left: 0,
-//   height: "100vh",
-//   background: "#111",
-//   color: "#fff",
-//   transition: "width 200ms",
-//   overflow: "hidden", //DO NOT DELETE, stops stuff from showing when collapsed
-//   paddingTop: 12,
-//   boxSizing: "border-box",
-//   zIndex: 20,
-// };
-
-// const toggleBtn: React.CSSProperties = {
-//   margin: "0 10px 12px",
-//   border: "none",
-//   borderRadius: 6,
-//   padding: "8px 10px",
-//   cursor: "pointer",
-// };
 
 const splits: React.CSSProperties = {
   display: "flex", //horizontal split
