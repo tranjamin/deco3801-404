@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { setStoredAccessToken } from "../api/storage";
+import { setStoredAccessToken, setStoredRefreshToken } from "../api/storage";
 import { BACKEND_BASE_URL } from "../base_url";
 import "./auth.css";
 
@@ -34,7 +34,8 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
         );
       }
 
-      await setStoredAccessToken(data.accessToken);
+      await setStoredAccessToken(data.access_token);
+      await setStoredRefreshToken(data.refresh_token);
       onAuthSuccess();
     } catch (err) {
       if (err instanceof Error) setError(err.message);
