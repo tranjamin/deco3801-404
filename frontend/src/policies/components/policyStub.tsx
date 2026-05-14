@@ -72,7 +72,7 @@ export default function PolicyStub({ policy, onSelect, isSelected, isDefault }: 
 }
 
 const stub: React.CSSProperties = {
-    border: "1px solid #000",
+    border: "1px solid rgb(204, 204, 204)",
     borderRadius: "8px",
     padding: "8px",
     marginBottom: "12px",

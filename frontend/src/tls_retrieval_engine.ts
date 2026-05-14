@@ -306,6 +306,7 @@ async function handleDebuggerEvent(
  * @returns void
  */
 async function sendCertToBackend(payload: object): Promise<void> {
+  console.log("storing:", payload);
   storeCurrentCert(payload);
 
   try {
@@ -420,7 +421,8 @@ async function prepCurrentCertForDisplay(payload: object) {
     protocol: readStr("protocol"),
     cipher: readStr("cipher"),
     subjectName: readStr("subjectName"),
-    sanList: readStr("sanList"),
+    //sanList: readStr("sanList"),
+    sanList: p["sanList"],
     issuer: readStr("issuer"),
     validFrom: new Date(Number(p["validFrom"]) * 1000).toISOString(),
     validTo: new Date(Number(p["validTo"]) * 1000).toISOString(),
