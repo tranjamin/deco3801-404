@@ -5,7 +5,7 @@ import {
   activatePolicy,
   deactivatePolicy,
   exportPolicy,
-  updatePolicy
+  updatePolicy,
 } from "../../policySharing/policySharing";
 
 /**
@@ -16,7 +16,7 @@ type DetailsProps = {
   policy: SecurityPolicy | null;
   startInEditMode?: boolean;
   isNewPolicy?: boolean;
-  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void,
+  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void;
   isDefaultPolicy?: boolean;
 };
 
@@ -42,7 +42,12 @@ type PolicyFormData = {
  * Union type for the names of array fields in PolicyFormData.
  * this comment was made with GPT-5 mini on 2026-05-09
  */
-type ArrayFieldName = "domains" | "protocols" | "ciphers" | "subjects" | "issuers";
+type ArrayFieldName =
+  | "domains"
+  | "protocols"
+  | "ciphers"
+  | "subjects"
+  | "issuers";
 
 /**
  * Props for editing a list of strings (domains, ciphers, etc.).
@@ -68,14 +73,23 @@ type ProtocolSelectorProps = {
   onProtocolChange: (protocol: string, checked: boolean) => void;
 };
 
-const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3", "QUIC"];
+const AVAILABLE_PROTOCOLS = [
+  "TLS 1.0",
+  "TLS 1.1",
+  "TLS 1.2",
+  "TLS 1.3",
+  "QUIC",
+];
 
 /**
  * Normalize protocol string by removing 'TLS' prefix and converting to lowercase.
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function normalizeProtocol(protocol: string): string {
-  return protocol.trim().toLowerCase().replace(/^tls\s+/, "");
+  return protocol
+    .trim()
+    .toLowerCase()
+    .replace(/^tls\s+/, "");
 }
 
 /**
@@ -148,7 +162,9 @@ function mapFormDataToPolicy(
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
     domains: [...formData.domains],
-    protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
+    protocols: formData.protocols.map((protocol) =>
+      toBackendProtocol(protocol),
+    ),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
     issuers: [...formData.issuers],
@@ -260,7 +276,6 @@ export default function Details({
   onSaveNewPolicy,
   isDefaultPolicy,
 }: DetailsProps) {
-
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<PolicyFormData>(emptyFormData);
   const [arrayDrafts, setArrayDrafts] = useState<
@@ -274,7 +289,6 @@ export default function Details({
   });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
 
   useEffect(() => {
     console.log("default?:", isDefaultPolicy);
@@ -303,14 +317,18 @@ export default function Details({
   }, [policy, startInEditMode]);
 
   const handleActivate = async () => {
-    if (policy == null) {return}
+    if (policy == null) {
+      return;
+    }
     console.log("sending activated policy to API");
     await activatePolicy(policy.id);
     window.location.reload();
   };
 
   const handleDeactivate = async () => {
-    if (policy == null) {return}
+    if (policy == null) {
+      return;
+    }
     console.log("sending deactivated policy to API");
     await deactivatePolicy(policy.id);
     window.location.reload();
@@ -340,6 +358,21 @@ export default function Details({
       await handleDelete();
     } else {
       //add code here for deleting the policy in the default folder
+      const modules = import.meta.glob("../../../../defaultPolicies/*.json", {
+        eager: true,
+      }) as Record<string, { default: { name?: unknown } }>;
+
+      for (const [filePath, mod] of Object.entries(modules)) {
+        const parsed = mod.default;
+        const name = typeof parsed.name === "string" ? parsed.name : null;
+
+        if (!name || !policy) continue;
+
+        if (policy.name.toLowerCase() === name.toLowerCase()) {
+          console.log("matched file path:", filePath);
+          //this is were the code for deleting the default policy would go... IF IT WAS POSSIBLE (an hour of my life down the drain)
+        }
+      }
       await handleDelete();
     }
   };
@@ -421,7 +454,11 @@ export default function Details({
                   ""
                 ) : (
                   <>
-                    {policy.active ? <div style={greendot} /> : <div style={graydot} />}
+                    {policy.active ? (
+                      <div style={greendot} />
+                    ) : (
+                      <div style={graydot} />
+                    )}
                     <div style={pName}>{policy.name}</div>
                   </>
                 )}
@@ -639,7 +676,6 @@ export default function Details({
                     title="Minimum number of days remaining until certificate expiration"
                   />
                 </div>
-
               </div>
             ) : (
               <>
@@ -683,19 +719,19 @@ export default function Details({
           <div style={bottomActionBar}>
             {!isEditing ? (
               <>
-              <button type="button" style={editbutton} onClick={handleEdit}>
-                Edit
-              </button>
-              <button
-                type="button"
-                style={deletebutton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteConfirm(true);
-                }}
-              >
-                Delete
-              </button>
+                <button type="button" style={editbutton} onClick={handleEdit}>
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  style={deletebutton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteConfirm(true);
+                  }}
+                >
+                  Delete
+                </button>
               </>
             ) : (
               <>
@@ -726,11 +762,11 @@ export default function Details({
               <div style={modal} onClick={(e) => e.stopPropagation()}>
                 <p style={modalMessage}>
                   {policy
-                    ? (isDefaultPolicy === true || (typeof isDefaultPolicy === 'undefined'))
+                    ? isDefaultPolicy === true ||
+                      typeof isDefaultPolicy === "undefined"
                       ? `This is a default policy bundled with the app. Deleting it will remove the local copy. Are you sure you want to delete "${policy.name}"?`
                       : `Are you sure you want to permanently delete "${policy.name}"? This action cannot be undone.`
-                    : "No policy selected."
-                  }
+                    : "No policy selected."}
                 </p>
 
                 <div style={modalActions}>
@@ -745,7 +781,7 @@ export default function Details({
                     type="button"
                     style={modalDeleteButton}
                     onClick={async () => {
-                      if (typeof isDefaultPolicy != 'undefined') {
+                      if (typeof isDefaultPolicy != "undefined") {
                         await confirmDelete(isDefaultPolicy);
                       } else {
                         await confirmDelete(false);

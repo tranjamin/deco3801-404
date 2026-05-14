@@ -1,4 +1,4 @@
-import { setCurrentCertificateData, getStoredAccessToken } from "./api/storage";
+import { setCurrentCertificateData, getStoredAccessToken, getActiveDomains } from "./api/storage";
 import { BACKEND_BASE_URL } from "./base_url";
 
 console.log("TLS Retrieval Engine service worker loaded.");
@@ -129,6 +129,20 @@ async function handleOnUpdate(
   }
   if (!changeInfo.url.startsWith("https://")) {
     return;
+  }
+  const activeDomains = await getActiveDomains();
+  var domainIsActive: boolean = false;
+  if (activeDomains != null) {
+    for (const activeDomain of activeDomains) {
+      if (changeInfo.url.startsWith(activeDomain)) {
+        domainIsActive = true;
+      }
+    }
+    if (domainIsActive === false) {
+      console.log("NOT IN ACTIVE DOMAINS", activeDomains)
+      return;
+    }
+    console.log("idk")
   }
   if (changeInfo.url.startsWith("https://www.google.com/")) {
     console.log("Google search detected - ignoring to prevent excessive captures.");

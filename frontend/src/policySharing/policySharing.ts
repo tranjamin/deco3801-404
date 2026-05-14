@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from "../api/storage";
+import { getStoredAccessToken, setActiveDomains } from "../api/storage";
 import { BACKEND_BASE_URL } from "../base_url";
 
 /**
@@ -538,7 +538,26 @@ export async function getAllPolicies() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
+    const policies = mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
+    console.log("got the following policies from the backend:",policies);
+    //ok now im going to add the policies that are active to a locally stored array for ref in the tlsReterval engine
+    const activeDomains: string[] = [];
+    for (const policy of policies) {
+      if (policy.active === true) {
+        for (const domain of policy.domains) {
+          if (domain.startsWith("https://")) {
+            activeDomains.push(domain);
+          } else {
+            activeDomains.push("https://" + domain);
+          }
+        }
+      }
+    }
+    if (activeDomains.length != 0) {
+      setActiveDomains(activeDomains);
+    }
+    console.log("active domains", activeDomains);
+    return policies;
   } catch (e) {
     console.log("BIG ERROR:", e);
     return null;
