@@ -86,11 +86,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
-function parseStringField(
+async function parseStringField(
   obj: Record<string, unknown>,
   fieldName: string,
   maxLength: number,
-): string {
+): Promise<string> {
   const value = obj[fieldName];
 
   if (typeof value !== "string") {
@@ -99,6 +99,27 @@ function parseStringField(
 
   if (value.length > maxLength) {
     throw new Error(`'${fieldName}' must be ${maxLength} characters or less.`);
+  }
+
+  if (fieldName === "name") {
+    if (value === "") {
+      throw new Error("Policy must have a name");
+    }
+    const fetchedPolicies = await getAllPolicies();
+    var curPolicyNames: string[] = [];
+    if (fetchedPolicies) {
+    for (const p of fetchedPolicies) {
+      curPolicyNames.push(p.name);
+    }
+    if (curPolicyNames.includes(value)) {
+      throw new Error("Policy Name is already in use, please chose another name");
+    }
+  }
+}
+if (fieldName === "description") {
+    if (value === "") {
+      throw new Error("Policy must have a description");
+    }
   }
 
   return value;
@@ -179,7 +200,7 @@ function parseNumberField(obj: Record<string, unknown>, fieldName: string): numb
  *
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
-function parseImportedPolicy(iPolicy: string): ExportedPolicy {
+async function parseImportedPolicy(iPolicy: string): Promise<ExportedPolicy> {
   let parsedValue: unknown;
 
   try {
@@ -195,8 +216,8 @@ function parseImportedPolicy(iPolicy: string): ExportedPolicy {
 
   return {
     // Validate all required fields using the helper parsers above - this comment was made with GPT-5 mini on 2026-05-09
-    name: parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
-    description: parseStringField(
+    name: await parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
+    description: await parseStringField(
       parsedValue,
       "description",
       MAX_DESCRIPTION_LENGTH,
@@ -244,7 +265,7 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function importPolicy(iPolicy: string) {
-  const exportedPolicy = parseImportedPolicy(iPolicy);
+  const exportedPolicy = await parseImportedPolicy(iPolicy);
   const cPolicy: SecurityPolicy = {
     id: 0,
     ...exportedPolicy,

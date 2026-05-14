@@ -6,6 +6,7 @@ import {
   deactivatePolicy,
   exportPolicy,
   updatePolicy,
+  getAllPolicies,
 } from "../../policySharing/policySharing";
 
 /**
@@ -289,9 +290,10 @@ export default function Details({
   });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  //const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    console.log("default?:", isDefaultPolicy);
+    //console.log("default?:", isDefaultPolicy);
     if (policy) {
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
@@ -320,7 +322,7 @@ export default function Details({
     if (policy == null) {
       return;
     }
-    console.log("sending activated policy to API");
+    //.log("sending activated policy to API");
     await activatePolicy(policy.id);
     window.location.reload();
   };
@@ -329,7 +331,7 @@ export default function Details({
     if (policy == null) {
       return;
     }
-    console.log("sending deactivated policy to API");
+    //console.log("sending deactivated policy to API");
     await deactivatePolicy(policy.id);
     window.location.reload();
   };
@@ -423,22 +425,57 @@ export default function Details({
     }));
   };
 
-  const handleSave = async () => {
-    const policyPayload = mapFormDataToPolicy(formData, policy?.id);
-
-    if (isNewPolicy && onSaveNewPolicy) {
-      await onSaveNewPolicy(policyPayload);
-      return;
-    } else if (!isNewPolicy && updatePolicy && policy) {
-      await updatePolicy(policyPayload, policy.id);
+  const validateSave = async () => {
+    console.log("formData", formData);
+    //Check name
+    if (formData.name === "") {
+      return "Policy name cannot be empty";
     }
+    //check description
+    if (formData.description === "") {
+      return "Policy description cannot be empty";
+    }
+    if (policy) {
+      if (!(formData.name === policy.name)) {
+        //get a list of names
+        const fetchedPolicies = await getAllPolicies();
+        var curPolicyNames: string[] = [];
+        if (fetchedPolicies) {
+          for (const p of fetchedPolicies) {
+            curPolicyNames.push(p.name);
+          }
+          if (curPolicyNames.includes(formData.name)) {
+            return "that policy name is already in use, please chose another name";
+          }
+        }
+      }
+    }
+    return null;
+  };
 
-    console.log("saving edited policy to API", policyPayload);
-    window.location.reload();
+  const handleSave = async () => {
+    const valid = await validateSave();
+    if (valid === null) {
+      //setErrorMsg("");
+      const policyPayload = mapFormDataToPolicy(formData, policy?.id);
+
+      if (isNewPolicy && onSaveNewPolicy) {
+        await onSaveNewPolicy(policyPayload);
+        return;
+      } else if (!isNewPolicy && updatePolicy && policy) {
+        await updatePolicy(policyPayload, policy.id);
+      }
+
+      //console.log("saving edited policy to API", policyPayload);
+      window.location.reload();
+    } else {
+      //setErrorMsg(valid);
+      alert(valid);
+    }
   };
 
   const handleBack = async () => {
-    console.log("cancelling policy edit");
+    //console.log("cancelling policy edit");
     window.location.reload();
   };
 
@@ -471,51 +508,51 @@ export default function Details({
                       <button
                         style={activatebutton}
                         onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#d3d3d3")
+                          (e.currentTarget.style.background = "#e2e6ea")
                         }
                         onMouseOut={(e) =>
-                          (e.currentTarget.style.background =
-                            "rgb(243, 243, 243)")
+                          (e.currentTarget.style.background = "#ffffff")
                         }
+                        title="Activate Policy"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleActivate();
                         }}
                       >
                         {" "}
-                        activate
+                        <img src="/activate4.svg" width={24} height={24} />
                       </button>
                     ) : (
                       <button
                         style={deactivatebutton}
                         onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#d3d3d3")
+                          (e.currentTarget.style.background = "#e2e6ea")
                         }
                         onMouseOut={(e) =>
-                          (e.currentTarget.style.background =
-                            "rgb(243, 243, 243)")
+                          (e.currentTarget.style.background = "#ffffff")
                         }
+                        title="Deactivate Policy"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleDeactivate();
                         }}
                       >
                         {" "}
-                        deactivate
+                        <img src="/deactivate.svg" width={24} height={24} />
                       </button>
                     )}
                     <button
                       style={importbutton}
                       onClick={handleShare}
+                      title="Export a policy to JSON"
                       onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "#d3d3d3")
+                        (e.currentTarget.style.background = "#e2e6ea")
                       }
                       onMouseOut={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgb(243, 243, 243)")
+                        (e.currentTarget.style.background = "#ffffff")
                       }
                     >
-                      Share
+                      <img src="/share.svg" width={24} height={24} />
                     </button>
                   </>
                 )}
@@ -719,18 +756,42 @@ export default function Details({
           <div style={bottomActionBar}>
             {!isEditing ? (
               <>
-                <button type="button" style={editbutton} onClick={handleEdit}>
+                {/* <button type="button" style={editbutton} onClick={handleEdit}>
                   Edit
-                </button>
+                </button> */}
                 <button
-                  type="button"
+                        style={editbutton}
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.background = "#e2e6ea")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.background = "#ffffff")
+                        }
+                        title="Edit Policy"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleEdit();
+                        }}
+                      >
+                        {" "}
+                        <img src="/edit.svg" width={24} height={24} />
+                      </button>
+                <button
                   style={deletebutton}
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.background = "#e2e6ea")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.background = "#ffffff")
+                        }
+                        title="Delete Policy"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowDeleteConfirm(true);
                   }}
                 >
-                  Delete
+                  {" "}
+                  <img src="/delete.svg" width={24} height={24} />
                 </button>
               </>
             ) : (
@@ -738,12 +799,27 @@ export default function Details({
                 <button
                   type="button"
                   style={savebutton}
+                  onMouseOver={(e) =>
+                          (e.currentTarget.style.background = "#e2e6ea")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.background = "#ffffff")
+                        }
+                        title="Save Policy"
                   onClick={() => void handleSave()}
                 >
                   Save
                 </button>
+                {/* <div style={errorMsgStyle}>{errorMsg}</div> */}
                 <button
                   type="button"
+                  onMouseOver={(e) =>
+                          (e.currentTarget.style.background = "#e2e6ea")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.background = "#ffffff")
+                        }
+                        title="Go Back"
                   style={backbutton}
                   onClick={() => void handleBack()}
                 >
@@ -840,7 +916,7 @@ const rightHeaderGroup: React.CSSProperties = {
   alignItems: "center",
   //flexDirection: "column",
   //alignItems: "flex-end",
-  //gap: "8px",
+  gap: "8px",
 };
 
 const detailsPane: React.CSSProperties = {
@@ -876,54 +952,82 @@ const graydot: React.CSSProperties = {
 };
 
 const deactivatebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  marginLeft: "auto",
+
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#ff0000",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const activatebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  marginLeft: "auto",
+
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#047e00",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const importbutton: React.CSSProperties = {
-  marginLeft: "auto",
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#00a2ff",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const editbutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#967500",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const deletebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+   display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#b30000",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const fieldGroup: React.CSSProperties = {
@@ -1040,21 +1144,33 @@ const bottomActionBar: React.CSSProperties = {
 };
 
 const savebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  color: "#047e00",
+   display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#047e00",
-  backgroundColor: "rgb(243, 243, 243)",
+  fontSize: "16px",
+  fontWeight: "bold",
+  transition: "background 0.2s",
 };
 
 const backbutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  color: "#000000",
+   display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#333333",
-  backgroundColor: "rgb(243, 243, 243)",
+  fontSize: "16px",
+  fontWeight: "bold",
+  transition: "background 0.2s",
 };
 
 const modalOverlay: React.CSSProperties = {
@@ -1104,3 +1220,9 @@ const modalDeleteButton: React.CSSProperties = {
   backgroundColor: "#ffdddd",
   color: "#b30000",
 };
+
+// const errorMsgStyle: React.CSSProperties = {
+//   color: "#ff0000",
+//   fontWeight: "bold",
+//   fontSize:"20px"
+// }
