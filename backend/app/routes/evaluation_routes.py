@@ -31,21 +31,24 @@ def evaluation_route():
     """
     # get the user
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
+    if user is None:
+        return jsonify({"message": "User not found"}), 404
     
     # .get_json handles any errors
-    data: Dict[str, Any] = request.get_json(force=True)
-    if data.get("certificate_id") is None or data.get("policy_id") is None:
-        return "Bad JSON Request", 400
+    data: Dict[str, Any] | None= request.get_json(force=True, silent=True)
+    if data is None or data.get("certificate_id") is None or data.get("policy_id") is None:
+        return jsonify({"message": "Bad data request"}), 400
         
-    cert: TLSCertificate = TLSCertificate.query.get_or_404(data.get("certificate_id"))
-    policy: CertificatePolicy = CertificatePolicy.query.get_or_404(data.get("policy_id"))
+    cert: TLSCertificate | None = TLSCertificate.query.get(data.get("certificate_id"))
+    policy: CertificatePolicy | None= CertificatePolicy.query.get(data.get("policy_id"))
 
-    if cert.user_id != user_id and user_id != "master":
-        return 404
-    if policy.user_id != user_id and user_id != "master":
-        return 404
+    if cert is None or (cert.user_id != user_id and user.username != "master"):
+        return jsonify({"message": "Certificate not found"}), 404
+    if policy is None or (policy.user_id != user_id and user.username != "master"):
+        return jsonify({"message": "Policy not found"}), 404
     
+    return_json: Dict[str, Any]
     _, return_json = evaluate_against_policy(cert, policy)
     
     return jsonify(return_json), 200
