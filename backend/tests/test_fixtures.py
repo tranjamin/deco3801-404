@@ -52,13 +52,13 @@ def client(app: Flask) -> FlaskClient:
 def access_headers(client):
     register_request = {"username": "test_username", "password": "test_password"}
     login_response = client.post("/api/auth/register", json=register_request)
-    return {"Authorization": f"Bearer {login_response.get_json()["accessToken"]}"}
+    return {"Authorization": f"Bearer {login_response.get_json()["access_token"]}"}
 
 @pytest.fixture()
 def access_headers_two(client):
     register_request = {"username": "test_username_two", "password": "test_password_two"}
     login_response = client.post("/api/auth/register", json=register_request)
-    return {"Authorization": f"Bearer {login_response.get_json()["accessToken"]}"}
+    return {"Authorization": f"Bearer {login_response.get_json()["access_token"]}"}
 
 
 @pytest.fixture()
