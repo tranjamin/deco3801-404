@@ -172,7 +172,7 @@ def change_username():
     Requires:
         JSON data with the following fields: "current_password", "new_username"
     Returns:
-        On success: A JSON with the updated 'user' data, Error code 200
+        On success: A JSON with a 'username_updated' boolean, Error code 200
         On failure: JSON with an 'error' field, Error code 400 (if missing/invalid fields), 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
     """
     data = request.get_json(force=True) or {}
