@@ -1,7 +1,18 @@
-import { setCurrentCertificateData, getStoredAccessToken } from "./api/storage";
+import { setCurrentCertificateData } from "./api/storage";
+import { getValidAccessToken } from "./api/auth";
 import { BACKEND_BASE_URL } from "./base_url";
 
 console.log("TLS Retrieval Engine service worker loaded.");
+
+chrome.runtime.onInstalled.addListener(() => {
+  try {
+    if (chrome.storage?.session?.setAccessLevel) {
+      chrome.storage.session.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" });
+    }
+  } catch (e) {
+    console.error("Error setting session storage access level:", e);
+  }
+});
 
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
 const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
@@ -118,7 +129,7 @@ async function handleOnUpdate(
   changeInfo: { url?: string },
   tab: chrome.tabs.Tab,
 ): Promise<void> {
-  const accessToken = await getStoredAccessToken();
+  const accessToken = await getValidAccessToken();
 
   if (!accessToken) {
      console.log("User is not signed in. Skipping TLS retrieval.");
@@ -295,7 +306,7 @@ async function sendCertToBackend(payload: object): Promise<void> {
   storeCurrentCert(payload);
 
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
 
     const headers: Record<string, string> = {
       Accept: "application/json",
