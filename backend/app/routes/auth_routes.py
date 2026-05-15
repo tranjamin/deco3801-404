@@ -10,6 +10,7 @@ from typing import Dict, Any
 
 from app import db
 from app.models.user import User
+from app.models.user import USER_NAME_MAXLEN
 
 auth_bp: Blueprint = Blueprint("auth_bp", __name__)
 
@@ -128,28 +129,73 @@ def change_password():
     API endpoint which changes a user's password.
 
     URL:
-        /check
+        /change_password
     Methods Supported:
         POST
     Requires:
         JSON data with the following fields: "current_password", "new_password"
     Returns:
-        On success: A JSON with an 'authenticated' boolean, Error code 200
+        On success: A JSON with an 'password_updated' boolean, Error code 200
         On failure: Error code 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
     """
-    data: Dict[str, Any] = request.get_json(force=True)
+    data: Dict[str, Any] = request.get_json(force=True) or {}
     current_password: str = str(data.get("current_password", ""))
-    new_password: str = str(data.get("current_password", ""))
+    new_password: str = str(data.get("new_password", ""))
+
+    if not current_password or not new_password:
+        return jsonify({"error": "current_password and new_password required"}), 400
 
     # checks if JWT token is authenticated
     user_id: str = get_jwt_identity()
     user: User = User.query.get_or_404(int(user_id))
     
     # checks if current password is correct
-    if not check_password_hash(user.password_hash, current_password):
+    if not user.check_password(current_password):
         return jsonify({"error": "unauthorised"}), 401
-    
+
     # updates password
-    user.password_hash = generate_password_hash(new_password, method="pbkdf2:sha256")
-    
+    user.set_password(new_password)
+    db.session.commit()
+
     return jsonify({"password_updated": True}), 200
+
+@auth_bp.route("/change_username", methods=["POST"])
+@jwt_required()
+def change_username():
+    """
+    API endpoint which changes a user's username.
+
+    URL:
+        /change_username
+    Methods Supported:
+        POST
+    Requires:
+        JSON data with the following fields: "current_password", "new_username"
+    Returns:
+        On success: A JSON with a 'username_updated' boolean, Error code 200
+        On failure: JSON with an 'error' field, Error code 400 (if missing/invalid fields), 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
+    """
+    data = request.get_json(force=True) or {}
+    current_password = str(data.get("current_password", ""))
+    new_username = str(data.get("new_username", "")).strip()
+    if not current_password or not new_username:
+        return jsonify({"error": "current_password and new_username required"}), 400
+
+    user_id = get_jwt_identity()
+    user = User.query.get_or_404(int(user_id))
+
+    if not user.check_password(current_password):
+        return jsonify({"error": "unauthorised"}), 401
+
+    new_username = new_username[:USER_NAME_MAXLEN]
+
+    existing = User.query.filter_by(username=new_username).first()
+    if existing and existing.id != user.id:
+        return jsonify({"error": "username already taken"}), 409
+
+    if new_username == user.username:
+        return jsonify({"error": "new_username is the same as the current username"}), 400
+
+    user.username = new_username
+    db.session.commit()
+    return jsonify({"username_updated": True}), 200
