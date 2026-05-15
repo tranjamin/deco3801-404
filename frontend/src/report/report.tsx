@@ -1,6 +1,8 @@
 /// <reference types="chrome" />
 import React, { useEffect, useState } from "react";
-import { getStoredAccessToken } from "../api/storage";
+import { getValidAccessToken } from "../api/auth";
+import { useAuth } from "../api/auth";
+import { SessionExpired } from "../sharedComponent/sessionExpired";
 import Navbar from "../sharedComponent/navbar";
 import ReportTable from "./components/reportTable";
 import TableFilters from "./components/tableFilters";
@@ -93,6 +95,7 @@ const getInitialStatusFilter = () => {
 
 
 export default function Report() {
+  const { isAuthenticated, setIsAuthenticated } = useAuth();
   const [sidebarOpen] = useState(true);
   const sidebarWidth = sidebarOpen ? 220 : 0;
 
@@ -108,16 +111,17 @@ export default function Report() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchReportVisits = async () => {
       setLoading(true);
       setError("");
 
       try {
-        const accessToken = await getStoredAccessToken();
+        const accessToken = await getValidAccessToken();
 
         if (!accessToken) {
-          setError("Sign in to view report history.");
-          setData([]);
+          setIsAuthenticated(false);
           return;
         }
 
@@ -143,7 +147,10 @@ export default function Report() {
     };
 
     fetchReportVisits();
-  }, []);
+  }, [isAuthenticated]);
+
+  if (isAuthenticated === null) return <div>Loading...</div>;
+  if (!isAuthenticated) return <SessionExpired />;
 
   const searchedData = searchCertificates(data, searchQuery);
   const filteredData = filterCertificates(searchedData, filters);

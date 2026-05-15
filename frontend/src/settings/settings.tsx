@@ -1,6 +1,8 @@
 /// <reference types="chrome" />
 import React, { useEffect, useState } from "react";
 import Navbar from "../sharedComponent/navbar";
+import { useAuth } from "../api/auth";
+import { SessionExpired } from "../sharedComponent/sessionExpired";
 
 const SETTINGS_STORAGE_KEY = "allowedDomains";
 
@@ -68,6 +70,7 @@ function SettingsListEditor({
 }
 
 export default function Settings() {
+  const { isAuthenticated } = useAuth();
   const defaultAllowedDomains = ["portal.my.uq.edu.au", "my.uq.edu.au"];
   const [formData, setFormData] = useState<SettingsFormData>({
     allowedDomains: defaultAllowedDomains,
@@ -133,6 +136,9 @@ export default function Settings() {
       console.error("Failed to save settings to localStorage:", error);
     }
   };
+
+  if (isAuthenticated === null) return <div>Loading...</div>;
+  if (!isAuthenticated) return <SessionExpired />;
 
   return (
     <div style={page}>

@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import sqlalchemy
 import os
+from datetime import timedelta
 # import psycopg2
 from dotenv import load_dotenv
 
@@ -117,7 +118,8 @@ def create_app(test=False):
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url.render_as_string(hide_password=False)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "change-this-jwt-secret")
-    # TODO: Add JWT secret key to environment variables
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 
     # init app
     db.init_app(app)

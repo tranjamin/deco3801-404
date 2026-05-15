@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from "../api/storage";
+import { getValidAccessToken } from "../api/auth";
 import { BACKEND_BASE_URL } from "../base_url";
 
 /**
@@ -302,7 +302,7 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
  */
 export async function addDummyPolicy(): Promise<{ message: string } | null> {
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -334,7 +334,7 @@ export async function storeNewPolicy(
 ): Promise<SecurityPolicy | null> {
   console.log("sending this", mapPolicyToBackendPayload(policy));
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     console.log(accessToken);
     const headers = {
       Accept: "application/json",
@@ -369,7 +369,7 @@ export async function activatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -402,7 +402,7 @@ export async function deactivatePolicy(
   policyID: number,
 ): Promise<{ message: string } | null> {
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -434,7 +434,7 @@ export async function deactivatePolicy(
 export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
   console.log(policy, policyID);
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -466,7 +466,7 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
 export async function deletePolicy(policyID: number) {
   console.log(policyID);
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -495,7 +495,7 @@ export async function deletePolicy(policyID: number) {
  */
 export async function getPolicy(policyID: number) {
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -524,7 +524,7 @@ export async function getPolicy(policyID: number) {
  */
 export async function getAllPolicies() {
   try {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
