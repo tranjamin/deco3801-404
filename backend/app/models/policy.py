@@ -94,18 +94,20 @@ class CertificatePolicy(db.Model):
             - Lifespan data is <0
         """
 
+        data = data.copy()
+
         # trim down all strings to their required length. modifies the data
         # ensure correct data types
         
         ## 
-        if isinstance(data.get("name", ""), str):
-            data["name"] = data.get("name", "")[:POLICY_NAME_MAXLEN]
+        if isinstance(data.get("name", "Unnamed Policy"), str):
+            data["name"] = data.get("name", "Unnamed Policy")[:POLICY_NAME_MAXLEN]
         else:
             return None
         
         ##
-        if isinstance(data.get("description", ""), str):
-            data["description"] = data.get("description","")[:POLICY_DESC_MAXLEN]
+        if isinstance(data.get("description", "No description provided"), str):
+            data["description"] = data.get("description", "No description provided")[:POLICY_DESC_MAXLEN]
         else:
             return None
         
@@ -114,6 +116,9 @@ class CertificatePolicy(db.Model):
             data["validProtocols"] = [data["validProtocols"]]
         elif not isinstance(data.get("validProtocols", []), list):
             return None 
+        for protocol in data.get("validProtocols", []):
+            if not isinstance(protocol, str):
+                return None
         protocol_bv: int = Protocols.encode(data.get("validProtocols", []))
         
         ##
@@ -122,6 +127,9 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validSubjects", []), list):
             return None
         else:
+            for subject in data.get("validSubjects", []):
+                if not isinstance(subject, str):
+                    return None
             data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data.get("validSubjects", [])][:POLICY_MAX_ARRAY_SIZE]
         
         ##
@@ -130,6 +138,9 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validIssuers", []), list):
             return None
         else:
+            for issuers in data.get("validIssuers", []):
+                if not isinstance(issuers, str):
+                    return None
             data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data.get("validIssuers", [])][:POLICY_MAX_ARRAY_SIZE]
             
         ##
@@ -138,6 +149,9 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("validCiphers", []), list):
             return None
         else:
+            for issuers in data.get("validCiphers", []):
+                if not isinstance(issuers, str):
+                    return None
             data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data.get("validCiphers", [])][:POLICY_MAX_ARRAY_SIZE]
         
         ##
@@ -146,6 +160,9 @@ class CertificatePolicy(db.Model):
         elif not isinstance(data.get("domains", []), list):
             return None
         else:
+            for domains in data.get("domains", []):
+                if not isinstance(domains, str):
+                    return None
             data["domains"] = [i[:POLICY_DOMA_MAXLEN] for i in data.get("domains", [])][:POLICY_MAX_ARRAY_SIZE]
         
         ##

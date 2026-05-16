@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import math
 from urllib.parse import urlparse
 
 from app import db
@@ -10,7 +11,7 @@ from typing import Any, List
 
 from app.models.utils import Flags, CertificateTransparencyCompliance
 from app.models.policy import CertificatePolicy
-from app.models.evaluation import evaluate_against_policy, satisfies_domain
+from app.models.evaluation import evaluate_against_policy
 
 from typing import TYPE_CHECKING
 
@@ -36,12 +37,12 @@ class TLSCertificate(db.Model):
         url (string[255]): the url this certificate came from
         protocol (string[50]): the certificate protocol used
         cipher (string[50]): the cipher used
-        subject_name (string[255]): the subject name of the certificate
-        san_list (list(string[255])): the SANs associated with this certificate
+        subject_name (string[50]): the subject name of the certificate
+        san_list (list(string[50])): the SANs associated with this certificate
         issuer (string[50]): the issuer of the certificate
-        valid_from (float): the timestamp that the certificate was issued
-        valid_to (float): the timestamp that the certificate expires at
-        visited_at (float): the timestamp when this certificate was captured by the extension
+        valid_from (int): the timestamp that the certificate was issued
+        valid_to (int): the timestamp that the certificate expires at
+        visited_at (int): the timestamp when this certificate was captured by the extension
         certificate_transparency_compliance (enum): whether the certificate was marked as compliant or not
 
     Inherits from:
@@ -53,16 +54,16 @@ class TLSCertificate(db.Model):
 
     # defines the column tables, refer to docstring for details
     id: Mapped[int] = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    issues: Mapped[int] = db.Column(db.Integer, nullable=False)
+    issues: Mapped[int] = db.Column(db.Integer, nullable=False, default=0)
     url: Mapped[str] = db.Column(db.String(CERT_URL_MAXLEN), nullable=False)
     protocol: Mapped[str] = db.Column(db.String(CERT_PROT_MAXLEN), nullable=False)
     cipher: Mapped[str] = db.Column(db.String(CERT_CIPH_MAXLEN), nullable=False)
     subject_name: Mapped[str] = db.Column(db.String(CERT_SUBJ_MAXLEN), nullable=False)
     san_list: Mapped[List[str]] = db.Column(ARRAY(db.String(CERT_SANS_MAXLEN)), nullable=False)
     issuer: Mapped[str] = db.Column(db.String(CERT_ISSU_MAXLEN), nullable=False)
-    valid_from: Mapped[float] = db.Column(db.Float, nullable=False)
-    valid_to: Mapped[float] = db.Column(db.Float, nullable=False)
-    visited_at: Mapped[float] = db.Column(db.Float, nullable=False, default=time.time, index=True)
+    valid_from: Mapped[int] = db.Column(db.Integer, nullable=False)
+    valid_to: Mapped[int] = db.Column(db.Integer, nullable=False)
+    visited_at: Mapped[int] = db.Column(db.Integer, nullable=False, default=lambda _: int(time.time()), index=True)
     certificate_transparency_compliance: Mapped[CertificateTransparencyCompliance] = db.Column(
         db.Enum(CertificateTransparencyCompliance),
         nullable=False,
@@ -103,7 +104,7 @@ class TLSCertificate(db.Model):
     def to_report_dict(self) -> dict[str, Any]:
         """Converts a certificate row to the report table API shape."""
         issues = Flags.decode(self.issues)
-        days_until_expiry = round((self.valid_to - time.time()) / 86400, 1)
+        days_until_expiry = int(self.valid_to - time.time()) // 86400 # always round down
         return {
             "id": self.id,
             "domain": self.domain_name(),
@@ -122,10 +123,12 @@ class TLSCertificate(db.Model):
         }
         
     def evaluate_against_policies_and_store(self, policies: List[CertificatePolicy]):
-        # evaluate against policies
+        """Evaluates this certificate against a list of policies and udates the self.issues accordingly"""
+        
+        # the combined issues bitvector
         combined_bv: int = 0
                 
-        for policy in policies:
+        for policy in policies: # evaluate each policy
             bv, _ = evaluate_against_policy(self, policy)
             combined_bv |= bv
         
@@ -139,31 +142,39 @@ class TLSCertificate(db.Model):
             - Some required fields are missing (url, protocol)
             - Times are incorrect or out of order
         """
+        
+        data = data.copy()
 
         # trim down all strings to their required length. modifies the data
         # ensure correct data types
         
-        ##
+        ## handle url
         if isinstance(data.get("url"), str):
             data["url"] = data["url"][:CERT_URL_MAXLEN]
         else:
             return None
 
-        ##
+        ## handle protocol
         if isinstance(data.get("protocol"), str):
             data["protocol"] = data["protocol"][:CERT_PROT_MAXLEN]
         else:
             return None
         
-        ##
+        ## handle cipher
         if isinstance(data.get("cipher", ""), str):
             data["cipher"] = data.get("cipher", "")[:CERT_CIPH_MAXLEN]
         else:
             return None
         
-        ##
+        ## handle subject name
         if isinstance(data.get("subjectName", ""), str):
             data["subjectName"] = data.get("subjectName", "")[:CERT_SUBJ_MAXLEN]
+        else:
+            return None
+        
+        ## handle issuer
+        if isinstance(data.get("issuer", ""), str):
+            data["issuer"] = data.get("issuer", "")[:CERT_ISSU_MAXLEN]
         else:
             return None
         
@@ -173,7 +184,11 @@ class TLSCertificate(db.Model):
         elif not isinstance(data.get("sanList", []), list):
             return None
         else:
+            for san in data.get("sanList", []):
+                if not isinstance(san, str):
+                    return None
             data["sanList"] = [i[:CERT_SANS_MAXLEN] for i in data.get("sanList", [])][:CERT_MAX_SANS]
+          
                 
         ##
         if not isinstance(data.get("validFrom", -1), int):
@@ -199,9 +214,9 @@ class TLSCertificate(db.Model):
             subject_name=data.get("subjectName", ""),
             san_list=data.get("sanList", []),
             issuer=data.get("issuer", ""),
-            valid_from=data.get("validFrom", 0.0),
-            valid_to=data.get("validTo", 0.0),
-            visited_at=time.time(),
+            valid_from=data.get("validFrom", 0),
+            valid_to=data.get("validTo", 0),
+            visited_at=int(time.time()),
             certificate_transparency_compliance=CertificateTransparencyCompliance(
                 data.get("certificateTransparencyCompliance", "unknown")
             ),
@@ -218,7 +233,7 @@ class TLSCertificate(db.Model):
             return False
         if self.subject_name != other.subject_name:
             return False
-        if self.san_list != other.san_list: # order is improtant for this
+        if set(self.san_list) != set(other.san_list): # order is not important for this
             return False
         if self.issuer != other.issuer:
             return False
