@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policySharing/policySharing";
 //import { getAllPolicies } from "../../policySharing/policySharing";
 import PolicyStub from "./policyStub";
+import "./loader.css";
 
 /**
  * Props for PolicyList component that displays all available policies.
@@ -169,7 +170,8 @@ export default function PolicyList({
         </div>
       </div>
       {policies.length === 0 ? (
-        <p>loading...</p>
+        // <p>loading...</p>
+        <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
           policy.active === true ? (
@@ -187,7 +189,8 @@ export default function PolicyList({
       )}
       <h3 style={subheading}>Inactive Policies</h3>
       {policies.length === 0 ? (
-        <p>loading...</p>
+        // <p>loading...</p>
+        <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
           policy.active === false ? (
@@ -204,6 +207,7 @@ export default function PolicyList({
         )
       )}
     </div>
+    
   );
 }
 

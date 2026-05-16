@@ -1,4 +1,4 @@
-import { getStoredAccessToken, setActiveDomains } from "../api/storage";
+import { setActiveDomains } from "../api/storage";
 import { getValidAccessToken } from "../api/auth";
 import { BACKEND_BASE_URL } from "../base_url";
 
@@ -266,6 +266,12 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function importPolicy(iPolicy: string) {
+  console.log("testing", iPolicy)
+  const temp = JSON.parse(iPolicy);
+  if (temp.deleted) {
+    console.log("double fuck");
+    return;
+  }
   const exportedPolicy = await parseImportedPolicy(iPolicy);
   const cPolicy: SecurityPolicy = {
     id: 0,

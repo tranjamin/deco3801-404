@@ -101,7 +101,7 @@ function toDisplayProtocol(protocol: string): string {
   if (protocol != "quic") {
     return `TLS ${normalizeProtocol(protocol)}`;
   } else {
-    return 'QUIC';
+    return "QUIC";
   }
 }
 
@@ -193,10 +193,16 @@ function ProtocolSelector({
   return (
     <div style={fieldGroup}>
       <label
-        style={fieldLabel}
-        title="Select allowed TLS/SSL protocol versions"
+        style={fieldLabelWithInfo}
+        title={
+          "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+        }
       >
-        Protocols
+        <span>Protocols</span>
+
+        <span style={infoIcon} aria-hidden="true">
+          ?
+        </span>
       </label>
       <div style={checkboxGroup}>
         {AVAILABLE_PROTOCOLS.map((protocol) => (
@@ -231,8 +237,13 @@ function ArrayListEditor({
 }: ArrayListEditorProps) {
   return (
     <div style={fieldGroup}>
-      <label style={fieldLabel} title={tooltip}>
-        {label}
+      <label style={fieldLabelWithInfo} title={tooltip}>
+        <span>{label}</span>
+        {tooltip ? (
+          <span style={infoIcon} aria-hidden="true">
+            ?
+          </span>
+        ) : null}
       </label>
       <div style={listBox}>
         {items.length > 0 ? (
@@ -254,21 +265,30 @@ function ArrayListEditor({
           <div style={emptyListText}>No items yet.</div>
         )}
       </div>
-      <div style={addRow}>
-        <input
-          id={inputId}
-          style={textInput}
-          type="text"
-          maxLength={50}
-          value={draftValue}
-          onChange={(e) => onDraftChange(e.target.value)}
-          title={tooltip}
-          placeholder="press Add to add to list of valid items"
-        />
-        <button type="button" style={addButton} onClick={onAdd}>
-          Add
-        </button>
-      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onAdd();
+        }}
+      >
+        {" "}
+        {/*without e.preventDefault the page autoreloads */}
+        <div style={addRow}>
+          <input
+            id={inputId}
+            style={textInput}
+            type="text"
+            maxLength={50}
+            value={draftValue}
+            onChange={(e) => onDraftChange(e.target.value)}
+            title={tooltip}
+            placeholder="press Add to add to list of valid items"
+          />
+          <button type="submit" style={addButton}>
+            Add
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -571,11 +591,14 @@ export default function Details({
               <div>
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-name"
-                    title="The name of the policy"
+                    style={fieldLabelWithInfo}
+                    title={"The name of the policy"}
                   >
-                    Name
+                    <span>Name</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <input
                     id="policy-name"
@@ -590,11 +613,14 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-description"
-                    title="A brief description of what this policy enforces"
+                    style={fieldLabelWithInfo}
+                    title={"A brief description of what this policy enforces"}
                   >
-                    Description
+                    <span>Description</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <input
                     id="policy-description"
@@ -625,7 +651,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("domains")}
                     onRemove={(index) => handleArrayRemove("domains", index)}
-                    tooltip="Domains where this policy should apply"
+                    tooltip="Domains where this policy should apply. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -640,7 +666,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("ciphers")}
                     onRemove={(index) => handleArrayRemove("ciphers", index)}
-                    tooltip="Valid cipher suites for TLS connections"
+                    tooltip="Valid cipher suites for TLS connections. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -655,7 +681,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("subjects")}
                     onRemove={(index) => handleArrayRemove("subjects", index)}
-                    tooltip="Valid certificate subject names"
+                    tooltip="Valid certificate subject names. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -676,11 +702,16 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-valid-for"
-                    title="Minimum number of days the certificate should be valid after issuance"
+                    style={fieldLabelWithInfo}
+                    title={
+                      "Minimum number of days the certificate should be valid after issuance"
+                    }
                   >
-                    Valid for how many days after issue?
+                    <span>Valid for how many days after issue?</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <div style={sliderValueText}>{formData.validFor} days</div>
                   <input
@@ -700,11 +731,19 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-valid-after"
-                    title="Minimum number of days remaining until certificate expiration"
+                    style={fieldLabelWithInfo}
+                    title={
+                      "Minimum number of days remaining until certificate expiration"
+                    }
                   >
-                    How many days is the certificate still valid for? (minimum)
+                    <span>
+                      How many days is the certificate still valid for?
+                      (minimum)
+                    </span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <div style={sliderValueText}>{formData.validAfter} days</div>
                   <input
@@ -724,34 +763,75 @@ export default function Details({
               </div>
             ) : (
               <>
-                <p>
+                <p
+                  title={"A brief description of what this policy enforces"}
+                  style={valueStyle}
+                >
                   <strong>Description:</strong> {policy.description}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Fields of active policies are used as criteria for tracking/reporting"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Status:</strong>{" "}
                   {policy.active ? "Active" : "Inactive"}
                 </p>
-                <p>
+                <p
+                  title={"Domains where this policy should apply"}
+                  style={valueStyle}
+                >
                   <strong>Domains:</strong> {policy.domains.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Protocols:</strong> {policy.protocols.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid cipher suites for TLS connections. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Ciphers:</strong> {policy.ciphers.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid certificate subject names. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Subjects:</strong> {policy.subjects.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid certificate issuers or Certificate Authorities. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Valid Certificate Authorities:</strong>{" "}
                   {policy.issuers.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Minimum number of days the certificate should be valid after issuance"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Valid for how many days after issue?:</strong>{" "}
                   {policy.validFor}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Minimum number of days remaining until certificate expiration"
+                  }
+                  style={valueStyle}
+                >
                   <strong>
                     How many days is the certificate still valid for? (minimum):
                   </strong>{" "}
@@ -768,31 +848,32 @@ export default function Details({
                   Edit
                 </button> */}
                 <button
-                        style={editbutton}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#e2e6ea")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.background = "#ffffff")
-                        }
-                        title="Edit Policy"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleEdit();
-                        }}
-                      >
-                        {" "}
-                        <img src="/edit.svg" width={24} height={24} />
-                      </button>
+                  style={editbutton}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Edit Policy"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleEdit();
+                  }}
+                >
+                  {" "}
+                  <img src="/edit.svg" width={24} height={24} />
+                </button>
+                {!isDefaultPolicy ? 
                 <button
                   style={deletebutton}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#e2e6ea")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.background = "#ffffff")
-                        }
-                        title="Delete Policy"
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Delete Policy"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowDeleteConfirm(true);
@@ -801,19 +882,20 @@ export default function Details({
                   {" "}
                   <img src="/delete.svg" width={24} height={24} />
                 </button>
-              </>
+                : <></> }
+              </> 
             ) : (
               <>
                 <button
                   type="button"
                   style={savebutton}
                   onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#e2e6ea")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.background = "#ffffff")
-                        }
-                        title="Save Policy"
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Save Policy"
                   onClick={() => void handleSave()}
                 >
                   Save
@@ -822,12 +904,12 @@ export default function Details({
                 <button
                   type="button"
                   onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#e2e6ea")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.background = "#ffffff")
-                        }
-                        title="Go Back"
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Go Back"
                   style={backbutton}
                   onClick={() => void handleBack()}
                 >
@@ -1024,7 +1106,7 @@ const editbutton: React.CSSProperties = {
 };
 
 const deletebutton: React.CSSProperties = {
-   display: "flex",
+  display: "flex",
   alignItems: "center",
   gap: "6px",
   padding: 6,
@@ -1047,6 +1129,29 @@ const fieldGroup: React.CSSProperties = {
 
 const fieldLabel: React.CSSProperties = {
   fontWeight: "bold",
+  fontSize: "16px",
+};
+
+const fieldLabelWithInfo: React.CSSProperties = {
+  ...fieldLabel,
+  display: "flex",
+  alignItems: "center",
+  gap: "3px",
+};
+
+const infoIcon: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "10px",
+  height: "10px",
+  borderRadius: "50%",
+  border: "1px solid #666666",
+  color: "#666666",
+  fontSize: "8px",
+  lineHeight: 1,
+  cursor: "help",
+  flexShrink: 0,
 };
 
 const textInput: React.CSSProperties = {
@@ -1153,7 +1258,7 @@ const bottomActionBar: React.CSSProperties = {
 
 const savebutton: React.CSSProperties = {
   color: "#047e00",
-   display: "flex",
+  display: "flex",
   alignItems: "center",
   gap: "6px",
   padding: 6,
@@ -1168,7 +1273,7 @@ const savebutton: React.CSSProperties = {
 
 const backbutton: React.CSSProperties = {
   color: "#000000",
-   display: "flex",
+  display: "flex",
   alignItems: "center",
   gap: "6px",
   padding: 6,
@@ -1227,6 +1332,13 @@ const modalDeleteButton: React.CSSProperties = {
   cursor: "pointer",
   backgroundColor: "#ffdddd",
   color: "#b30000",
+};
+
+const valueStyle: React.CSSProperties = {
+  fontSize: "18px",
+  marginBlockStart: "1em",
+  marginBlockEnd: "0em",
+  cursor: "help",
 };
 
 // const errorMsgStyle: React.CSSProperties = {

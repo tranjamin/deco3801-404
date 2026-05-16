@@ -1,5 +1,4 @@
-import { setCurrentCertificateData, getStoredAccessToken, getActiveDomains } from "./api/storage";
-import { setCurrentCertificateData } from "./api/storage";
+import { setCurrentCertificateData, getActiveDomains } from "./api/storage";
 import { getValidAccessToken } from "./api/auth";
 import { BACKEND_BASE_URL } from "./base_url";
 
