@@ -1,3 +1,4 @@
+import { setCurrentCertificateData, getStoredAccessToken, getActiveDomains } from "./api/storage";
 import { setCurrentCertificateData } from "./api/storage";
 import { getValidAccessToken } from "./api/auth";
 import { BACKEND_BASE_URL } from "./base_url";
@@ -140,6 +141,20 @@ async function handleOnUpdate(
   }
   if (!changeInfo.url.startsWith("https://")) {
     return;
+  }
+  const activeDomains = await getActiveDomains();
+  var domainIsActive: boolean = false;
+  if (activeDomains != null) {
+    for (const activeDomain of activeDomains) {
+      if (changeInfo.url.startsWith(activeDomain)) {
+        domainIsActive = true;
+      }
+    }
+    if (domainIsActive === false) {
+      console.log("NOT IN ACTIVE DOMAINS", activeDomains)
+      return;
+    }
+    console.log("idk")
   }
   if (changeInfo.url.startsWith("https://www.google.com/")) {
     console.log("Google search detected - ignoring to prevent excessive captures.");
@@ -303,6 +318,7 @@ async function handleDebuggerEvent(
  * @returns void
  */
 async function sendCertToBackend(payload: object): Promise<void> {
+  console.log("storing:", payload);
   storeCurrentCert(payload);
 
   try {
@@ -417,7 +433,8 @@ async function prepCurrentCertForDisplay(payload: object) {
     protocol: readStr("protocol"),
     cipher: readStr("cipher"),
     subjectName: readStr("subjectName"),
-    sanList: readStr("sanList"),
+    //sanList: readStr("sanList"),
+    sanList: p["sanList"],
     issuer: readStr("issuer"),
     validFrom: new Date(Number(p["validFrom"]) * 1000).toISOString(),
     validTo: new Date(Number(p["validTo"]) * 1000).toISOString(),
