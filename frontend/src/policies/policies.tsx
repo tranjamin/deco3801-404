@@ -4,6 +4,8 @@ import PolicyList from "./components/policyList";
 import Details from "./components/details";
 import {type SecurityPolicy, storeNewPolicy} from "../policySharing/policySharing";
 import Navbar from "../sharedComponent/navbar";
+import { useAuth } from "../api/auth";
+import { SessionExpired } from "../sharedComponent/sessionExpired";
 
 /**
  * Main Policies page component. Displays a two-pane layout with the policy list
@@ -12,6 +14,8 @@ import Navbar from "../sharedComponent/navbar";
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 export default function Policies() {
+
+  const { isAuthenticated } = useAuth();
 
   const [sidebarOpen] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
@@ -65,6 +69,9 @@ export default function Policies() {
     setSelectedPolicy(policy);
     window.location.reload();
   };
+
+  if (isAuthenticated === null) return <div>Loading...</div>;
+  if (!isAuthenticated) return <SessionExpired />;
 
   // Calculate sidebar width based on state; used for responsive layout adjustment
   const sidebarWidth = sidebarOpen ? 220 : 0; //if the state is true width is 220 (random number lol), if not then 0, dont care that its single use for now

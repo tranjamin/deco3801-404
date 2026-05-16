@@ -98,7 +98,11 @@ function normalizeProtocol(protocol: string): string {
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function toDisplayProtocol(protocol: string): string {
-  return `TLS ${normalizeProtocol(protocol)}`;
+  if (protocol != "quic") {
+    return `TLS ${normalizeProtocol(protocol)}`;
+  } else {
+    return 'QUIC';
+  }
 }
 
 /**
@@ -106,7 +110,11 @@ function toDisplayProtocol(protocol: string): string {
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function toBackendProtocol(protocol: string): string {
-  return `tls ${normalizeProtocol(protocol)}`;
+  if (protocol != "QUIC") {
+    return `tls ${normalizeProtocol(protocol)}`;
+  } else {
+    return protocol.toLowerCase();
+  }
 }
 
 const emptyFormData: PolicyFormData = {
