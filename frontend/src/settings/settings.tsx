@@ -1,8 +1,9 @@
 /// <reference types="chrome" />
 import React, { useEffect, useState } from "react";
 import Navbar from "../sharedComponent/navbar";
-import { useAuth } from "../api/auth";
+import { useAuth, changePassword, changeUsername } from "../api/auth";
 import { SessionExpired } from "../sharedComponent/sessionExpired";
+
 
 const SETTINGS_STORAGE_KEY = "allowedDomains";
 
@@ -80,6 +81,19 @@ export default function Settings() {
   );
   const [domainDraft, setDomainDraft] = useState("");
 
+  const [usernamePassword, setUsernamePassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   useEffect(() => {
     try {
       const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -136,6 +150,77 @@ export default function Settings() {
       console.error("Failed to save settings to localStorage:", error);
     }
   };
+
+  async function handleUsernameChange(
+    event: React.FormEvent<HTMLFormEvent>
+  ) {
+    event.preventDefault();
+
+    setUsernameMessage("");
+    setUsernameError("");
+
+    if (!usernamePassword || !newUsername) {
+      setUsernameError("Current password and new username are required.");
+      return;
+    }
+
+    setIsUpdatingUsername(true);
+
+    const result = await changeUsername(usernamePassword, newUsername);
+
+    setIsUpdatingUsername(false);
+
+    if (!result.success) {
+      setUsernameError(result.error || "Failed to update username.");
+      return;
+    }
+
+    setUsernameMessage("Username updated successfully.");
+    setUsernamePassword("");
+    setNewUsername("");
+  }
+
+  
+  async function handlePasswordChange(
+    event: React.FormEvent<HTMLFormEvent>
+  ) {
+    event.preventDefault();
+
+    setPasswordMessage("");
+    setPasswordError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("All password fields are required.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords to not match");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError("New password must be different from current password.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+
+    const result = await changePassword(currentPassword, newPassword);
+    
+    setIsUpdatingPassword(false);
+
+    if (!result.success) {
+      setPasswordError(result.error || "Failed to update password.");
+      return;
+    }
+
+    setPasswordMessage("Password updated successfully.");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+
+  }
 
   if (isAuthenticated === null) return <div>Loading...</div>;
   if (!isAuthenticated) return <SessionExpired />;

@@ -150,6 +150,12 @@ async function authChangeRequest (
 
 }
 
+/**
+ * Feeds the endpoint for changing passwords and the required fields to authChangeRequest
+ * @param currentPassword The current password used by the user to login
+ * @param newPassword The new password the user wants to change password to
+ * @returns A boolean and error? object
+ */
 export async function changePassword (
   currentPassword: string,
   newPassword: string
@@ -160,6 +166,12 @@ export async function changePassword (
   });
 }
 
+/**
+ * Feeds the endpoint for changing username and the required fields to authChangeRequest
+ * @param currentPassword The current password used by the user to login
+ * @param newUsername The new username the users want to change usernames to
+ * @returns A boolean and error? object
+ */
 export async function changeUsername (
   currentPassword: string,
   newUsername: string
