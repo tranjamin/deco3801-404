@@ -1,8 +1,9 @@
 /// <reference types="chrome" />
 import React, { useEffect, useState } from "react";
 import Navbar from "../sharedComponent/navbar";
-import { useAuth } from "../api/auth";
+import { useAuth, changePassword, changeUsername } from "../api/auth";
 import { SessionExpired } from "../sharedComponent/sessionExpired";
+
 
 const SETTINGS_STORAGE_KEY = "allowedDomains";
 
@@ -80,6 +81,19 @@ export default function Settings() {
   );
   const [domainDraft, setDomainDraft] = useState("");
 
+  const [usernamePassword, setUsernamePassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   useEffect(() => {
     try {
       const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -137,6 +151,77 @@ export default function Settings() {
     }
   };
 
+  async function handleUsernameChange(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setUsernameMessage("");
+    setUsernameError("");
+
+    if (!usernamePassword || !newUsername) {
+      setUsernameError("Current password and new username are required.");
+      return;
+    }
+
+    setIsUpdatingUsername(true);
+
+    const result = await changeUsername(usernamePassword, newUsername);
+
+    setIsUpdatingUsername(false);
+
+    if (!result.success) {
+      setUsernameError(result.error || "Failed to update username.");
+      return;
+    }
+
+    setUsernameMessage("Username updated successfully.");
+    setUsernamePassword("");
+    setNewUsername("");
+  }
+
+  
+  async function handlePasswordChange(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setPasswordMessage("");
+    setPasswordError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("All password fields are required.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords to not match");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError("New password must be different from current password.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+
+    const result = await changePassword(currentPassword, newPassword);
+    
+    setIsUpdatingPassword(false);
+
+    if (!result.success) {
+      setPasswordError(result.error || "Failed to update password.");
+      return;
+    }
+
+    setPasswordMessage("Password updated successfully.");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+
+  }
+
   if (isAuthenticated === null) return <div>Loading...</div>;
   if (!isAuthenticated) return <SessionExpired />;
 
@@ -171,6 +256,92 @@ export default function Settings() {
                 Save
               </button>
             </div>
+
+            <hr style={sectionDivider} />
+
+            <form style={accountForm} onSubmit={handleUsernameChange}>
+              <h3 style={sectionHeading}>Change Username</h3>
+
+              <label style={fieldLabel} htmlFor="new-username">
+                New Username
+              </label>
+              <input
+                id="new-username"
+                style={textInput}
+                type="text"
+                value={newUsername}
+                onChange={(event) => setNewUsername(event.target.value)}
+                placeholder="Enter new username"
+              />
+
+              <label style={fieldLabel} htmlFor="username-current-password">
+                Current Password
+              </label>
+              <input
+                id="username-current-password"
+                style={textInput}
+                type="password"
+                value={usernamePassword}
+                onChange={(event) => setUsernamePassword(event.target.value)}
+                placeholder="Enter current password"
+              />
+
+              {usernameError && <p style={errorText}>{usernameError}</p>}
+              {usernameMessage && <p style={successText}>{usernameMessage}</p>}
+
+              <button type="submit" style={saveButton} disabled={isUpdatingUsername}>
+                {isUpdatingUsername ? "Updating..." : "Update Username"}
+              </button>
+            </form>
+
+            <hr style={sectionDivider} />
+
+            <form style={accountForm} onSubmit={handlePasswordChange}>
+              <h3 style={sectionHeading}>Change Password</h3>
+
+              <label style={fieldLabel} htmlFor="current-password">
+                Current Password
+              </label>
+              <input
+                id="current-password"
+                style={textInput}
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="Enter new password"
+              />
+
+              <label style={fieldLabel} htmlFor="new-password">
+                New Password
+              </label>
+              <input
+                id="new-password"
+                style={textInput}
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="Enter new Password"
+              />
+
+              <label style={fieldLabel} htmlFor="confirm-password">
+                Confirm New Password
+              </label>
+              <input
+                id="confirm-password"
+                style={textInput}
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="Confirm new password"
+              />
+
+              {passwordError && <p style={errorText}>{passwordError}</p>}
+              {passwordMessage && <p style={successText}>{passwordMessage}</p>}
+
+              <button type="submit" style={saveButton} disabled={isUpdatingPassword}>
+                {isUpdatingPassword ? "Updating..." : "Update Password"}
+              </button>
+            </form>
             </div>
         </div>
       </main>
@@ -301,4 +472,34 @@ const saveButton: React.CSSProperties = {
 const saveButtonDisabled: React.CSSProperties = {
   cursor: "not-allowed",
   opacity: 0.5,
+};
+
+const sectionDivider: React.CSSProperties = {
+  margin: "24px 0",
+  border: "none",
+  borderTop: "1px solid #d0d0d0",
+};
+
+const sectionHeading: React.CSSProperties = {
+  margin: "0 0 12px 0",
+  fontSize: "18px",
+};
+
+const accountForm: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  marginBottom: "16px",
+};
+
+const errorText: React.CSSProperties = {
+  color: "#b00020",
+  margin: "4px 0",
+  fontSize: "14px",
+};
+
+const successText: React.CSSProperties = {
+  color: "#0a7a28",
+  margin: "4px 0",
+  fontSize: "14px",
 };

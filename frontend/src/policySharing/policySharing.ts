@@ -1,3 +1,4 @@
+import { setActiveDomains } from "../api/storage";
 import { getValidAccessToken } from "../api/auth";
 import { BACKEND_BASE_URL } from "../base_url";
 
@@ -86,11 +87,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
-function parseStringField(
+async function parseStringField(
   obj: Record<string, unknown>,
   fieldName: string,
   maxLength: number,
-): string {
+): Promise<string> {
   const value = obj[fieldName];
 
   if (typeof value !== "string") {
@@ -99,6 +100,27 @@ function parseStringField(
 
   if (value.length > maxLength) {
     throw new Error(`'${fieldName}' must be ${maxLength} characters or less.`);
+  }
+
+  if (fieldName === "name") {
+    if (value === "") {
+      throw new Error("Policy must have a name");
+    }
+    const fetchedPolicies = await getAllPolicies();
+    var curPolicyNames: string[] = [];
+    if (fetchedPolicies) {
+    for (const p of fetchedPolicies) {
+      curPolicyNames.push(p.name);
+    }
+    if (curPolicyNames.includes(value)) {
+      throw new Error("Policy Name is already in use, please chose another name");
+    }
+  }
+}
+if (fieldName === "description") {
+    if (value === "") {
+      throw new Error("Policy must have a description");
+    }
   }
 
   return value;
@@ -179,7 +201,7 @@ function parseNumberField(obj: Record<string, unknown>, fieldName: string): numb
  *
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
-function parseImportedPolicy(iPolicy: string): ExportedPolicy {
+async function parseImportedPolicy(iPolicy: string): Promise<ExportedPolicy> {
   let parsedValue: unknown;
 
   try {
@@ -195,8 +217,8 @@ function parseImportedPolicy(iPolicy: string): ExportedPolicy {
 
   return {
     // Validate all required fields using the helper parsers above - this comment was made with GPT-5 mini on 2026-05-09
-    name: parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
-    description: parseStringField(
+    name: await parseStringField(parsedValue, "name", MAX_TEXT_LENGTH),
+    description: await parseStringField(
       parsedValue,
       "description",
       MAX_DESCRIPTION_LENGTH,
@@ -244,7 +266,13 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function importPolicy(iPolicy: string) {
-  const exportedPolicy = parseImportedPolicy(iPolicy);
+  console.log("testing", iPolicy)
+  const temp = JSON.parse(iPolicy);
+  if (temp.deleted) {
+    console.log("double fuck");
+    return;
+  }
+  const exportedPolicy = await parseImportedPolicy(iPolicy);
   const cPolicy: SecurityPolicy = {
     id: 0,
     ...exportedPolicy,
@@ -538,7 +566,26 @@ export async function getAllPolicies() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
+    const policies = mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
+    console.log("got the following policies from the backend:",policies);
+    //ok now im going to add the policies that are active to a locally stored array for ref in the tlsReterval engine
+    const activeDomains: string[] = [];
+    for (const policy of policies) {
+      if (policy.active === true) {
+        for (const domain of policy.domains) {
+          if (domain.startsWith("https://")) {
+            activeDomains.push(domain);
+          } else {
+            activeDomains.push("https://" + domain);
+          }
+        }
+      }
+    }
+    if (activeDomains.length != 0) {
+      setActiveDomains(activeDomains);
+    }
+    console.log("active domains", activeDomains);
+    return policies;
   } catch (e) {
     console.log("BIG ERROR:", e);
     return null;

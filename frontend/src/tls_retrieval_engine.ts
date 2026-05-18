@@ -1,4 +1,4 @@
-import { setCurrentCertificateData } from "./api/storage";
+import { setCurrentCertificateData, getActiveDomains } from "./api/storage";
 import { getValidAccessToken } from "./api/auth";
 import { BACKEND_BASE_URL } from "./base_url";
 
@@ -15,9 +15,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 const CERTIFICATE_ENDPOINT = `${BACKEND_BASE_URL}/api/certificates/`;
-const REPORT_VISITS_ENDPOINT = `${BACKEND_BASE_URL}/api/reports/visits`;
 
-let selectedTab: chrome.tabs.Tab | null = null;
 let attachedTabId: number | null = null;
 
 const processingCerts = new Set<string>();
@@ -100,7 +98,6 @@ async function detachFromTab(tabId: number): Promise<void> {
   } finally {
     if (attachedTabId === tabId) {
       attachedTabId = null;
-      selectedTab = null;
     }
 
     clearCertStateForTab(tabId);
@@ -141,6 +138,20 @@ async function handleOnUpdate(
   if (!changeInfo.url.startsWith("https://")) {
     return;
   }
+  const activeDomains = await getActiveDomains();
+  var domainIsActive: boolean = false;
+  if (activeDomains != null) {
+    for (const activeDomain of activeDomains) {
+      if (changeInfo.url.startsWith(activeDomain)) {
+        domainIsActive = true;
+      }
+    }
+    if (domainIsActive === false) {
+      console.log("NOT IN ACTIVE DOMAINS", activeDomains)
+      return;
+    }
+    console.log("idk")
+  }
   if (changeInfo.url.startsWith("https://www.google.com/")) {
     console.log("Google search detected - ignoring to prevent excessive captures.");
     return;
@@ -161,7 +172,6 @@ async function handleOnUpdate(
   }
   if (attachedTabId === tab.id) {
     console.log("Debugger already attached to this tab.");
-    selectedTab = tab;
     return;
   }
   if (attachedTabId !== null && attachedTabId !== tab.id) {
@@ -180,7 +190,6 @@ async function handleOnUpdate(
     return;
   }
 
-  selectedTab = tab;
   attachedTabId = tab.id;
 
 }
@@ -303,6 +312,7 @@ async function handleDebuggerEvent(
  * @returns void
  */
 async function sendCertToBackend(payload: object): Promise<void> {
+  console.log("storing:", payload);
   storeCurrentCert(payload);
 
   try {
@@ -334,70 +344,8 @@ async function sendCertToBackend(payload: object): Promise<void> {
     console.log("TLS certificate saved to backend:");
     console.log(savedCertificate);
 
-    await logVisitToBackend(payload, savedCertificate, headers);
   } catch (error) {
     console.error("Failed to send TLS certificate to backend:", error);
-  }
-}
-
-/**
- * After a TLS Certificate is saved, a "report visit" is logged to the backend,
- * via a POST request, containing the visited domain, the saved certificate id,
- * the user agent, and the tab.id active when visiting the domain.
- * 
- * @param payload The TLS Certificate payload originally sent to the backend.
- * Is used to extract the visited domain from the certificate URL.
- * @param savedCertificate The certificate record returned by the backend after
- * saving the TLS certificate, whereby its id is linked to the report visit.
- * @param headers The request headers to use when sending the report visit
- * @returns null
- */
-async function logVisitToBackend(
-  payload: object,
-  savedCertificate: { id?: number | string },
-  headers: Record<string, string>,
-): Promise<void> {
-  try {
-    const p = payload as Record<string, unknown>;
-    const url = typeof p.url === "string" ? p.url : "";
-    const domain = url
-      ? new URL(url).hostname
-      : selectedTab?.url
-        ? new URL(selectedTab.url).hostname
-        : "";
-
-    if (!domain) {
-      console.error("Cannot log report visit without a domain.");
-      return;
-    }
-
-    const reportPayload = {
-      domain,
-      certificate_id: savedCertificate.id,
-      user_agent: navigator.userAgent,
-      tab_id: selectedTab?.id,
-    };
-
-    const response = await fetch(REPORT_VISITS_ENDPOINT, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(reportPayload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        "Backend rejected report visit:",
-        response.status,
-        errorText,
-      );
-      return;
-    }
-
-    console.log("Report visit logged to backend:");
-    console.log(await response.json());
-  } catch (error) {
-    console.error("Failed to log report visit:", error);
   }
 }
 
@@ -417,7 +365,8 @@ async function prepCurrentCertForDisplay(payload: object) {
     protocol: readStr("protocol"),
     cipher: readStr("cipher"),
     subjectName: readStr("subjectName"),
-    sanList: readStr("sanList"),
+    //sanList: readStr("sanList"),
+    sanList: p["sanList"],
     issuer: readStr("issuer"),
     validFrom: new Date(Number(p["validFrom"]) * 1000).toISOString(),
     validTo: new Date(Number(p["validTo"]) * 1000).toISOString(),

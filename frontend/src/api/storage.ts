@@ -37,3 +37,12 @@ export const getCurrentCertificateData = async (): Promise<string | null> => {
 export const setCurrentCertificateData = async (currentCert: string | null): Promise<void> => {
   await chrome.storage.local.set({ currentCert });
 };
+
+export const getActiveDomains = async (): Promise<string[] | null> => {
+  const { activeDomains } = await chrome.storage.local.get("activeDomains");
+  return (activeDomains as string[] | undefined) || null;
+};
+
+export const setActiveDomains = async (activeDomains: string[] | null): Promise<void> => {
+  await chrome.storage.local.set({ activeDomains });
+};

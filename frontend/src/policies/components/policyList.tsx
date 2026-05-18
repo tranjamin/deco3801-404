@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policySharing/policySharing";
 //import { getAllPolicies } from "../../policySharing/policySharing";
 import PolicyStub from "./policyStub";
+import "./loader.css";
 
 /**
  * Props for PolicyList component that displays all available policies.
@@ -150,27 +151,27 @@ export default function PolicyList({
           <button
             style={addbutton}
             onClick={handleAdd}
-            onMouseOver={(e) => (e.currentTarget.style.background = "#d3d3d3")}
-            onMouseOut={(e) =>
-              (e.currentTarget.style.background = "rgb(243, 243, 243)")
-            }
+            title="Add a new policy"
+            onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+            onMouseOut={(e) => (e.currentTarget.style.background = "#ffffff")}
           >
-            Add
+            <img src="/add.svg" width={24} height={24} />
           </button>
           <button
             style={importbutton}
             onClick={handleImport}
-            onMouseOver={(e) => (e.currentTarget.style.background = "#d3d3d3")}
-            onMouseOut={(e) =>
-              (e.currentTarget.style.background = "rgb(243, 243, 243)")
-            }
+            title="Import a policy from JSON"
+            onMouseOver={(e) => (e.currentTarget.style.background = "#e2e6ea")}
+            onMouseOut={(e) => (e.currentTarget.style.background = "#ffffff")}
+            
           >
-            Import
+            <img src="/import3.svg" width={24} height={24} />
           </button>
         </div>
       </div>
       {policies.length === 0 ? (
-        <p>loading...</p>
+        // <p>loading...</p>
+        <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
           policy.active === true ? (
@@ -188,7 +189,8 @@ export default function PolicyList({
       )}
       <h3 style={subheading}>Inactive Policies</h3>
       {policies.length === 0 ? (
-        <p>loading...</p>
+        // <p>loading...</p>
+        <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
           policy.active === false ? (
@@ -205,6 +207,7 @@ export default function PolicyList({
         )
       )}
     </div>
+    
   );
 }
 
@@ -220,23 +223,34 @@ const putonLeft: React.CSSProperties = {
 }
 
 const addbutton: React.CSSProperties = {
-  //marginLeft: "auto",
-  padding: "8px 12px 8px 8px",
-  border: "1px solid #000000",
-  borderRadius: "6px",
-  cursor: "pointer",
-  color: "#009900",
-  backgroundColor: "rgb(243, 243, 243)",
+  display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: 6,
+    background: "#ffffff",
+    border: "1px solid #d1d9e0",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#24292f",
+    transition: "background 0.2s"
 };
 
 
 const importbutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
-  borderRadius: "6px",
-  cursor: "pointer",
-  color: "#00a2ff",
-  backgroundColor: "rgb(243, 243, 243)",
+ display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: 6,
+    background: "#ffffff",
+    border: "1px solid #d1d9e0",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "11px",
+    fontWeight: "500",
+    color: "#24292f",
+    transition: "background 0.2s"
 };
 
 const container: React.CSSProperties = {

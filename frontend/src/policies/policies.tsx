@@ -128,7 +128,7 @@ const split: React.CSSProperties = {
 const left: React.CSSProperties = {
   background: "#ffffff",
   color: "#000000",
-  borderRight: "3px solid #000000",
+  borderRight: "0.5px solid #000000",
   overflow: "auto",
   paddingBottom: "4px"
 };
@@ -136,5 +136,5 @@ const left: React.CSSProperties = {
 const right: React.CSSProperties = {
   background: "#ffffff",
   color: "#111",
-  borderLeft: "3px solid #000000"
+  borderLeft: "0.5px solid #000000"
 };
