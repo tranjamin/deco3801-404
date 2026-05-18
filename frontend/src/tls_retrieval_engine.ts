@@ -349,7 +349,6 @@ async function sendCertToBackend(payload: object): Promise<void> {
     console.log("TLS certificate saved to backend:");
     console.log(savedCertificate);
 
-    await logVisitToBackend(payload, savedCertificate, headers);
   } catch (error) {
     console.error("Failed to send TLS certificate to backend:", error);
   }
