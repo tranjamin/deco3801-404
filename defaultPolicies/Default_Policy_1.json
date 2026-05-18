@@ -16,5 +16,6 @@
   "validAfter": 14,
   "validFor": 100,
   "SANs": [],
-  "SCT": false
+  "SCT": false,
+  "deleted": false
 }

@@ -4,7 +4,8 @@ import { CurrentSiteSummary } from "./components/currentSiteSummary";
 import { TLSLog } from "./components/TLSLog";
 import { ActionButtons } from "./components/actionButtons";
 import { transformSingleCert } from "../sharedComponent/utils";
-import { getCurrentCertificateData, getStoredAccessToken } from "../api/storage";
+import { clearStorage, getCurrentCertificateData } from "../api/storage";
+import { getValidAccessToken } from "../api/auth";
 import { BACKEND_BASE_URL } from "../base_url";
 import type { TLSCertificateTransformed } from "../sharedComponent/types";
 
@@ -49,7 +50,7 @@ function countVisitStatuses(visits: BackendVisit[]): Stats {
   }, { ...emptyStats });
 }
 
-export default function Home() {
+export default function Home({ onSessionExpired }: { onSessionExpired?: () => void }) {
   const [transformedData, setTransformedData] =
     useState<TLSCertificateTransformed>();
   const [stats, setStats] = useState<Stats>(emptyStats);
@@ -62,9 +63,9 @@ export default function Home() {
   };
 
   const fetchReportStats = async () => {
-    const accessToken = await getStoredAccessToken();
+    const accessToken = await getValidAccessToken();
     if (!accessToken) {
-      setStats(emptyStats);
+      onSessionExpired?.();
       return;
     }
 
@@ -109,9 +110,9 @@ export default function Home() {
     chrome.tabs.create({ url: settingsUrl });
   };
 
-  const handleLogout = () => {
-    // does nothing currently
-    // code to handle logout here
+  const handleLogout = async () => {
+    await clearStorage();
+    onSessionExpired?.();
   };
 
   const openReportWithStatus = (status: "ok" | "warning" | "expired") => {

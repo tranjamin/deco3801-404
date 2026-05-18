@@ -52,13 +52,13 @@ def client(app: Flask) -> FlaskClient:
 def access_headers(client):
     register_request = {"username": "test_username", "password": "test_password"}
     login_response = client.post("/api/auth/register", json=register_request)
-    return {"Authorization": f"Bearer {login_response.get_json()["accessToken"]}"}
+    return {"Authorization": f"Bearer {login_response.get_json()["access_token"]}"}
 
 @pytest.fixture()
 def access_headers_two(client):
     register_request = {"username": "test_username_two", "password": "test_password_two"}
     login_response = client.post("/api/auth/register", json=register_request)
-    return {"Authorization": f"Bearer {login_response.get_json()["accessToken"]}"}
+    return {"Authorization": f"Bearer {login_response.get_json()["access_token"]}"}
 
 
 @pytest.fixture()
@@ -89,6 +89,34 @@ def valid_certificate_two():
         "certificateTransparencyCompliance": "compliant"
     }
 
+    
+@pytest.fixture()
+def valid_policy():
+    return {
+        "name": "this-is-a-policy-name",
+        "description": "this-is-a-policy-description",
+        "validProtocols": ["tls 1.0"],
+        "validSubjects": ["test-subject-name"],
+        "validIssuers": ["test-issuer"],
+        "validCiphers": ["this-is-a-cipher"],
+        "domains": ["*.test-domain.com"],
+        "minCertificateLifespan": 40,
+        "minCertificateDaysLeft": 15,
+    }
+    
+@pytest.fixture()
+def valid_policy_two():
+    return {
+        "name": "this-is-a-policy-name-2",
+        "description": "this-is-a-policy-description-2",
+        "validProtocols": ["quic"],
+        "validSubjects": ["test-subject-name-2"],
+        "validIssuers": ["test-issuer-2"],
+        "validCiphers": ["this-is-a-cipher-2"],
+        "domains": ["*.test-domain-2.com"],
+        "minCertificateLifespan": 30,
+        "minCertificateDaysLeft": 10,
+    }
 
 @pytest.fixture()
 def runner(app: Flask) -> FlaskCliRunner:

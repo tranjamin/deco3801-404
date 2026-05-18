@@ -5,7 +5,8 @@ import {
   activatePolicy,
   deactivatePolicy,
   exportPolicy,
-  updatePolicy
+  updatePolicy,
+  getAllPolicies,
 } from "../../policySharing/policySharing";
 
 /**
@@ -16,7 +17,7 @@ type DetailsProps = {
   policy: SecurityPolicy | null;
   startInEditMode?: boolean;
   isNewPolicy?: boolean;
-  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void,
+  onSaveNewPolicy?: (policy: SecurityPolicy) => Promise<void> | void;
   isDefaultPolicy?: boolean;
 };
 
@@ -42,7 +43,12 @@ type PolicyFormData = {
  * Union type for the names of array fields in PolicyFormData.
  * this comment was made with GPT-5 mini on 2026-05-09
  */
-type ArrayFieldName = "domains" | "protocols" | "ciphers" | "subjects" | "issuers";
+type ArrayFieldName =
+  | "domains"
+  | "protocols"
+  | "ciphers"
+  | "subjects"
+  | "issuers";
 
 /**
  * Props for editing a list of strings (domains, ciphers, etc.).
@@ -68,14 +74,23 @@ type ProtocolSelectorProps = {
   onProtocolChange: (protocol: string, checked: boolean) => void;
 };
 
-const AVAILABLE_PROTOCOLS = ["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3", "QUIC"];
+const AVAILABLE_PROTOCOLS = [
+  "TLS 1.0",
+  "TLS 1.1",
+  "TLS 1.2",
+  "TLS 1.3",
+  "QUIC",
+];
 
 /**
  * Normalize protocol string by removing 'TLS' prefix and converting to lowercase.
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function normalizeProtocol(protocol: string): string {
-  return protocol.trim().toLowerCase().replace(/^tls\s+/, "");
+  return protocol
+    .trim()
+    .toLowerCase()
+    .replace(/^tls\s+/, "");
 }
 
 /**
@@ -83,7 +98,11 @@ function normalizeProtocol(protocol: string): string {
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function toDisplayProtocol(protocol: string): string {
-  return `TLS ${normalizeProtocol(protocol)}`;
+  if (protocol != "quic") {
+    return `TLS ${normalizeProtocol(protocol)}`;
+  } else {
+    return "QUIC";
+  }
 }
 
 /**
@@ -91,7 +110,11 @@ function toDisplayProtocol(protocol: string): string {
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function toBackendProtocol(protocol: string): string {
-  return `tls ${normalizeProtocol(protocol)}`;
+  if (protocol != "QUIC") {
+    return `tls ${normalizeProtocol(protocol)}`;
+  } else {
+    return protocol.toLowerCase();
+  }
 }
 
 const emptyFormData: PolicyFormData = {
@@ -148,7 +171,9 @@ function mapFormDataToPolicy(
     description: formData.description,
     active: formData.active.trim().toLowerCase() === "true",
     domains: [...formData.domains],
-    protocols: formData.protocols.map((protocol) => toBackendProtocol(protocol)),
+    protocols: formData.protocols.map((protocol) =>
+      toBackendProtocol(protocol),
+    ),
     ciphers: [...formData.ciphers],
     subjects: [...formData.subjects],
     issuers: [...formData.issuers],
@@ -168,10 +193,16 @@ function ProtocolSelector({
   return (
     <div style={fieldGroup}>
       <label
-        style={fieldLabel}
-        title="Select allowed TLS/SSL protocol versions"
+        style={fieldLabelWithInfo}
+        title={
+          "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+        }
       >
-        Protocols
+        <span>Protocols</span>
+
+        <span style={infoIcon} aria-hidden="true">
+          ?
+        </span>
       </label>
       <div style={checkboxGroup}>
         {AVAILABLE_PROTOCOLS.map((protocol) => (
@@ -206,8 +237,13 @@ function ArrayListEditor({
 }: ArrayListEditorProps) {
   return (
     <div style={fieldGroup}>
-      <label style={fieldLabel} title={tooltip}>
-        {label}
+      <label style={fieldLabelWithInfo} title={tooltip}>
+        <span>{label}</span>
+        {tooltip ? (
+          <span style={infoIcon} aria-hidden="true">
+            ?
+          </span>
+        ) : null}
       </label>
       <div style={listBox}>
         {items.length > 0 ? (
@@ -229,21 +265,30 @@ function ArrayListEditor({
           <div style={emptyListText}>No items yet.</div>
         )}
       </div>
-      <div style={addRow}>
-        <input
-          id={inputId}
-          style={textInput}
-          type="text"
-          maxLength={50}
-          value={draftValue}
-          onChange={(e) => onDraftChange(e.target.value)}
-          title={tooltip}
-          placeholder="press Add to add to list of valid items"
-        />
-        <button type="button" style={addButton} onClick={onAdd}>
-          Add
-        </button>
-      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onAdd();
+        }}
+      >
+        {" "}
+        {/*without e.preventDefault the page autoreloads */}
+        <div style={addRow}>
+          <input
+            id={inputId}
+            style={textInput}
+            type="text"
+            maxLength={50}
+            value={draftValue}
+            onChange={(e) => onDraftChange(e.target.value)}
+            title={tooltip}
+            placeholder="press Add to add to list of valid items"
+          />
+          <button type="submit" style={addButton}>
+            Add
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -260,7 +305,6 @@ export default function Details({
   onSaveNewPolicy,
   isDefaultPolicy,
 }: DetailsProps) {
-
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<PolicyFormData>(emptyFormData);
   const [arrayDrafts, setArrayDrafts] = useState<
@@ -274,10 +318,10 @@ export default function Details({
   });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
+  //const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    console.log("default?:", isDefaultPolicy);
+    //console.log("default?:", isDefaultPolicy);
     if (policy) {
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
@@ -303,15 +347,19 @@ export default function Details({
   }, [policy, startInEditMode]);
 
   const handleActivate = async () => {
-    if (policy == null) {return}
-    console.log("sending activated policy to API");
+    if (policy == null) {
+      return;
+    }
+    //.log("sending activated policy to API");
     await activatePolicy(policy.id);
     window.location.reload();
   };
 
   const handleDeactivate = async () => {
-    if (policy == null) {return}
-    console.log("sending deactivated policy to API");
+    if (policy == null) {
+      return;
+    }
+    //console.log("sending deactivated policy to API");
     await deactivatePolicy(policy.id);
     window.location.reload();
   };
@@ -340,6 +388,21 @@ export default function Details({
       await handleDelete();
     } else {
       //add code here for deleting the policy in the default folder
+      const modules = import.meta.glob("../../../../defaultPolicies/*.json", {
+        eager: true,
+      }) as Record<string, { default: { name?: unknown } }>;
+
+      for (const [filePath, mod] of Object.entries(modules)) {
+        const parsed = mod.default;
+        const name = typeof parsed.name === "string" ? parsed.name : null;
+
+        if (!name || !policy) continue;
+
+        if (policy.name.toLowerCase() === name.toLowerCase()) {
+          console.log("matched file path:", filePath);
+          //this is were the code for deleting the default policy would go... IF IT WAS POSSIBLE (an hour of my life down the drain)
+        }
+      }
       await handleDelete();
     }
   };
@@ -390,22 +453,57 @@ export default function Details({
     }));
   };
 
-  const handleSave = async () => {
-    const policyPayload = mapFormDataToPolicy(formData, policy?.id);
-
-    if (isNewPolicy && onSaveNewPolicy) {
-      await onSaveNewPolicy(policyPayload);
-      return;
-    } else if (!isNewPolicy && updatePolicy && policy) {
-      await updatePolicy(policyPayload, policy.id);
+  const validateSave = async () => {
+    console.log("formData", formData);
+    //Check name
+    if (formData.name === "") {
+      return "Policy name cannot be empty";
     }
+    //check description
+    if (formData.description === "") {
+      return "Policy description cannot be empty";
+    }
+    if (policy) {
+      if (!(formData.name === policy.name)) {
+        //get a list of names
+        const fetchedPolicies = await getAllPolicies();
+        var curPolicyNames: string[] = [];
+        if (fetchedPolicies) {
+          for (const p of fetchedPolicies) {
+            curPolicyNames.push(p.name);
+          }
+          if (curPolicyNames.includes(formData.name)) {
+            return "that policy name is already in use, please chose another name";
+          }
+        }
+      }
+    }
+    return null;
+  };
 
-    console.log("saving edited policy to API", policyPayload);
-    window.location.reload();
+  const handleSave = async () => {
+    const valid = await validateSave();
+    if (valid === null) {
+      //setErrorMsg("");
+      const policyPayload = mapFormDataToPolicy(formData, policy?.id);
+
+      if (isNewPolicy && onSaveNewPolicy) {
+        await onSaveNewPolicy(policyPayload);
+        return;
+      } else if (!isNewPolicy && updatePolicy && policy) {
+        await updatePolicy(policyPayload, policy.id);
+      }
+
+      //console.log("saving edited policy to API", policyPayload);
+      window.location.reload();
+    } else {
+      //setErrorMsg(valid);
+      alert(valid);
+    }
   };
 
   const handleBack = async () => {
-    console.log("cancelling policy edit");
+    //console.log("cancelling policy edit");
     window.location.reload();
   };
 
@@ -421,7 +519,11 @@ export default function Details({
                   ""
                 ) : (
                   <>
-                    {policy.active ? <div style={greendot} /> : <div style={graydot} />}
+                    {policy.active ? (
+                      <div style={greendot} />
+                    ) : (
+                      <div style={graydot} />
+                    )}
                     <div style={pName}>{policy.name}</div>
                   </>
                 )}
@@ -434,51 +536,51 @@ export default function Details({
                       <button
                         style={activatebutton}
                         onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#d3d3d3")
+                          (e.currentTarget.style.background = "#e2e6ea")
                         }
                         onMouseOut={(e) =>
-                          (e.currentTarget.style.background =
-                            "rgb(243, 243, 243)")
+                          (e.currentTarget.style.background = "#ffffff")
                         }
+                        title="Activate Policy"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleActivate();
                         }}
                       >
                         {" "}
-                        activate
+                        <img src="/activate4.svg" width={24} height={24} />
                       </button>
                     ) : (
                       <button
                         style={deactivatebutton}
                         onMouseOver={(e) =>
-                          (e.currentTarget.style.background = "#d3d3d3")
+                          (e.currentTarget.style.background = "#e2e6ea")
                         }
                         onMouseOut={(e) =>
-                          (e.currentTarget.style.background =
-                            "rgb(243, 243, 243)")
+                          (e.currentTarget.style.background = "#ffffff")
                         }
+                        title="Deactivate Policy"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleDeactivate();
                         }}
                       >
                         {" "}
-                        deactivate
+                        <img src="/deactivate.svg" width={24} height={24} />
                       </button>
                     )}
                     <button
                       style={importbutton}
                       onClick={handleShare}
+                      title="Export a policy to JSON"
                       onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "#d3d3d3")
+                        (e.currentTarget.style.background = "#e2e6ea")
                       }
                       onMouseOut={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgb(243, 243, 243)")
+                        (e.currentTarget.style.background = "#ffffff")
                       }
                     >
-                      Share
+                      <img src="/share.svg" width={24} height={24} />
                     </button>
                   </>
                 )}
@@ -489,11 +591,14 @@ export default function Details({
               <div>
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-name"
-                    title="The name of the policy"
+                    style={fieldLabelWithInfo}
+                    title={"The name of the policy"}
                   >
-                    Name
+                    <span>Name</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <input
                     id="policy-name"
@@ -508,11 +613,14 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-description"
-                    title="A brief description of what this policy enforces"
+                    style={fieldLabelWithInfo}
+                    title={"A brief description of what this policy enforces"}
                   >
-                    Description
+                    <span>Description</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <input
                     id="policy-description"
@@ -543,7 +651,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("domains")}
                     onRemove={(index) => handleArrayRemove("domains", index)}
-                    tooltip="Domains where this policy should apply"
+                    tooltip="Domains where this policy should apply. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -558,7 +666,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("ciphers")}
                     onRemove={(index) => handleArrayRemove("ciphers", index)}
-                    tooltip="Valid cipher suites for TLS connections"
+                    tooltip="Valid cipher suites for TLS connections. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -573,7 +681,7 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("subjects")}
                     onRemove={(index) => handleArrayRemove("subjects", index)}
-                    tooltip="Valid certificate subject names"
+                    tooltip="Valid certificate subject names. If empty this criteria is ignored"
                   />
                 </div>
 
@@ -594,11 +702,16 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-valid-for"
-                    title="Minimum number of days the certificate should be valid after issuance"
+                    style={fieldLabelWithInfo}
+                    title={
+                      "Minimum number of days the certificate should be valid after issuance"
+                    }
                   >
-                    Valid for how many days after issue?
+                    <span>Valid for how many days after issue?</span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <div style={sliderValueText}>{formData.validFor} days</div>
                   <input
@@ -618,11 +731,19 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <label
-                    style={fieldLabel}
-                    htmlFor="policy-valid-after"
-                    title="Minimum number of days remaining until certificate expiration"
+                    style={fieldLabelWithInfo}
+                    title={
+                      "Minimum number of days remaining until certificate expiration"
+                    }
                   >
-                    How many days is the certificate still valid for? (minimum)
+                    <span>
+                      How many days is the certificate still valid for?
+                      (minimum)
+                    </span>
+
+                    <span style={infoIcon} aria-hidden="true">
+                      ?
+                    </span>
                   </label>
                   <div style={sliderValueText}>{formData.validAfter} days</div>
                   <input
@@ -639,38 +760,78 @@ export default function Details({
                     title="Minimum number of days remaining until certificate expiration"
                   />
                 </div>
-
               </div>
             ) : (
               <>
-                <p>
+                <p
+                  title={"A brief description of what this policy enforces"}
+                  style={valueStyle}
+                >
                   <strong>Description:</strong> {policy.description}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Fields of active policies are used as criteria for tracking/reporting"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Status:</strong>{" "}
                   {policy.active ? "Active" : "Inactive"}
                 </p>
-                <p>
+                <p
+                  title={"Domains where this policy should apply"}
+                  style={valueStyle}
+                >
                   <strong>Domains:</strong> {policy.domains.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Protocols:</strong> {policy.protocols.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid cipher suites for TLS connections. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Ciphers:</strong> {policy.ciphers.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid certificate subject names. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Subjects:</strong> {policy.subjects.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Valid certificate issuers or Certificate Authorities. If empty this criteria is ignored"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Valid Certificate Authorities:</strong>{" "}
                   {policy.issuers.join(", ")}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Minimum number of days the certificate should be valid after issuance"
+                  }
+                  style={valueStyle}
+                >
                   <strong>Valid for how many days after issue?:</strong>{" "}
                   {policy.validFor}
                 </p>
-                <p>
+                <p
+                  title={
+                    "Minimum number of days remaining until certificate expiration"
+                  }
+                  style={valueStyle}
+                >
                   <strong>
                     How many days is the certificate still valid for? (minimum):
                   </strong>{" "}
@@ -683,31 +844,72 @@ export default function Details({
           <div style={bottomActionBar}>
             {!isEditing ? (
               <>
-              <button type="button" style={editbutton} onClick={handleEdit}>
-                Edit
-              </button>
-              <button
-                type="button"
-                style={deletebutton}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteConfirm(true);
-                }}
-              >
-                Delete
-              </button>
-              </>
+                {/* <button type="button" style={editbutton} onClick={handleEdit}>
+                  Edit
+                </button> */}
+                <button
+                  style={editbutton}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Edit Policy"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleEdit();
+                  }}
+                >
+                  {" "}
+                  <img src="/edit.svg" width={24} height={24} />
+                </button>
+                {!isDefaultPolicy ? 
+                <button
+                  style={deletebutton}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Delete Policy"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteConfirm(true);
+                  }}
+                >
+                  {" "}
+                  <img src="/delete.svg" width={24} height={24} />
+                </button>
+                : <></> }
+              </> 
             ) : (
               <>
                 <button
                   type="button"
                   style={savebutton}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Save Policy"
                   onClick={() => void handleSave()}
                 >
                   Save
                 </button>
+                {/* <div style={errorMsgStyle}>{errorMsg}</div> */}
                 <button
                   type="button"
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.background = "#e2e6ea")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.background = "#ffffff")
+                  }
+                  title="Go Back"
                   style={backbutton}
                   onClick={() => void handleBack()}
                 >
@@ -726,11 +928,11 @@ export default function Details({
               <div style={modal} onClick={(e) => e.stopPropagation()}>
                 <p style={modalMessage}>
                   {policy
-                    ? (isDefaultPolicy === true || (typeof isDefaultPolicy === 'undefined'))
+                    ? isDefaultPolicy === true ||
+                      typeof isDefaultPolicy === "undefined"
                       ? `This is a default policy bundled with the app. Deleting it will remove the local copy. Are you sure you want to delete "${policy.name}"?`
                       : `Are you sure you want to permanently delete "${policy.name}"? This action cannot be undone.`
-                    : "No policy selected."
-                  }
+                    : "No policy selected."}
                 </p>
 
                 <div style={modalActions}>
@@ -745,7 +947,7 @@ export default function Details({
                     type="button"
                     style={modalDeleteButton}
                     onClick={async () => {
-                      if (typeof isDefaultPolicy != 'undefined') {
+                      if (typeof isDefaultPolicy != "undefined") {
                         await confirmDelete(isDefaultPolicy);
                       } else {
                         await confirmDelete(false);
@@ -804,7 +1006,7 @@ const rightHeaderGroup: React.CSSProperties = {
   alignItems: "center",
   //flexDirection: "column",
   //alignItems: "flex-end",
-  //gap: "8px",
+  gap: "8px",
 };
 
 const detailsPane: React.CSSProperties = {
@@ -840,54 +1042,82 @@ const graydot: React.CSSProperties = {
 };
 
 const deactivatebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  marginLeft: "auto",
+
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#ff0000",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const activatebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  marginLeft: "auto",
+
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#047e00",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const importbutton: React.CSSProperties = {
-  marginLeft: "auto",
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#00a2ff",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const editbutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#967500",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const deletebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#b30000",
-  backgroundColor: "rgb(243, 243, 243)",
-  margin: "3px",
+  fontSize: "11px",
+  fontWeight: "500",
+  color: "#24292f",
+  transition: "background 0.2s",
 };
 
 const fieldGroup: React.CSSProperties = {
@@ -899,6 +1129,29 @@ const fieldGroup: React.CSSProperties = {
 
 const fieldLabel: React.CSSProperties = {
   fontWeight: "bold",
+  fontSize: "16px",
+};
+
+const fieldLabelWithInfo: React.CSSProperties = {
+  ...fieldLabel,
+  display: "flex",
+  alignItems: "center",
+  gap: "3px",
+};
+
+const infoIcon: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "10px",
+  height: "10px",
+  borderRadius: "50%",
+  border: "1px solid #666666",
+  color: "#666666",
+  fontSize: "8px",
+  lineHeight: 1,
+  cursor: "help",
+  flexShrink: 0,
 };
 
 const textInput: React.CSSProperties = {
@@ -1004,21 +1257,33 @@ const bottomActionBar: React.CSSProperties = {
 };
 
 const savebutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  color: "#047e00",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#047e00",
-  backgroundColor: "rgb(243, 243, 243)",
+  fontSize: "16px",
+  fontWeight: "bold",
+  transition: "background 0.2s",
 };
 
 const backbutton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
+  color: "#000000",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: 6,
+  background: "#ffffff",
+  border: "1px solid #d1d9e0",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#333333",
-  backgroundColor: "rgb(243, 243, 243)",
+  fontSize: "16px",
+  fontWeight: "bold",
+  transition: "background 0.2s",
 };
 
 const modalOverlay: React.CSSProperties = {
@@ -1068,3 +1333,16 @@ const modalDeleteButton: React.CSSProperties = {
   backgroundColor: "#ffdddd",
   color: "#b30000",
 };
+
+const valueStyle: React.CSSProperties = {
+  fontSize: "18px",
+  marginBlockStart: "1em",
+  marginBlockEnd: "0em",
+  cursor: "help",
+};
+
+// const errorMsgStyle: React.CSSProperties = {
+//   color: "#ff0000",
+//   fontWeight: "bold",
+//   fontSize:"20px"
+// }

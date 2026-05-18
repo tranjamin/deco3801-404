@@ -6,8 +6,8 @@ from typing import List, Dict, Any
 from flask_sqlalchemy.query import Query
 
 from app import db
-from app.models.certificate import TLSCertificate, CertificateTransparencyCompliance
-from app.models.evaluation import evaluate_against_policy, satisfies_domain
+from app.models.certificate import TLSCertificate
+from app.models.evaluation import satisfies_domain
 from app.models.policy import CertificatePolicy
 from app.models.user import User
 
@@ -18,7 +18,7 @@ certificate_bp: Blueprint = Blueprint("certificate_bp", __name__)
 @jwt_required()
 def get_all():
     """
-    API endpoint which retrieves all TLS certificates
+    API endpoint which retrieves all TLS certificates belonging to the active user
 
     URL:
         /
@@ -26,16 +26,18 @@ def get_all():
         GET
     Returns:
         On success: A JSON containing a list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
+        On failure: {"message": "User does not exist"}, 404
     """
-    # get the user
+    # get the user from the JWT token
     user_id: int = int(get_jwt_identity())
-    user: User = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
 
-    
-    # we have a master username for admin (temporary)
-    if user.username == "master":
+    if user is None:
+        return jsonify({"message": "User does not exist"}), 404 
+
+    if user.username == "master": # temporary master password
         certs: List[TLSCertificate] = TLSCertificate.query.all() # type: ignore
-    else:
+    else: # collect user's certificates
         certs: List[TLSCertificate] = TLSCertificate.query.filter(
             TLSCertificate.user_id == user_id
         ) # type: ignore
@@ -55,19 +57,20 @@ def get_one(cert_id: int):
         GET
     Returns:
         On success: A JSON containing the requested TLS certificate in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 200
-        On failure: {"message": "Certificate not found"}, 404 
+        On failure: {"message": "Certificate not found"}, 404 if the certificate is not found
     """
     # get the user
     user_id: int = int(get_jwt_identity())
     user: User | None = User.query.get(user_id)
 
-    # returns 404 if failed
+    # gets the certificate by id
     cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
+    # error if certificate does not exists
     if user is None or cert is None:
-        return {"message": "Certificate not found"}, 404 
+        return jsonify({"message": "Certificate not found"}), 404 
     elif user.username != "master" and cert.user_id != user_id:
-        return {"message": "Certificate not found"}, 404 
+        return jsonify({"message": "Certificate not found"}), 404 
 
     return jsonify(cert.to_dict()), 200
 
@@ -87,101 +90,65 @@ def create():
         JSON in a format readable by :class:`TLSCertificate` `.from_dict()`
     Returns:
         On success: A JSON containing the parsed TLS certificate data in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 201
-        On failure: JSON with an 'error' field, Error code 400
+        On failure:
+            {"message": "Request cannot be formatted as a TLS certificate"}, 400 if request is badly formatted
     """
-    # .get_json handles any errors
-    data: Dict[str, Any] = request.get_json(force=True)
-    cert: TLSCertificate | None = TLSCertificate.from_dict(data)
+    # convert data to tls certificate
+    data: Dict[str, Any] | None = request.get_json(force=True, silent=True)
+    cert: TLSCertificate | None = TLSCertificate.from_dict(data) if data is not None else None
     
+    # badly formatted data
     if cert is None:
-        return jsonify({"error": "Request cannot be formatted as a TLS certificate"}), 400
+        return jsonify({"message": "Request cannot be formatted as a TLS certificate"}), 400
     
+    # get user id
     user_id: int = int(get_jwt_identity())
     cert.user_id = user_id
 
+    # get the list of active policies belonging to this user
     policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
             CertificatePolicy.user_id == user_id,
             CertificatePolicy.active == True,
         ) # type: ignore
     
     # only keep policies this certificate applies to
+    print(f"Testing for policies")
     applicable_policies: List[CertificatePolicy] = []
     for policy in policies:
         if satisfies_domain(cert.domain_name(), policy.valid_domains):
             applicable_policies.append(policy)
+            print(f"Policy match: {policy.to_dict()}")
 
+    # silently continue if there are no policies which match
+    if not len(applicable_policies):
+        print(f"No policies... continuing")
+        
+    # evaluate against the policies and store it in the certificate
     cert.evaluate_against_policies_and_store(applicable_policies)
 
-    # now we check if an existing certificate exists. we need to decide how to replace (e.g. what if they update the protocol?)
+    # check if an existing certificate exists for the same site (url, subject name and san list are the same)
     existing_certificates: Query = TLSCertificate.query.filter(
         TLSCertificate.user_id == cert.user_id,
         TLSCertificate.url == cert.url,
-        # TLSCertificate.protocol == cert.protocol,
-        # TLSCertificate.cipher == cert.cipher,
         TLSCertificate.subject_name == cert.subject_name,
         TLSCertificate.san_list == cert.san_list,
-        # TLSCertificate.issuer == TLSCertificate.issuer,
-        # TLSCertificate.valid_from == cert.valid_from,
-        # TLSCertificate.valid_to == cert.valid_to
     ) # type: ignore
 
-    # let's update the first retrieved one and delete the rest
-    if existing_certificates.count():
-        print("Found an existing certificate")
+    num_certificates: int = existing_certificates.count()
+    if num_certificates: # update the first certificate found
+        print(f"Found an existing certificate")
         existing_certificates[0].update_certificate(cert)
-        for i in range(1, existing_certificates.count()):
+        
+        # also delete older certificates, which may be artifacts of concurrency
+        for i in range(1, num_certificates):
             db.session.delete(existing_certificates[i])
+
         db.session.commit()
         return jsonify(existing_certificates[0].to_dict()), 201
-    else:
+    else: # add a new certificate
         db.session.add(cert)
         db.session.commit()
         return jsonify(cert.to_dict()), 201
-
-@certificate_bp.route("/create_dummy", methods=["GET"])
-@jwt_required()
-def create_dummy():
-    """
-    API endpoint which creates a dummy certificate policy when navigating to it.
-
-    URL:
-        /create_dummy
-    Methods Supported:
-        GET
-    Returns:
-        On success: A JSON containing the parsed TLS certificate data in the format specified by :class:`TLSCertificate` `.to_dict()`, Error code 201
-        On failure: JSON with an 'error' field, Error code 400
-    """
-    
-    cert = TLSCertificate(
-        url="127.0.0.1",
-        protocol="tls 1.0",
-        cipher="Dummy cipher",
-        subject_name="Dummy subject name",
-        san_list=["SAN 1", "SAN 2"],
-        issuer="Dummy issuer",
-        valid_from=0,
-        valid_to=1,
-        certificate_transparency_compliance=CertificateTransparencyCompliance.UNKNOWN,
-    )
-    user_id: int = int(get_jwt_identity())
-    cert.user_id = user_id
-    
-    policies: List[CertificatePolicy] = CertificatePolicy.query.filter(
-            CertificatePolicy.user_id == user_id
-        ) # type: ignore
-    
-    # only keep policies this certificate applies to
-    applicable_policies: List[CertificatePolicy] = []
-    for policy in policies:
-        if satisfies_domain(cert.domain_name(), policy.valid_domains):
-            applicable_policies.append(policy)
-
-    cert.evaluate_against_policies_and_store(applicable_policies)
-
-    db.session.add(cert)
-    db.session.commit()
-    return jsonify(cert.to_dict()), 201
 
 @certificate_bp.route("/<int:cert_id>", methods=["DELETE"])
 @jwt_required()
@@ -195,15 +162,16 @@ def delete(cert_id: int):
         DELETE
     Returns:
         On success: {"message": "Deleted"}, 200
-        On failure: {"message": "Certificate not found"}, 404 
+        On failure: {"message": "Certificate not found"}, 404 if the certificate does not exist for this user, or the user if not found
     """
     # get the user
     user_id: int = int(get_jwt_identity())
     user: User | None = User.query.get(user_id)
 
-    # automatically handles any errors
+    # get the certificate
     cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
+    # error if the certificate/user does not exist of if the cert does not belong to the user
     if user is None or cert is None:
         return jsonify({"message": "Certificate not found"}),  404
     elif user.username != "master" and cert.user_id != user_id:
@@ -212,170 +180,3 @@ def delete(cert_id: int):
     db.session.delete(cert)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
-
-@certificate_bp.route("/batch", methods=["POST"])
-@jwt_required()
-def batch_create():
-    """
-    API endpoint which creates a batch of TLS certificates
-
-    URL:
-        /batch
-    Methods Supported:
-        POST
-    Request Data:
-        A JSON in the format {'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.from_dict()`}
-    Returns:
-        On success: A JSON in the format {'created': number of certificates created, 'ids': list of certificate IDs}, Error code 201
-        On failure: A JSON with an 'error' field, Error code 400
-    """
-
-    # retrieve certificate
-    # .get_json handles any errors
-    data: Dict[str, Any] = request.get_json(force=True)
-    entries: List[Any] = data.get("certificates", [])
-    if not entries:
-        return jsonify({"error": "No certificates provided"}), 400
-
-    # get user
-    user_id: int = int(get_jwt_identity())
-
-    # parse each certificate to a table entry
-    created_ids: List[Any] = []
-    for entry in entries:
-        cert: TLSCertificate | None = TLSCertificate.from_dict(entry)
-        if cert is not None:
-            cert.user_id = user_id
-            db.session.add(cert)
-            created_ids.append(cert.id)
-            db.session.flush() # we may want to flush less frequently than this
-
-    # save changes to database
-    db.session.commit()
-
-    return jsonify({"created": len(created_ids), "ids": created_ids}), 201
-
-@certificate_bp.route("/expiring", methods=["GET"])
-@jwt_required()
-def expiring():
-    """
-    API endpoint which retrieves all certificates which expire in the next <n> days
-
-    URL:
-        /expiring
-    Methods Supported:
-        GET
-    Request Data:
-        an argument "days", of which's value is <n>. Defaults to 30
-    Returns:
-        On success: A JSON in the format {'days_window': <n>, 'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
-        On failure: #TODO
-    """
-    # get user
-    user_id: int = int(get_jwt_identity())
-    
-    days = int(request.args.get("days", 30))
-    now: float = time.time()
-    cutoff: float = now + days * 86400 # days to seconds
-
-    #TODO: handle errors
-
-    # query all certificates that lie within the expiry range
-    certs: List[TLSCertificate] = TLSCertificate.query.filter(  # type: ignore
-        TLSCertificate.user_id == user_id,
-        TLSCertificate.valid_to >= now,
-        TLSCertificate.valid_to <= cutoff,
-    ).all()
-
-    return jsonify({
-        "days_window": days,
-        "count": len(certs),
-        "certificates": [c.to_dict() for c in certs],
-    }), 200
-
-
-@certificate_bp.route("/expired", methods=["GET"])
-@jwt_required()
-def expired():
-    """
-    API endpoint which retrieves all certificates which have expired
-
-    URL:
-        /expired
-    Methods Supported:
-        GET
-    Returns:
-        On success: A JSON in the format {'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
-        On failure: #TODO
-    """
-    # get user
-    user_id: int = int(get_jwt_identity())
-    
-    #TODO: handle errors
-
-    now: float = time.time()
-    certs: List[TLSCertificate] = TLSCertificate.query.filter(
-        TLSCertificate.user_id == user_id,
-        TLSCertificate.valid_to < now
-        ).all() # type: ignore
-    return jsonify({
-        "count": len(certs),
-        "certificates": [c.to_dict() for c in certs],
-    }), 200
-
-
-@certificate_bp.route("/search", methods=["GET"])
-@jwt_required()
-def search():
-    """
-    API endpoint which searches for certificates by subject
-
-    URL:
-        /search
-    Methods Supported:
-        GET
-    Request Data:
-        arguments to filter by: "subject", "issuer", "protocol", "compliance"
-    Returns:
-        On success: A JSON in the format {'count': number of certificates found, 'certificates': list of certificates in the format specified by :class:`TLSCertificate` `.to_dict()`}, Error code 200
-        On failure: A JSON with an 'error' field, Error code 400
-    """
-    query = TLSCertificate.query
-
-    # get user
-    user_id: int = int(get_jwt_identity())
-    query = query.filter(
-        TLSCertificate.user_id == user_id
-    )
-
-    # filter by subject
-    subject: str | None = request.args.get("subject")
-    if subject:
-        query = query.filter(TLSCertificate.subject_name.ilike(f"%{subject}%"))
-
-    # filter by issuer
-    issuer: str | None = request.args.get("issuer")
-    if issuer:
-        query = query.filter(TLSCertificate.issuer.ilike(f"%{issuer}%"))
-
-    # filter by protocol
-    protocol: str | None = request.args.get("protocol")
-    if protocol:
-        query = query.filter(TLSCertificate.protocol == protocol)
-
-    # filter by compliance
-    compliance: str | None = request.args.get("compliance")
-    if compliance:
-        try:
-            compliance_enum = CertificateTransparencyCompliance(compliance)
-            query = query.filter(
-                TLSCertificate.certificate_transparency_compliance == compliance_enum
-            )
-        except ValueError:
-            return jsonify({"error": f"Invalid compliance value: {compliance}"}), 400
-
-    results: List[TLSCertificate] = query.all() # type: ignore
-    return jsonify({
-        "count": len(results),
-        "certificates": [c.to_dict() for c in results],
-    }), 200

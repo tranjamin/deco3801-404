@@ -46,7 +46,7 @@ export function CurrentSiteSummary({ data }: Props) {
                 <div style={rightBox}>
                     <div style={{ padding: 3 }}>
                         <p style= {{ margin: 0 }}><b>Domain</b></p>
-                        <p style= {{ margin: 0 }}>{data.subjectName}</p>
+                        <p style= {{ margin: 0 }}>{data.subjectName || data.sanList?.[0]}</p>
                     </div>
                     
                     <div style={{ padding: 3 }}>
