@@ -15,5 +15,3 @@ def test_certificate_routes_no_jwt(client: FlaskClient):
 def test_certificate_routes_with_jwt(client: FlaskClient, access_headers: dict):
     """If the authorization header has been provided, should not return 401"""
     assert client.get("/api/evaluate/", headers=access_headers).status_code != 401
-
-def evaluation_
