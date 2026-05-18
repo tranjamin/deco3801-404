@@ -13,9 +13,7 @@ import time
 def database():
     # create database
     postgres = PostgresContainer("postgres:16-alpine")
-    print("Starting testing database...")
     postgres.start()
-    print("Started testing database.")
     os.environ["DB_URL"] = postgres.get_connection_url()
     os.environ["DB_HOSTNAME"] = postgres.get_container_host_ip()
     os.environ["DB_PORT"] = str(postgres.get_exposed_port(5432))

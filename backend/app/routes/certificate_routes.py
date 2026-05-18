@@ -34,13 +34,10 @@ def get_all():
 
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
-
-    if user.username == "master": # temporary master password
-        certs: List[TLSCertificate] = TLSCertificate.query.all() # type: ignore
-    else: # collect user's certificates
-        certs: List[TLSCertificate] = TLSCertificate.query.filter(
-            TLSCertificate.user_id == user_id
-        ) # type: ignore
+    
+    certs: List[TLSCertificate] = TLSCertificate.query.filter(
+        TLSCertificate.user_id == user_id
+    ) # type: ignore
 
     return jsonify([c.to_dict() for c in certs]), 200
 
@@ -66,11 +63,9 @@ def get_one(cert_id: int):
     # gets the certificate by id
     cert: TLSCertificate | None = TLSCertificate.query.get(cert_id)
 
-    # error if certificate does not exists
-    if user is None or cert is None:
-        return jsonify({"message": "Certificate not found"}), 404 
-    elif user.username != "master" and cert.user_id != user_id:
-        return jsonify({"message": "Certificate not found"}), 404 
+    # error if certificate does not exists or does not belong to user
+    if user is None or cert is None or (cert.user_id != user_id):
+        return jsonify({"message": "Certificate not found"}), 404
 
     return jsonify(cert.to_dict()), 200
 
@@ -174,7 +169,7 @@ def delete(cert_id: int):
     # error if the certificate/user does not exist of if the cert does not belong to the user
     if user is None or cert is None:
         return jsonify({"message": "Certificate not found"}),  404
-    elif user.username != "master" and cert.user_id != user_id:
+    elif cert.user_id != user_id:
         return jsonify({"message": "Certificate not found"}), 404
 
     db.session.delete(cert)

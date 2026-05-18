@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.user import User
 
+# maximum length of database entries for each field
 CERT_URL_MAXLEN = 255
 CERT_PROT_MAXLEN = 50
 CERT_CIPH_MAXLEN = 50
