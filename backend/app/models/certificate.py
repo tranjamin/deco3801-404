@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.user import User
 
+# maximum length of database entries for each field
 CERT_URL_MAXLEN = 255
 CERT_PROT_MAXLEN = 50
 CERT_CIPH_MAXLEN = 50
@@ -132,6 +133,13 @@ class TLSCertificate(db.Model):
             bv, _ = evaluate_against_policy(self, policy)
             combined_bv |= bv
         
+        # separate check for expired and transparency, if no policies exist
+        if len(policies) == 0:
+            if self.valid_to < time.time():
+                combined_bv |= (1 << Flags.WARN_EXPIRED.value[0])
+            if self.certificate_transparency_compliance != CertificateTransparencyCompliance.COMPLIANT:
+                combined_bv |= (1 << Flags.WARN_SECURITY_COMPLIANCE.value[0])
+        
         self.issues = combined_bv
         
     @staticmethod
@@ -225,7 +233,7 @@ class TLSCertificate(db.Model):
     
     def is_similar(self, other: TLSCertificate) -> bool:
         """Checks if two certificates are similar"""
-        if self.url != other.url:
+        if self.domain_name() != other.domain_name():
             return False
         if self.protocol != other.protocol:
             return False

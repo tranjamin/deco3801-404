@@ -21,7 +21,7 @@ export default function ReportTable({ data }: Props) {
                         <th style={headerCellStyle}>Cipher</th>
                         <th style={headerCellStyle}>Valid From</th>
                         <th style={headerCellStyle}>Valid To</th>
-                        <th style={headerCellStyle}>Description</th>
+                        <th style={headerCellStyle}>Violations to Resolve</th>
                     </tr>
                 </thead>
                 <tbody>

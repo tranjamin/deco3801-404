@@ -5,12 +5,6 @@ from test_fixtures import *
 
 HTTP_METHODS = ["get", "post", "put", "delete"]
 
-def test_invalid_methods_info(client: FlaskClient, access_headers):
-    for method in HTTP_METHODS:
-        if method in ["get"]:
-            continue
-        assert getattr(client, method)("/", headers=access_headers).status_code == 405
-
 def test_invalid_methods_cert(client: FlaskClient, access_headers):  
     for method in HTTP_METHODS:
         if method in ["get", "post"]:

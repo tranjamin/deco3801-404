@@ -30,7 +30,7 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
     now: int = int(time.time())
     days_until_expiry: int = (cert.valid_to - now) // 86400 # seconds to days, rounded down
 
-    print(f"Evaluating against a policy {policy.to_dict()}")
+    # print(f"Evaluating against a policy {policy.to_dict()}")
 
     # check expiry date - either expired or under days until expiry
     if cert.valid_to < now:
@@ -65,8 +65,9 @@ def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> 
         warnings |= (1 << Flags.WARN_CIPHER.value[0])
         print(f"Issue: ciphers because certificate cipher is {cert.cipher} and policy allowed ciphers is {policy.valid_ciphers}")
     
-    # check for valid isuers - but only if there is at least one issuer
-    if cert.certificate_transparency_compliance == CertificateTransparencyCompliance.NON_COMPLIANT:
+    # check to see if the certificate is transparent
+    if cert.certificate_transparency_compliance != CertificateTransparencyCompliance.COMPLIANT:
+        print(f"Issue: transparency compliance between transparency is {cert.certificate_transparency_compliance}")
         warnings |= (1 << Flags.WARN_SECURITY_COMPLIANCE.value[0])
 
     return warnings, {

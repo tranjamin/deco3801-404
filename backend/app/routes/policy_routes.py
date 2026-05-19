@@ -32,12 +32,10 @@ def get_all():
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
 
-    if user.username == "master": # temporary master password
-        certs: List[CertificatePolicy] = CertificatePolicy.query.all()
-    else: # collect user's policies
-        certs: List[CertificatePolicy] = CertificatePolicy.query.filter(
-            CertificatePolicy.user_id == user_id
-        ) # type: ignore
+
+    certs: List[CertificatePolicy] = CertificatePolicy.query.filter(
+        CertificatePolicy.user_id == user_id
+    ) # type: ignore
 
     return jsonify([c.to_dict() for c in certs]), 200
 
@@ -62,10 +60,8 @@ def get_one(policy_id: int):
     # get the policy by id
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
-    if user is None or policy is None:
-        return jsonify({"message": "Policy not found"}), 404 
-    if user.username != "master" and policy.user_id != user_id:
-        return jsonify({"message": "Policy not found"}), 404 
+    if (user is None) or (policy is None) or (policy.user_id != user_id):
+        return jsonify({"message": "Policy not found"}), 404
 
     return jsonify(policy.to_dict()), 200
 
@@ -97,7 +93,7 @@ def update_active(policy_id: int):
         return jsonify({"message": "User not found"}), 404
     elif data is None or data.get("active") is None:
         return jsonify({"message": "Malformed request"}), 400
-    if policy is None or (user.username != "master" and policy.user_id != user_id):
+    if policy is None or (policy.user_id != user_id):
         return jsonify({"message": "Policy not found"}), 404
 
     policy.active = data.get("active", False)
@@ -161,7 +157,7 @@ def delete(policy_id: int):
 
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
-    if policy is None or (user.username != "master" and policy.user_id != user_id):
+    if policy is None or policy.user_id != user_id:
         return jsonify({"message": "Policy does not exist"}), 404 
     
     db.session.delete(policy)
@@ -193,7 +189,7 @@ def update_policy(policy_id: int):
 
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
-    if policy is None or (user.username != "master" and policy.user_id != user_id):
+    if policy is None or (policy.user_id != user_id):
         return jsonify({"message": "Policy does not exist"}), 404 
 
     data: Dict[str, Any] | None = request.get_json(force=True, silent=True)

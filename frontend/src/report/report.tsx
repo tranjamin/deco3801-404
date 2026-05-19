@@ -41,6 +41,29 @@ function formatTimestamp(seconds: number | null): string {
   return new Intl.DateTimeFormat("en-CA").format(new Date(seconds * 1000));
 }
 
+function mapIssueToDescription(issue: string) : string {
+  switch (issue) {
+    case "expired":
+      return "Expired";
+    case "expiring":
+      return "Expiring Soon";
+    case "lifespan":
+      return "Short Certificate Lifespan";
+    case "protocol":
+      return "Invalid Protocol";
+    case "subject":
+      return "Invalid Subject";
+    case "issuer":
+      return "Invalid Certificate Issuer";
+    case "cipher":
+      return "Invalid Cipher";
+    case "security_compliance":
+      return "Unknown/Non-Compliant Certificate Transparency";
+    default:
+      return "Visit has policy or certificate issue"
+  }
+}
+
 function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
   const isExpired =
     visit.issues_found.includes("expired") ||
@@ -54,14 +77,14 @@ function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
 
   const daysRemaining =
     visit.days_until_expiry !== null
-      ? Math.ceil(visit.days_until_expiry)
+      ? Math.floor(visit.days_until_expiry)
       : visit.valid_to !== null
-        ? Math.ceil((visit.valid_to * 1000 - Date.now()) / (1000 * 60 * 60 * 24))
+        ? Math.floor((visit.valid_to * 1000 - Date.now()) / (1000 * 60 * 60 * 24))
         : 0;
 
   const desc =
     visit.issues_found.length > 0
-      ? visit.issues_found.join(", ")
+      ? visit.issues_found.map(mapIssueToDescription).join(", ")
       : visit.evaluation_passed
         ? "Everything is currently fine"
         : "Visit has policy or certificate issues";

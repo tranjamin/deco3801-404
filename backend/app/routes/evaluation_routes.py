@@ -43,9 +43,9 @@ def evaluation_route():
     cert: TLSCertificate | None = TLSCertificate.query.get(data.get("certificate_id"))
     policy: CertificatePolicy | None= CertificatePolicy.query.get(data.get("policy_id"))
 
-    if cert is None or (cert.user_id != user_id and user.username != "master"):
+    if cert is None or cert.user_id != user_id:
         return jsonify({"message": "Certificate not found"}), 404
-    if policy is None or (policy.user_id != user_id and user.username != "master"):
+    if policy is None or policy.user_id != user_id:
         return jsonify({"message": "Policy not found"}), 404
     
     return_json: Dict[str, Any]

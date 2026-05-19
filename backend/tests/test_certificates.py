@@ -238,7 +238,7 @@ def test_api_certificates_post__update(client: FlaskClient, access_headers: dict
     assert response.json[0]['cipher'] == cert3['cipher']
     
     # alter the url (no duplicate should be detected)
-    updated_certificate["url"] = "nothing-url"
+    updated_certificate["url"] = "https://www.google.com/help"
     client.post("/api/certificates/", headers=access_headers, json=updated_certificate)
     
     # alter the san list (no duplicate should be detected)

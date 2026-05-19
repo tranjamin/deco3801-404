@@ -14,9 +14,7 @@ def _certificate_has_issues(cert: TLSCertificate) -> bool:
 
 
 def _get_certificate_query_for_user(user: User, user_id: int):
-    query = TLSCertificate.query
-    if user.username != "master":
-        query = query.filter(TLSCertificate.user_id == user_id)
+    query = TLSCertificate.query.filter(TLSCertificate.user_id == user_id)
     return query
 
 
@@ -30,7 +28,10 @@ def get_visit_history():
     end_date = request.args.get("end_date")
     has_issues = request.args.get("has_issues")
     user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
+
+    if user is None:
+        return jsonify({"message": "user no longer exists"}), 404
 
     query = _get_certificate_query_for_user(user, user_id)
 
@@ -80,11 +81,13 @@ def get_visit_history():
 @jwt_required()
 def get_visit_detail(certificate_id: int):
     user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
-    cert = TLSCertificate.query.get_or_404(certificate_id)
+    user: User | None = User.query.get(user_id)
+    cert: TLSCertificate | None = TLSCertificate.query.get(certificate_id)
 
-    if user.username != "master" and cert.user_id != user_id:
-        return jsonify({"error": "certificate does not belong to user"}), 403
+    if user is None:
+        return jsonify({"message": "user no longer exists"}), 404
+    elif cert is None or (cert.user_id != user_id):
+        return jsonify({"message": "certificate not found"}), 404
 
     return jsonify(cert.to_report_dict()), 200
 
@@ -95,7 +98,10 @@ def get_domain_stats():
     end_date = time.time()
     start_date = end_date - (30 * 24 * 60 * 60)
     user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
+    user: User | None = User.query.get(user_id)
+    
+    if user is None:
+        return jsonify({"message": "user no longer exists"}), 404
 
     start_param = request.args.get("start_date")
     end_param = request.args.get("end_date")

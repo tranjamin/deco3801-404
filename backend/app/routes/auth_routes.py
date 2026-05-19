@@ -97,7 +97,10 @@ def refresh():
         On failure: Error code 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
     """
     user_id: str = get_jwt_identity()
-    User.query.get_or_404(int(user_id))
+
+    # ensure user still exists    
+    if User.query.get(int(user_id)) is None:
+        return jsonify({"message": "User no longer exists"}), 404
 
     access_token: str = create_access_token(identity=user_id)
     return jsonify({"access_token": access_token}), 200
@@ -118,7 +121,10 @@ def check():
         On failure: Error code 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
     """
     user_id: str = get_jwt_identity()
-    User.query.get_or_404(int(user_id))
+    
+    # ensure user still exists
+    if User.query.get(int(user_id)) is None:
+        return jsonify({"message": "User no longer exists"})
     
     return jsonify({"authenticated": True}), 200
 
@@ -147,11 +153,11 @@ def change_password():
 
     # checks if JWT token is authenticated
     user_id: str = get_jwt_identity()
-    user: User = User.query.get_or_404(int(user_id))
+    user: User | None = User.query.get(int(user_id))
     
     # checks if current password is correct
-    if not user.check_password(current_password):
-        return jsonify({"error": "unauthorised"}), 401
+    if user is None or (not user.check_password(current_password)):
+        return jsonify({"message": "unauthorised"}), 401
 
     # updates password
     user.set_password(new_password)
@@ -175,27 +181,27 @@ def change_username():
         On success: A JSON with a 'username_updated' boolean, Error code 200
         On failure: JSON with an 'error' field, Error code 400 (if missing/invalid fields), 401 (if unauthorized/invalid token) or 404 (if user no longer exists)
     """
-    data = request.get_json(force=True) or {}
+    data: dict = request.get_json(force=True, silent=True) or {}
     current_password = str(data.get("current_password", ""))
     new_username = str(data.get("new_username", "")).strip()
     if not current_password or not new_username:
-        return jsonify({"error": "current_password and new_username required"}), 400
+        return jsonify({"message": "current_password and new_username required"}), 400
 
-    user_id = get_jwt_identity()
-    user = User.query.get_or_404(int(user_id))
+    user_id: str = get_jwt_identity()
+    user: User | None = User.query.get(int(user_id))
 
-    if not user.check_password(current_password):
+    if user is None or (not user.check_password(current_password)):
         return jsonify({"error": "unauthorised"}), 401
 
-    new_username = new_username[:USER_NAME_MAXLEN]
+    new_username: str = new_username[:USER_NAME_MAXLEN]
 
-    existing = User.query.filter_by(username=new_username).first()
-    if existing and existing.id != user.id:
-        return jsonify({"error": "username already taken"}), 409
+    existing_user : User | None = User.query.filter_by(username=new_username).first()
+    if existing_user and existing_user.id != user.id:
+        return jsonify({"message": "username already taken"}), 409
 
     if new_username == user.username:
-        return jsonify({"error": "new_username is the same as the current username"}), 400
+        return jsonify({"message": "new username cannot be the same as old username"}), 400
 
     user.username = new_username
     db.session.commit()
-    return jsonify({"username_updated": True}), 200
+    return jsonify({"success": True}), 200

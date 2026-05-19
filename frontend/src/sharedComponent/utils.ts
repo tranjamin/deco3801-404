@@ -13,7 +13,7 @@ export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTra
         );
     
         const diff = new Date(cert.validTo).getTime() - now;
-        const daysRemaining = Math.ceil(diff / (1000*60*60*24));
+        const daysRemaining = Math.floor(diff / (1000*60*60*24));
 
         let status: TLSCertificateTransformed["status"];
         if (daysRemaining <= 0) status = "expired";
@@ -49,7 +49,7 @@ export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransfo
 
     const now = Date.now();
     const diff = new Date(cert.validTo).getTime() - now;
-    const daysRemaining = Math.ceil(diff / (1000*60*60*24));
+    const daysRemaining = Math.floor(diff / (1000*60*60*24));
     
     let status: TLSCertificateTransformed["status"];
     if (daysRemaining <= 0) status = "expired";
@@ -78,7 +78,7 @@ export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertif
 
     return data.map( cert => {
         const diff = new Date(cert.validTo).getTime() - now;
-        const daysRemaining = Math.ceil(diff / (1000*60*60*24));
+        const daysRemaining = Math.floor(diff / (1000*60*60*24));
 
         let status: TLSCertificateTransformed["status"];
         if (daysRemaining < 0) status = "expired";
