@@ -107,12 +107,19 @@ def create():
         ) # type: ignore
     
     # only keep policies this certificate applies to
-    print(f"Testing for policies")
     applicable_policies: List[CertificatePolicy] = []
     for policy in policies:
+        domain_match = False
         if satisfies_domain(cert.domain_name(), policy.valid_domains):
+            domain_match = True
+        else:
+            for san in cert.san_list:
+                if satisfies_domain(san, policy.valid_domains):
+                    domain_match = True
+                    break
+
+        if domain_match:
             applicable_policies.append(policy)
-            print(f"Policy match: {policy.to_dict()}")
 
     # silently continue if there are no policies which match
     if not len(applicable_policies):
@@ -121,29 +128,32 @@ def create():
     # evaluate against the policies and store it in the certificate
     cert.evaluate_against_policies_and_store(applicable_policies)
 
-    # check if an existing certificate exists for the same site (url, subject name and san list are the same)
+    # check if an existing certificate exists for the same site (domain, subject name and san list are the same)
     existing_certificates: Query = TLSCertificate.query.filter(
         TLSCertificate.user_id == cert.user_id,
-        TLSCertificate.url == cert.url,
         TLSCertificate.subject_name == cert.subject_name,
         TLSCertificate.san_list == cert.san_list,
     ) # type: ignore
 
-    num_certificates: int = existing_certificates.count()
-    if num_certificates: # update the first certificate found
-        print(f"Found an existing certificate")
-        existing_certificates[0].update_certificate(cert)
+    # update the first certificate found
+    # also delete older certificates, which may be artifacts of concurrency
+    updated_certificate : bool = False
+    returned_cert: TLSCertificate = cert
         
-        # also delete older certificates, which may be artifacts of concurrency
-        for i in range(1, num_certificates):
-            db.session.delete(existing_certificates[i])
+    for duplicate_cert in existing_certificates:
+        if not updated_certificate and cert.domain_name() == duplicate_cert.domain_name():
+            print(f"Found a certificate with domain {cert.domain_name()}, subject name {cert.subject_name} and a san list {cert.san_list}")
+            updated_certificate = True
+            duplicate_cert.update_certificate(cert)
+            returned_cert = duplicate_cert
+        elif updated_certificate and cert.domain_name() == duplicate_cert.domain_name():
+            db.session.delete(duplicate_cert)
 
-        db.session.commit()
-        return jsonify(existing_certificates[0].to_dict()), 201
-    else: # add a new certificate
-        db.session.add(cert)
-        db.session.commit()
-        return jsonify(cert.to_dict()), 201
+    if not updated_certificate:
+        db.session.add(cert) 
+
+    db.session.commit()
+    return jsonify(returned_cert.to_dict()), 201
 
 @certificate_bp.route("/<int:cert_id>", methods=["DELETE"])
 @jwt_required()

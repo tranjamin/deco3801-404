@@ -243,7 +243,7 @@ def test_api_policies_put__update(client: FlaskClient, access_headers: dict, acc
     updated_policy["domains"] = ["updated-domains"]
     updated_policy["validCiphers"] = ["updated-validCiphers"]
     updated_policy["validSubjects"] = ["updated-subjects"]
-    updated_policy["validProtocols"] = ["tls 1.3"]
+    updated_policy["validProtocols"] = ["TLS 1.3"]
     updated_policy["validIssuers"] = ["updated-issuers"]
     updated_policy["active"] = False
 

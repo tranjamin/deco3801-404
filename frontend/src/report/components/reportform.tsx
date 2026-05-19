@@ -16,7 +16,7 @@ const CSV_COLUMNS: Array<{
   { header: "Valid From", value: (row) => row.validFrom },
   { header: "Valid To", value: (row) => row.validTo },
   { header: "Status", value: (row) => row.status },
-  { header: "Description", value: (row) => row.desc },
+  { header: "Violations to Resolve", value: (row) => row.desc },
 ];
 
 function escapeCsvValue(value: string | number): string {

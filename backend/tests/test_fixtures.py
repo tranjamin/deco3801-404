@@ -93,7 +93,7 @@ def valid_policy():
     return {
         "name": "this-is-a-policy-name",
         "description": "this-is-a-policy-description",
-        "validProtocols": ["tls 1.0"],
+        "validProtocols": ["TLS 1.0"],
         "validSubjects": ["test-subject-name"],
         "validIssuers": ["test-issuer"],
         "validCiphers": ["this-is-a-cipher"],

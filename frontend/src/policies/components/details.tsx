@@ -183,7 +183,7 @@ function mapFormDataToPolicy(
 }
 
 /**
- * Component for selecting which TLS protocol versions are allowed.
+ * Component for selecting which TLS protocol versions are Valid.
  * this comment was made with GPT-5 mini on 2026-05-09
  */
 function ProtocolSelector({
@@ -195,10 +195,10 @@ function ProtocolSelector({
       <label
         style={fieldLabelWithInfo}
         title={
-          "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+          "Valid TLS/SSL protocol versions. If empty this criteria is ignored"
         }
       >
-        <span>Protocols</span>
+        <span>Valid Protocols</span>
 
         <span style={infoIcon} aria-hidden="true">
           ?
@@ -635,14 +635,9 @@ export default function Details({
                   />
                 </div>
 
-                <ProtocolSelector
-                  selectedProtocols={formData.protocols}
-                  onProtocolChange={handleProtocolChange}
-                />
-
                 <div style={fieldGroup}>
                   <ArrayListEditor
-                    label="Domains"
+                    label="Applicable Domains"
                     inputId="policy-domains"
                     items={formData.domains}
                     draftValue={arrayDrafts.domains}
@@ -651,13 +646,18 @@ export default function Details({
                     }
                     onAdd={() => handleArrayAdd("domains")}
                     onRemove={(index) => handleArrayRemove("domains", index)}
-                    tooltip="Domains where this policy should apply. If empty this criteria is ignored"
+                    tooltip="Domains for which this policy should apply. Use wildcards * to match any single subdomain or ** to match multiple subdomains. Leave empty to apply policy to all domains"
                   />
                 </div>
 
+                <ProtocolSelector
+                  selectedProtocols={formData.protocols}
+                  onProtocolChange={handleProtocolChange}
+                />
+
                 <div style={fieldGroup}>
                   <ArrayListEditor
-                    label="Ciphers"
+                    label="Valid Ciphers"
                     inputId="policy-ciphers"
                     items={formData.ciphers}
                     draftValue={arrayDrafts.ciphers}
@@ -672,7 +672,7 @@ export default function Details({
 
                 <div style={fieldGroup}>
                   <ArrayListEditor
-                    label="Subjects"
+                    label="Valid Subjects"
                     inputId="policy-subjects"
                     items={formData.subjects}
                     draftValue={arrayDrafts.subjects}
@@ -707,7 +707,7 @@ export default function Details({
                       "Minimum number of days the certificate should be valid after issuance"
                     }
                   >
-                    <span>Valid for how many days after issue?</span>
+                    <span>Minimum Certificate Lifespan</span>
 
                     <span style={infoIcon} aria-hidden="true">
                       ?
@@ -737,8 +737,7 @@ export default function Details({
                     }
                   >
                     <span>
-                      How many days is the certificate still valid for?
-                      (minimum)
+                      Minimum Days Until Certificate Expiry
                     </span>
 
                     <span style={infoIcon} aria-hidden="true">
@@ -782,15 +781,15 @@ export default function Details({
                   title={"Domains where this policy should apply"}
                   style={valueStyle}
                 >
-                  <strong>Domains:</strong> {policy.domains.join(", ")}
+                  <strong>Applicable Domains:</strong> {policy.domains.join(", ")}
                 </p>
                 <p
                   title={
-                    "Allowed TLS/SSL protocol versions. If empty this criteria is ignored"
+                    "Valid TLS/SSL protocol versions. If empty this criteria is ignored"
                   }
                   style={valueStyle}
                 >
-                  <strong>Protocols:</strong> {policy.protocols.join(", ")}
+                  <strong>Valid Protocols:</strong> {policy.protocols.join(", ")}
                 </p>
                 <p
                   title={
@@ -798,7 +797,7 @@ export default function Details({
                   }
                   style={valueStyle}
                 >
-                  <strong>Ciphers:</strong> {policy.ciphers.join(", ")}
+                  <strong>Valid Ciphers:</strong> {policy.ciphers.join(", ")}
                 </p>
                 <p
                   title={
@@ -806,7 +805,7 @@ export default function Details({
                   }
                   style={valueStyle}
                 >
-                  <strong>Subjects:</strong> {policy.subjects.join(", ")}
+                  <strong>Valid Subjects:</strong> {policy.subjects.join(", ")}
                 </p>
                 <p
                   title={
@@ -823,7 +822,7 @@ export default function Details({
                   }
                   style={valueStyle}
                 >
-                  <strong>Valid for how many days after issue?:</strong>{" "}
+                  <strong>Minimum Certificate Lifespan:</strong>{" "}
                   {policy.validFor}
                 </p>
                 <p
@@ -833,7 +832,7 @@ export default function Details({
                   style={valueStyle}
                 >
                   <strong>
-                    How many days is the certificate still valid for? (minimum):
+                    Minimum Days Until Certificate Expiry:
                   </strong>{" "}
                   {policy.validAfter}
                 </p>

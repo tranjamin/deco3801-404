@@ -71,17 +71,17 @@ class Protocols(enum.Enum):
     An enumerated class to define different TLS protocols. Valid protocols are encoded by a bitvector and are enumerated by the format TLS<subversion nnumber>V<version number>.
 
     Values --> (bit position, string encoding):
-        TLS1V0 --> (0, "tls 1.0")
-        TLS1V1 --> (1, "tls 1.1")
-        TLS1V2 --> (2, "tls 1.2")
-        TLS1V3 --> (3, "tls 1.3")
+        TLS1V0 --> (0, "TLS 1.0")
+        TLS1V1 --> (1, "TLS 1.1")
+        TLS1V2 --> (2, "TLS 1.2")
+        TLS1V3 --> (3, "TLS 1.3")
         QUIC --> (4, "quic")
     """
-    TLS1V0 = (0, "tls 1.0")
-    TLS1V1 = (1, "tls 1.1")
-    TLS1V2 = (2, "tls 1.2")
-    TLS1V3 = (3, "tls 1.3")
-    QUIC = (4, "quic")
+    TLS1V0 = (0, "TLS 1.0")
+    TLS1V1 = (1, "TLS 1.1")
+    TLS1V2 = (2, "TLS 1.2")
+    TLS1V3 = (3, "TLS 1.3")
+    QUIC = (4, "QUIC")
     
     @classmethod
     @functools.cache
