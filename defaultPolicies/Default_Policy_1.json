@@ -1,21 +1,14 @@
 {
   "name": "Default Policy 1",
-  "description": "This is a testing default policy",
+  "description": "This is a policy for learn.uq",
   "active": true,
-  "domains": [],
+  "domains": ["https://learn.uq.edu.au"],
   "protocols": [
-    "tls 1.0",
-    "tls 1.1",
-    "tls 1.2"
+    "TLS 1.2"
   ],
-  "ciphers": [],
-  "subjects": [],
-  "issuers": [
-    "amazon"
-  ],
+  "ciphers": ["AES_128_GCM"],
+  "subjects": ["learn.uq.edu.au"],
+  "issuers": ["Amazon RSA 2048 M04"],
   "validAfter": 14,
-  "validFor": 100,
-  "SANs": [],
-  "SCT": false,
-  "deleted": false
+  "validFor": 100
 }
