@@ -583,6 +583,8 @@ export async function getAllPolicies() {
     }
     if (activeDomains.length != 0) {
       setActiveDomains(activeDomains);
+    } else {
+      setActiveDomains([]);
     }
     console.log("active domains", activeDomains);
     return policies;
