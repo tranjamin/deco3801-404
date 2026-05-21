@@ -1,5 +1,9 @@
 # DECO3801 Team 404
 
+## Acknowledge of AI Usage
+
+Team 404 acknowledges the usage of AI in the assistance of developing the TLS Checker. AI has been mainly used to provide a general example of code usage, and debugging code.
+
 ## Contributing
 
 `main` cannot be committed to directly. Instead, create a new branch and submit a pull request into `main`. Each pull request must fulfill certain requirements, such as getting approval from another person and passing deployment checks. Merge with squash commits if you are merging in a single feature and don't need commit-level granularity; for merging multiple features (e.g. from a `dev` branch), rebase.
