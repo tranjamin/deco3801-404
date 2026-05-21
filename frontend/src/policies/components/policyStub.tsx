@@ -32,7 +32,6 @@ export default function PolicyStub({
    * this comment was made with GPT-5 mini on 2026-05-09
    */
   const handleActivate = async () => {
-    console.log("sending activated policy to API");
     await activatePolicy(policy.id);
     window.location.reload();
   };
@@ -42,7 +41,6 @@ export default function PolicyStub({
    * this comment was made with GPT-5 mini on 2026-05-09
    */
   const handleDeactivate = async () => {
-    console.log("sending deactivated policy to API");
     await deactivatePolicy(policy.id);
     window.location.reload();
   };
@@ -72,7 +70,7 @@ export default function PolicyStub({
             }}
           >
             {" "}
-            <img src="/activate4.svg" width={24} height={24} />
+            <img src="/empty.svg" width={15} height={15} />
           </button>
         ) : (
           <button
@@ -86,7 +84,7 @@ export default function PolicyStub({
             }}
           >
             {" "}
-            <img src="/deactivate.svg" width={24} height={24} />
+            <img src="/activate4.svg" width={15} height={15} />
           </button>
         )}
       </div>
@@ -123,8 +121,8 @@ const deactivatebutton: React.CSSProperties = {
   gap: "6px",
   padding: 6,
   background: "#ffffff",
-  border: "1px solid #ffffff",
-  borderRadius: "6px",
+  border: "2.5px solid #000000",
+  borderRadius: "50%",
   cursor: "pointer",
   fontSize: "11px",
   fontWeight: "500",
@@ -140,8 +138,8 @@ const activatebutton: React.CSSProperties = {
   gap: "6px",
   padding: 6,
   background: "#ffffff",
-  border: "1px solid #ffffff",
-  borderRadius: "6px",
+  border: "2.5px solid #000000",
+  borderRadius: "50%",
   cursor: "pointer",
   fontSize: "11px",
   fontWeight: "500",
