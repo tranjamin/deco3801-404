@@ -136,7 +136,7 @@ export default function Home({ onSessionExpired }: { onSessionExpired?: () => vo
         {transformedData ? (
           <CurrentSiteSummary data={transformedData} />
         ) : (
-          <p>Loading certificate...</p>
+          <p>Waiting for a TLS certificate...</p>
         )}
 
         <TLSLog

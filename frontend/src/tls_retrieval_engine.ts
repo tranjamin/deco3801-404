@@ -312,7 +312,6 @@ async function handleDebuggerEvent(
  * @returns void
  */
 async function sendCertToBackend(payload: object): Promise<void> {
-  console.log("storing:", payload);
   storeCurrentCert(payload);
 
   try {
@@ -354,18 +353,15 @@ async function sendCertToBackend(payload: object): Promise<void> {
  * format to be compatible with the extension popup component
  */
 async function prepCurrentCertForDisplay(payload: object) {
-  console.log(payload);
   const p = payload as Record<string, unknown>;
   const readStr = (key: string, fallback = "") =>
     typeof p[key] === "string" ? (p[key] as string) : fallback;
 
-  console.log(Number(readStr("validFrom")));
   const tempVar = {
     id: "1",
     protocol: readStr("protocol"),
     cipher: readStr("cipher"),
     subjectName: readStr("subjectName"),
-    //sanList: readStr("sanList"),
     sanList: p["sanList"],
     issuer: readStr("issuer"),
     validFrom: new Date(Number(p["validFrom"]) * 1000).toISOString(),
@@ -382,13 +378,11 @@ async function prepCurrentCertForDisplay(payload: object) {
  * @param payload The TLS certificate payload captured from Chrome securityDetails.
  */
 async function storeCurrentCert(payload: object) {
-  console.log("storing cert");
   const formattedCert = JSON.stringify(
     await prepCurrentCertForDisplay(payload),
     null,
     2,
   );
-  console.log("formatted cert:", formattedCert);
   setCurrentCertificateData(formattedCert);
 }
 

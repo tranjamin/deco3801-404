@@ -62,9 +62,7 @@ export default function Policies() {
    * this comment was made with GPT-5 mini on 2026-05-09
    */
   const handleSaveNewPolicy = async (policy: SecurityPolicy) => {
-    console.log("placeholder: create new policy", policy);
     await storeNewPolicy(policy);
-    // await addDummyPolicy();
     setIsCreatingPolicy(false);
     setSelectedPolicy(policy);
     window.location.reload();

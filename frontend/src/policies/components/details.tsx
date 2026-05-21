@@ -111,9 +111,9 @@ function toDisplayProtocol(protocol: string): string {
  */
 function toBackendProtocol(protocol: string): string {
   if (protocol != "QUIC") {
-    return `tls ${normalizeProtocol(protocol)}`;
+    return `TLS ${normalizeProtocol(protocol)}`;
   } else {
-    return protocol.toLowerCase();
+    return protocol;
   }
 }
 
@@ -282,7 +282,7 @@ function ArrayListEditor({
             value={draftValue}
             onChange={(e) => onDraftChange(e.target.value)}
             title={tooltip}
-            placeholder="press Add to add to list of valid items"
+            placeholder="press 'Add' to add to the list of valid items"
           />
           <button type="submit" style={addButton}>
             Add
@@ -318,10 +318,8 @@ export default function Details({
   });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  //const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    //console.log("default?:", isDefaultPolicy);
     if (policy) {
       setFormData(mapPolicyToFormData(policy));
       setIsEditing(startInEditMode);
@@ -350,7 +348,6 @@ export default function Details({
     if (policy == null) {
       return;
     }
-    //.log("sending activated policy to API");
     await activatePolicy(policy.id);
     window.location.reload();
   };
@@ -359,7 +356,6 @@ export default function Details({
     if (policy == null) {
       return;
     }
-    //console.log("sending deactivated policy to API");
     await deactivatePolicy(policy.id);
     window.location.reload();
   };
@@ -377,8 +373,6 @@ export default function Details({
 
   const handleDelete = async () => {
     if (!policy) return;
-    //setFormData(mapPolicyToFormData(policy));
-    //setIsEditing(true);
     await deletePolicy(policy.id);
     window.location.reload();
   };
@@ -387,7 +381,6 @@ export default function Details({
     if (!isDefaultPolicy) {
       await handleDelete();
     } else {
-      //add code here for deleting the policy in the default folder
       const modules = import.meta.glob("../../../../defaultPolicies/*.json", {
         eager: true,
       }) as Record<string, { default: { name?: unknown } }>;
@@ -399,7 +392,7 @@ export default function Details({
         if (!name || !policy) continue;
 
         if (policy.name.toLowerCase() === name.toLowerCase()) {
-          console.log("matched file path:", filePath);
+          console.warn("Failed to delete the following file:", filePath)
           //this is were the code for deleting the default policy would go... IF IT WAS POSSIBLE (an hour of my life down the drain)
         }
       }
@@ -454,7 +447,6 @@ export default function Details({
   };
 
   const validateSave = async () => {
-    console.log("formData", formData);
     //Check name
     if (formData.name === "") {
       return "Policy name cannot be empty";
@@ -484,7 +476,6 @@ export default function Details({
   const handleSave = async () => {
     const valid = await validateSave();
     if (valid === null) {
-      //setErrorMsg("");
       const policyPayload = mapFormDataToPolicy(formData, policy?.id);
 
       if (isNewPolicy && onSaveNewPolicy) {
@@ -493,17 +484,13 @@ export default function Details({
       } else if (!isNewPolicy && updatePolicy && policy) {
         await updatePolicy(policyPayload, policy.id);
       }
-
-      //console.log("saving edited policy to API", policyPayload);
       window.location.reload();
     } else {
-      //setErrorMsg(valid);
       alert(valid);
     }
   };
 
   const handleBack = async () => {
-    //console.log("cancelling policy edit");
     window.location.reload();
   };
 
@@ -589,6 +576,7 @@ export default function Details({
 
             {isEditing ? (
               <div>
+                {!isDefaultPolicy ? 
                 <div style={fieldGroup}>
                   <label
                     style={fieldLabelWithInfo}
@@ -598,7 +586,7 @@ export default function Details({
 
                     <span style={infoIcon} aria-hidden="true">
                       ?
-                    </span>
+                    </span><span style={requiredField}>*</span>
                   </label>
                   <input
                     id="policy-name"
@@ -610,6 +598,8 @@ export default function Details({
                     title="The name of the policy"
                   />
                 </div>
+                : <></> }
+                
 
                 <div style={fieldGroup}>
                   <label
@@ -620,7 +610,7 @@ export default function Details({
 
                     <span style={infoIcon} aria-hidden="true">
                       ?
-                    </span>
+                    </span><span style={requiredField}>*</span>
                   </label>
                   <input
                     id="policy-description"
@@ -843,9 +833,6 @@ export default function Details({
           <div style={bottomActionBar}>
             {!isEditing ? (
               <>
-                {/* <button type="button" style={editbutton} onClick={handleEdit}>
-                  Edit
-                </button> */}
                 <button
                   style={editbutton}
                   onMouseOver={(e) =>
@@ -899,7 +886,6 @@ export default function Details({
                 >
                   Save
                 </button>
-                {/* <div style={errorMsgStyle}>{errorMsg}</div> */}
                 <button
                   type="button"
                   onMouseOver={(e) =>
@@ -991,8 +977,6 @@ const headerRow: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-
-  //gap: "16px",
 };
 
 const leftHeaderGroup: React.CSSProperties = {
@@ -1003,8 +987,6 @@ const leftHeaderGroup: React.CSSProperties = {
 const rightHeaderGroup: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  //flexDirection: "column",
-  //alignItems: "flex-end",
   gap: "8px",
 };
 
@@ -1334,14 +1316,12 @@ const modalDeleteButton: React.CSSProperties = {
 };
 
 const valueStyle: React.CSSProperties = {
-  fontSize: "18px",
+  fontSize: "16px",
   marginBlockStart: "1em",
   marginBlockEnd: "0em",
   cursor: "help",
 };
 
-// const errorMsgStyle: React.CSSProperties = {
-//   color: "#ff0000",
-//   fontWeight: "bold",
-//   fontSize:"20px"
-// }
+const requiredField: React.CSSProperties = {
+  color: "#ff0000"
+}
