@@ -1,85 +1,85 @@
 /// <reference types="chrome" />
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Navbar from "../sharedComponent/navbar";
 import { useAuth, changePassword, changeUsername } from "../api/auth";
 import { SessionExpired } from "../sharedComponent/sessionExpired";
 
 
-const SETTINGS_STORAGE_KEY = "allowedDomains";
+// const SETTINGS_STORAGE_KEY = "allowedDomains";
 
-type SettingsFormData = {
-  allowedDomains: string[];
-};
+// type SettingsFormData = {
+//   allowedDomains: string[];
+// };
 
-type SettingsListEditorProps = {
-  label: string;
-  inputId: string;
-  items: string[];
-  draftValue: string;
-  onDraftChange: (value: string) => void;
-  onAdd: () => void;
-  onRemove: (index: number) => void;
-};
+// type SettingsListEditorProps = {
+//   label: string;
+//   inputId: string;
+//   items: string[];
+//   draftValue: string;
+//   onDraftChange: (value: string) => void;
+//   onAdd: () => void;
+//   onRemove: (index: number) => void;
+// };
 
-function SettingsListEditor({
-  label,
-  inputId,
-  items,
-  draftValue,
-  onDraftChange,
-  onAdd,
-  onRemove,
-}: SettingsListEditorProps) {
-  return (
-    <div style={fieldGroup}>
-      <label style={fieldLabel}>{label}</label>
-      <div style={listBox}>
-        {items.length > 0 ? (
-          items.map((item, index) => (
-            <div key={`${inputId}-${item}-${index}`} style={listRow}>
-              <span style={listItemText}>{item}</span>
-              <button
-                type="button"
-                style={deleteItemButton}
-                onClick={() => onRemove(index)}
-                aria-label={`Remove ${item}`}
-                title="Remove item"
-              >
-                x
-              </button>
-            </div>
-          ))
-        ) : (
-          <div style={emptyListText}>No items yet.</div>
-        )}
-      </div>
-      <div style={addRow}>
-        <input
-          id={inputId}
-          style={textInput}
-          type="text"
-          value={draftValue}
-          onChange={(e) => onDraftChange(e.target.value)}
-          placeholder="new domain"
-        />
-        <button type="button" style={addButton} onClick={onAdd}>
-          Add
-        </button>
-      </div>
-    </div>
-  );
-}
+// function SettingsListEditor({
+//   label,
+//   inputId,
+//   items,
+//   draftValue,
+//   onDraftChange,
+//   onAdd,
+//   onRemove,
+// }: SettingsListEditorProps) {
+//   return (
+//     <div style={fieldGroup}>
+//       <label style={fieldLabel}>{label}</label>
+//       <div style={listBox}>
+//         {items.length > 0 ? (
+//           items.map((item, index) => (
+//             <div key={`${inputId}-${item}-${index}`} style={listRow}>
+//               <span style={listItemText}>{item}</span>
+//               <button
+//                 type="button"
+//                 style={deleteItemButton}
+//                 onClick={() => onRemove(index)}
+//                 aria-label={`Remove ${item}`}
+//                 title="Remove item"
+//               >
+//                 x
+//               </button>
+//             </div>
+//           ))
+//         ) : (
+//           <div style={emptyListText}>No items yet.</div>
+//         )}
+//       </div>
+//       <div style={addRow}>
+//         <input
+//           id={inputId}
+//           style={textInput}
+//           type="text"
+//           value={draftValue}
+//           onChange={(e) => onDraftChange(e.target.value)}
+//           placeholder="new domain"
+//         />
+//         <button type="button" style={addButton} onClick={onAdd}>
+//           Add
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
 
 export default function Settings() {
   const { isAuthenticated } = useAuth();
-  const defaultAllowedDomains = ["portal.my.uq.edu.au", "my.uq.edu.au"];
-  const [formData, setFormData] = useState<SettingsFormData>({
-    allowedDomains: defaultAllowedDomains,
-  });
-  const [lastSavedAllowedDomains, setLastSavedAllowedDomains] = useState<string[]>(
-    defaultAllowedDomains,
-  );
-  const [domainDraft, setDomainDraft] = useState("");
+  // const defaultAllowedDomains = ["portal.my.uq.edu.au", "my.uq.edu.au"];
+  // const [formData, setFormData] = useState<SettingsFormData>({
+  //   allowedDomains: defaultAllowedDomains,
+  // });
+  // const [lastSavedAllowedDomains, setLastSavedAllowedDomains] = useState<string[]>(
+  //   defaultAllowedDomains,
+  // );
+  // const [domainDraft, setDomainDraft] = useState("");
 
   const [usernamePassword, setUsernamePassword] = useState("");
   const [newUsername, setNewUsername] = useState("");
@@ -94,62 +94,62 @@ export default function Settings() {
   const [passwordError, setPasswordError] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  useEffect(() => {
-    try {
-      const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (!rawValue) {
-        return;
-      }
+  // useEffect(() => {
+  //   try {
+  //     const rawValue = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+  //     if (!rawValue) {
+  //       return;
+  //     }
 
-      const parsedValue = JSON.parse(rawValue);
-      if (Array.isArray(parsedValue)) {
-        setFormData({
-          allowedDomains: parsedValue,
-        });
-        setLastSavedAllowedDomains(parsedValue);
-      }
-    } catch (error) {
-      console.error("Failed to load settings from localStorage:", error);
-    }
-  }, []);
+  //   //   const parsedValue = JSON.parse(rawValue);
+  //   //   if (Array.isArray(parsedValue)) {
+  //   //     setFormData({
+  //   //       allowedDomains: parsedValue,
+  //   //     });
+  //   //     setLastSavedAllowedDomains(parsedValue);
+  //   //   }
+  //   // } catch (error) {
+  //   //   console.error("Failed to load settings from localStorage:", error);
+  //   // }
+  // }, []);
 
-  const hasUnsavedChanges =
-    JSON.stringify(formData.allowedDomains) !==
-    JSON.stringify(lastSavedAllowedDomains);
+  // const hasUnsavedChanges =
+  //   JSON.stringify(formData.allowedDomains) !==
+  //   JSON.stringify(lastSavedAllowedDomains);
 
-  const handleDomainAdd = () => {
-    const value = domainDraft.trim();
+  // const handleDomainAdd = () => {
+  //   const value = domainDraft.trim();
 
-    if (!value) return;
+  //   if (!value) return;
 
-    setFormData((prev) => ({
-      ...prev,
-      allowedDomains: [...prev.allowedDomains, value],
-    }));
-    setDomainDraft("");
-  };
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     allowedDomains: [...prev.allowedDomains, value],
+  //   }));
+  //   setDomainDraft("");
+  // };
 
-  const handleDomainRemove = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      allowedDomains: prev.allowedDomains.filter(
-        (_, currentIndex) => currentIndex !== index,
-      ),
-    }));
-  };
+  // const handleDomainRemove = (index: number) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     allowedDomains: prev.allowedDomains.filter(
+  //       (_, currentIndex) => currentIndex !== index,
+  //     ),
+  //   }));
+  // };
 
-  const handleSave = async () => {
-    try {
-      window.localStorage.setItem(
-        SETTINGS_STORAGE_KEY,
-        JSON.stringify(formData.allowedDomains),
-      );
-      setLastSavedAllowedDomains([...formData.allowedDomains]);
-      console.log("Value is set");
-    } catch (error) {
-      console.error("Failed to save settings to localStorage:", error);
-    }
-  };
+  // const handleSave = async () => {
+  //   try {
+  //     window.localStorage.setItem(
+  //       SETTINGS_STORAGE_KEY,
+  //       JSON.stringify(formData.allowedDomains),
+  //     );
+  //     setLastSavedAllowedDomains([...formData.allowedDomains]);
+  //     console.log("Value is set");
+  //   } catch (error) {
+  //     console.error("Failed to save settings to localStorage:", error);
+  //   }
+  // };
 
   async function handleUsernameChange(
     event: React.FormEvent<HTMLFormElement>
@@ -233,7 +233,7 @@ export default function Settings() {
         <div style={container}>
           <h2 style={heading}>SETTINGS</h2>
             <div style={card}>
-            <SettingsListEditor
+            {/* <SettingsListEditor
               label="Allowed Domains"
               inputId="allowed-domains"
               items={formData.allowedDomains}
@@ -241,9 +241,9 @@ export default function Settings() {
               onDraftChange={setDomainDraft}
               onAdd={handleDomainAdd}
               onRemove={handleDomainRemove}
-            />
+            /> */}
 
-            <div style={footerActions}>
+            {/* <div style={footerActions}>
               <button
                 type="button"
                 style={{
@@ -257,7 +257,7 @@ export default function Settings() {
               </button>
             </div>
 
-            <hr style={sectionDivider} />
+            <hr style={sectionDivider} /> */}
 
             <form style={accountForm} onSubmit={handleUsernameChange}>
               <h3 style={sectionHeading}>Change Username</h3>
@@ -381,12 +381,12 @@ const heading: React.CSSProperties = {
   textAlign: "left",
 };
 
-const fieldGroup: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "4px",
-  marginBottom: "16px",
-};
+// const fieldGroup: React.CSSProperties = {
+//   display: "flex",
+//   flexDirection: "column",
+//   gap: "4px",
+//   marginBottom: "16px",
+// };
 
 const fieldLabel: React.CSSProperties = {
   fontWeight: "bold",
@@ -399,66 +399,66 @@ const textInput: React.CSSProperties = {
   fontSize: "14px",
 };
 
-const listBox: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "6px",
-  padding: "8px",
-  border: "1px solid #b5b5b5",
-  borderRadius: "6px",
-  backgroundColor: "#f7f7f7",
-};
+// const listBox: React.CSSProperties = {
+//   display: "flex",
+//   flexDirection: "column",
+//   gap: "6px",
+//   padding: "8px",
+//   border: "1px solid #b5b5b5",
+//   borderRadius: "6px",
+//   backgroundColor: "#f7f7f7",
+// };
 
-const listRow: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "8px",
-};
+// const listRow: React.CSSProperties = {
+//   display: "flex",
+//   alignItems: "center",
+//   justifyContent: "space-between",
+//   gap: "8px",
+// };
 
-const listItemText: React.CSSProperties = {
-  wordBreak: "break-word",
-};
+// const listItemText: React.CSSProperties = {
+//   wordBreak: "break-word",
+// };
 
-const emptyListText: React.CSSProperties = {
-  color: "#666666",
-  fontStyle: "italic",
-};
+// const emptyListText: React.CSSProperties = {
+//   color: "#666666",
+//   fontStyle: "italic",
+// };
 
-const addRow: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-};
+// const addRow: React.CSSProperties = {
+//   display: "flex",
+//   alignItems: "center",
+//   gap: "8px",
+// };
 
-const addButton: React.CSSProperties = {
-  padding: "8px 12px",
-  border: "1px solid #000000",
-  borderRadius: "6px",
-  cursor: "pointer",
-  color: "#047e00",
-  backgroundColor: "rgb(243, 243, 243)",
-  flexShrink: 0,
-};
+// const addButton: React.CSSProperties = {
+//   padding: "8px 12px",
+//   border: "1px solid #000000",
+//   borderRadius: "6px",
+//   cursor: "pointer",
+//   color: "#047e00",
+//   backgroundColor: "rgb(243, 243, 243)",
+//   flexShrink: 0,
+// };
 
-const deleteItemButton: React.CSSProperties = {
-  width: "22px",
-  height: "22px",
-  border: "1px solid #b00020",
-  borderRadius: "50%",
-  backgroundColor: "#fff0f2",
-  color: "#b00020",
-  cursor: "pointer",
-  lineHeight: 1,
-  padding: 0,
-  flexShrink: 0,
-};
+// const deleteItemButton: React.CSSProperties = {
+//   width: "22px",
+//   height: "22px",
+//   border: "1px solid #b00020",
+//   borderRadius: "50%",
+//   backgroundColor: "#fff0f2",
+//   color: "#b00020",
+//   cursor: "pointer",
+//   lineHeight: 1,
+//   padding: 0,
+//   flexShrink: 0,
+// };
 
-const footerActions: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "flex-start",
-  marginTop: "20px",
-};
+// const footerActions: React.CSSProperties = {
+//   display: "flex",
+//   justifyContent: "flex-start",
+//   marginTop: "20px",
+// };
 
 const saveButton: React.CSSProperties = {
   padding: "8px 12px",
@@ -469,10 +469,10 @@ const saveButton: React.CSSProperties = {
   backgroundColor: "rgb(243, 243, 243)",
 };
 
-const saveButtonDisabled: React.CSSProperties = {
-  cursor: "not-allowed",
-  opacity: 0.5,
-};
+// const saveButtonDisabled: React.CSSProperties = {
+//   cursor: "not-allowed",
+//   opacity: 0.5,
+// };
 
 const sectionDivider: React.CSSProperties = {
   margin: "24px 0",

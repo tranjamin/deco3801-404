@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { getAllPolicies, importPolicy, type SecurityPolicy } from "../../policySharing/policySharing";
-//import { getAllPolicies } from "../../policySharing/policySharing";
 import PolicyStub from "./policyStub";
 import "./loader.css";
 
@@ -34,8 +33,6 @@ export default function PolicyList({
    */
   const GetAllPoliciesFunction = async () => {
     const fetchedPolicies = await getAllPolicies();
-    console.log(fetchedPolicies);
-    console.log(typeof(fetchedPolicies));
     const backendPolicies = fetchedPolicies ?? [];
     const collectedDefaults: string[] = [];
 
@@ -44,17 +41,13 @@ export default function PolicyList({
         eager: true
       }) as Record<string, { default: string }>;
 
-      console.log("imported:",modules);
-
       const defaultFiles = Object.values(modules).map(m => m.default);
 
       const backendNames = new Set(
         backendPolicies.map((p) => (p?.name ?? '').toLowerCase()),
       );
-      console.log("default files:", defaultFiles);
       for (const fileContent of defaultFiles) {
         try {
-          //const parsed = JSON.parse(fileContent) as { name?: unknown };
           const parsed = fileContent as { name?: unknown };
           const name = typeof parsed.name === 'string' ? parsed.name : null;
 
@@ -64,7 +57,6 @@ export default function PolicyList({
 
           // Only import if this policy name doesn't already exist in backend
           if (!backendNames.has(name.toLowerCase())) {
-            console.log("importing a policy")
             await importPolicy(JSON.stringify(fileContent));
             
           }
@@ -72,15 +64,23 @@ export default function PolicyList({
           console.warn('Skipping invalid default policy file:', err);
         }
       }
-      //window.location.reload();
     } catch (e) {
       console.warn('No default policies found or failed to load defaults.', e);
     }
 
     setDefaultPolicies(collectedDefaults);
     const allPolicies = await getAllPolicies();
-    setPolicies(allPolicies ?? backendPolicies);
-    console.log("default policy names:", collectedDefaults)
+
+    //The following code segment was written by GPT-5 mini on 19/05/2026
+    const source = allPolicies ?? backendPolicies;
+    const sortedPolicies = Array.isArray(source)
+      ? [...source].sort((a, b) =>
+          ((a?.name ?? "").toLowerCase()).localeCompare(((b?.name ?? "")).toLowerCase()),
+        )
+      : source;
+    //End of AI written segment
+    
+    setPolicies(sortedPolicies);
     
   };
 
@@ -170,7 +170,6 @@ export default function PolicyList({
         </div>
       </div>
       {policies.length === 0 ? (
-        // <p>loading...</p>
         <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
@@ -189,7 +188,6 @@ export default function PolicyList({
       )}
       <h3 style={subheading}>Inactive Policies</h3>
       {policies.length === 0 ? (
-        // <p>loading...</p>
         <div className="loader"></div>
       ) : (
         policies.map((policy, index) =>
@@ -272,6 +270,5 @@ const subheading: React.CSSProperties = {
   fontStyle: "italic bold",
   textDecoration: "underline",
   fontSize: 20,
-  //  flex: 1,
   textAlign: "left",
 };

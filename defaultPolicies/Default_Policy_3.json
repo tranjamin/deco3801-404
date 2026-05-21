@@ -1,0 +1,14 @@
+{
+  "name": "Default Policy 3",
+  "description": "This is a policy for github",
+  "active": true,
+  "domains": ["github.com"],
+  "protocols": [
+    "TLS 1.3"
+  ],
+  "ciphers": ["AES_128_GCM"],
+  "subjects": ["github.com"],
+  "issuers": ["Sectigo Public Server Authentication CA DV E36"],
+  "validAfter": 10,
+  "validFor": 50
+}

@@ -43,8 +43,6 @@ export interface ExportedPolicy {
   issuers: string[];
   validAfter: number; //maximum days since certificate issue
   validFor: number; //days remaining until expiration
-  SANs: string[]; //DELETE THIS
-  SCT: boolean; //DELETE THIS
 }
 
 /**
@@ -230,9 +228,7 @@ async function parseImportedPolicy(iPolicy: string): Promise<ExportedPolicy> {
     subjects: parseStringArrayField(parsedValue, "subjects"),
     issuers: parseStringArrayField(parsedValue, "issuers"),
     validAfter: parseNumberField(parsedValue, "validAfter"),
-    validFor: parseNumberField(parsedValue, "validFor"),
-    SANs: parseStringArrayField(parsedValue, "SANs"),//DELETE THIS
-    SCT: parseBooleanField(parsedValue, "SCT"),//DELETE THIS
+    validFor: parseNumberField(parsedValue, "validFor")
   };
 }
 
@@ -246,8 +242,6 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
   return {
     name: policy.name,
     description: policy.description,
-
-    //active: policy.active,
     domains: policy.domains,
     validProtocols: policy.protocols,
     validCiphers: policy.ciphers,
@@ -266,10 +260,8 @@ function mapPolicyToBackendPayload(policy: SecurityPolicy): Omit<RawPolicy, "id"
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function importPolicy(iPolicy: string) {
-  console.log("testing", iPolicy)
   const temp = JSON.parse(iPolicy);
   if (temp.deleted) {
-    console.log("double fuck");
     return;
   }
   const exportedPolicy = await parseImportedPolicy(iPolicy);
@@ -299,8 +291,6 @@ export async function exportPolicy(cPolicy: SecurityPolicy) {
     issuers: cPolicy.issuers,
     validAfter: cPolicy.validAfter,
     validFor: cPolicy.validFor,
-    SANs: [],
-    SCT: false
   }
   const ePolicy: string = JSON.stringify(sPolicy, null, 2);
   const blob = new Blob([ePolicy], { type: "application/json" });
@@ -346,7 +336,6 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
     const data = (await response.json()) as { message?: string };
     return { message: data.message ?? "Policy activity updated" };
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -360,10 +349,8 @@ export async function addDummyPolicy(): Promise<{ message: string } | null> {
 export async function storeNewPolicy(
   policy: SecurityPolicy,
 ): Promise<SecurityPolicy | null> {
-  console.log("sending this", mapPolicyToBackendPayload(policy));
   try {
     const accessToken = await getValidAccessToken();
-    console.log(accessToken);
     const headers = {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -382,7 +369,6 @@ export async function storeNewPolicy(
     const data = (await response.json()) as RawPolicy;
     return mapJSONtoPolicies([data])[0] ?? null;
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -415,7 +401,7 @@ export async function activatePolicy(
     const data = (await response.json()) as { message?: string };
     return { message: data.message ?? "Policy activity updated" };
   } catch (e) {
-    console.log("BIG ERROR:", e);
+
     return null;
   }
 }
@@ -448,7 +434,6 @@ export async function deactivatePolicy(
     const data = (await response.json()) as { message?: string };
     return { message: data.message ?? "Policy activity updated" };
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -460,7 +445,6 @@ export async function deactivatePolicy(
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
-  console.log(policy, policyID);
   try {
     const accessToken = await getValidAccessToken();
     const headers = {
@@ -480,7 +464,6 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
     const text = await response.text();
     return text ? JSON.parse(text) : null;
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -492,7 +475,6 @@ export async function updatePolicy(policy: SecurityPolicy, policyID: number) {
  * this docstring was made with GPT-5 mini on 2026-05-09
  */
 export async function deletePolicy(policyID: number) {
-  console.log(policyID);
   try {
     const accessToken = await getValidAccessToken();
     const headers = {
@@ -510,7 +492,6 @@ export async function deletePolicy(policyID: number) {
     const text = await response.text();
     return text ? JSON.parse(text) : null;
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -539,7 +520,6 @@ export async function getPolicy(policyID: number) {
     const data = await response.json();
     return mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
@@ -567,7 +547,7 @@ export async function getAllPolicies() {
     }
     const data = await response.json();
     const policies = mapJSONtoPolicies(Array.isArray(data) ? data : [data]);
-    console.log("got the following policies from the backend:",policies);
+
     //ok now im going to add the policies that are active to a locally stored array for ref in the tlsReterval engine
     const activeDomains: string[] = [];
     for (const policy of policies) {
@@ -583,11 +563,11 @@ export async function getAllPolicies() {
     }
     if (activeDomains.length != 0) {
       setActiveDomains(activeDomains);
+    } else {
+      setActiveDomains([]);
     }
-    console.log("active domains", activeDomains);
     return policies;
   } catch (e) {
-    console.log("BIG ERROR:", e);
     return null;
   }
 }
