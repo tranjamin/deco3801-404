@@ -1,5 +1,7 @@
 import type { TLSCertificate } from "./types";
 
+// mockdata generated from ChatGPT4o
+// prompt: generate some mock data using the provided TLS certificate data structure
 export const mockTLSData: TLSCertificate[] = [
   {
     id: "1",

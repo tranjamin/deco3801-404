@@ -69,7 +69,6 @@ export function ActionButtons({
 }
 
 
-
 // Shared style to keep buttons consistent
 const buttonContainer: React.CSSProperties = {
     display: "flex",

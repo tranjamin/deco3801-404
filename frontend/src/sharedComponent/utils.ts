@@ -1,6 +1,9 @@
 import type { TLSCertificate, TLSCertificateTransformed } from "./types";
 
-// Converts datetime into YYYY-MM-DD instead of YYYY-MM-DDT[TIME]Z
+
+// Converts datetime into YYYY-MM-DD instead of YYYY-MM-DDT[TIME]Z (WAS USED FOR MOCKDATA TESTING)
+// reference ChatGPT4o - assisted in writing a basic initial TLS ceritficate transformation
+// prompt: how do I transform a data structure to include additional variables in typescript
 export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTransformed[] {
     const now = Date.now();
 
@@ -25,8 +28,6 @@ export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTra
         else if (daysRemaining < 15) desc = "Soon to expire due to valid date period";
         else desc = "Everything is currently fine";
 
-        // if statements for incorrect policies description
-
         return {
             ...cert,
             validTo: formattedValidTo,
@@ -38,7 +39,7 @@ export function transformCertificates(cert: TLSCertificate[]): TLSCertificateTra
     })
 }
 
-
+// (WAS USED FOR MOCKDATA TESTING)
 export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransformed {
     const formattedValidTo = new Intl.DateTimeFormat("en-CA").format(
         new Date(cert.validTo)
@@ -72,7 +73,7 @@ export function transformSingleCert(cert: TLSCertificate): TLSCertificateTransfo
 }
 
 
-
+// (WAS USED FOR MOCKDATA TESTING)
 export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertificateTransformed[] {
     const now = Date.now();
 
@@ -101,7 +102,7 @@ export function transformCertificatesKeepTime(data: TLSCertificate[]): TLSCertif
 
 
 
-
+// counted statuses (WAS USED FOR MOCKDATA TESTING)
 export function countStatus(data: TLSCertificateTransformed[]) {
     // for each loop
     return data.reduce((acc, cert) => {

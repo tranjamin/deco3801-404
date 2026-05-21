@@ -52,7 +52,8 @@ python -m gunicorn backend:app # to deploy with gunicorn (linux only)
 
 
 
-Policy Import/Export Format;
+Policy Import/Export Format:
+```sh
 {
     "description": "My Example Policy",
     "protocols": ["TLS 1.2", "QUIC"],
@@ -62,3 +63,8 @@ Policy Import/Export Format;
     "validFor": 10,
     "transparencyCompliance": True,
 }
+```
+
+## Credit
+
+* Icons were obtained from https://www.svgrepo.com
