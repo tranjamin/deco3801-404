@@ -2,6 +2,10 @@
 
 This is a prototype of the TLS Certificate Checker, a full-stack extension-based application which passively monitors TLS certificates as users browse the web.
 
+## Acknowledge of AI Usage
+
+Team 404 acknowledges the usage of AI in the assistance of developing the TLS Checker. AI has been mainly used to provide a general example of code usage, and debugging code.
+
 ## Frontend
 
 ### Requirements
