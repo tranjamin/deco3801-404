@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-import math
 from urllib.parse import urlparse
 
 from app import db
@@ -14,7 +13,6 @@ from app.models.policy import CertificatePolicy
 from app.models.evaluation import evaluate_against_policy
 
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from app.models.user import User
 
@@ -124,7 +122,7 @@ class TLSCertificate(db.Model):
         }
         
     def evaluate_against_policies_and_store(self, policies: List[CertificatePolicy]):
-        """Evaluates this certificate against a list of policies and udates the self.issues accordingly"""
+        """Evaluates this certificate against a list of policies and updates the self.issues accordingly"""
         
         # the combined issues bitvector
         combined_bv: int = 0
@@ -186,7 +184,7 @@ class TLSCertificate(db.Model):
         else:
             return None
         
-        ##
+        ## handle san list
         if isinstance(data.get("sanList"), str):
             data["sanList"] = [data["sanList"][:CERT_SANS_MAXLEN]]
         elif not isinstance(data.get("sanList", []), list):
@@ -197,24 +195,23 @@ class TLSCertificate(db.Model):
                     return None
             data["sanList"] = [i[:CERT_SANS_MAXLEN] for i in data.get("sanList", [])][:CERT_MAX_SANS]
           
-                
-        ##
+        ## handle certificate start
         if not isinstance(data.get("validFrom", -1), int):
             return None
         elif data.get("validFrom", -1) < 0:
             return None
         
-        ##
+        ## handle certificate end
         if not isinstance(data.get("validTo", -1), int):
             return None
         elif data.get("validTo", -1) <= data.get("validFrom", -1):
             return None
 
-        ##
+        ## handle transparency compliance
         if data.get("certificateTransparencyCompliance", "unknown") not in ["unknown", "not-compliant", "compliant"]:
             return None
 
-        # calculate 
+        # create a new certificate
         cert = TLSCertificate(
             url=data.get("url", ""),
             protocol=data.get("protocol", ""),
@@ -241,7 +238,7 @@ class TLSCertificate(db.Model):
             return False
         if self.subject_name != other.subject_name:
             return False
-        if set(self.san_list) != set(other.san_list): # order is not important for this
+        if set(self.san_list) != set(other.san_list): # order is not important for this, so convert to set
             return False
         if self.issuer != other.issuer:
             return False

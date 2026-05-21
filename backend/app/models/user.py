@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from app.models.policy import CertificatePolicy
 
 USER_NAME_MAXLEN = 80
-USER_PASS_MAXLEN = 255 # removed this because we control the password has size, it cannot be exploited
 
 class User(db.Model):
     """
@@ -68,13 +67,13 @@ class User(db.Model):
             - Required fields are missing (username, password)
         """
         
-        ##
+        ## ensure there is a username
         if isinstance(data.get("username"), str) and data.get("username"):
             data["username"] = data["username"][:USER_NAME_MAXLEN]
         else:
             return None
 
-        ##
+        ## ensure there is a password
         if not isinstance(data.get("password"), str) or not data.get("password"):
             return None
 

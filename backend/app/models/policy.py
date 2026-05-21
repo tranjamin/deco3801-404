@@ -99,19 +99,19 @@ class CertificatePolicy(db.Model):
         # trim down all strings to their required length. modifies the data
         # ensure correct data types
         
-        ## 
+        ## handle policy name
         if isinstance(data.get("name", "Unnamed Policy"), str):
             data["name"] = data.get("name", "Unnamed Policy")[:POLICY_NAME_MAXLEN]
         else:
             return None
         
-        ##
+        ## handle policy description
         if isinstance(data.get("description", "No description provided"), str):
             data["description"] = data.get("description", "No description provided")[:POLICY_DESC_MAXLEN]
         else:
             return None
         
-        ##
+        ## handle policy protocols
         if isinstance(data.get("validProtocols"), str):
             data["validProtocols"] = [data["validProtocols"]]
         elif not isinstance(data.get("validProtocols", []), list):
@@ -121,7 +121,7 @@ class CertificatePolicy(db.Model):
                 return None
         protocol_bv: int = Protocols.encode(data.get("validProtocols", []))
         
-        ##
+        ## handle policy subjects
         if isinstance(data.get("validSubjects"), str):
             data["validSubjects"] = [data["validSubjects"][:POLICY_SUBJ_MAXLEN]]
         elif not isinstance(data.get("validSubjects", []), list):
@@ -132,7 +132,7 @@ class CertificatePolicy(db.Model):
                     return None
             data["validSubjects"] = [i[:POLICY_SUBJ_MAXLEN] for i in data.get("validSubjects", [])][:POLICY_MAX_ARRAY_SIZE]
         
-        ##
+        ## handle policy issuers
         if isinstance(data.get("validIssuers"), str):
             data["validIssuers"] = [data["validIssuers"][:POLICY_ISSU_MAXLEN]]
         elif not isinstance(data.get("validIssuers", []), list):
@@ -143,7 +143,7 @@ class CertificatePolicy(db.Model):
                     return None
             data["validIssuers"] = [i[:POLICY_ISSU_MAXLEN] for i in data.get("validIssuers", [])][:POLICY_MAX_ARRAY_SIZE]
             
-        ##
+        ## handle policy ciphers
         if isinstance(data.get("validCiphers"), str):
             data["validCiphers"] = [data["validCiphers"][:POLICY_CIPH_MAXLEN]]
         elif not isinstance(data.get("validCiphers", []), list):
@@ -154,7 +154,7 @@ class CertificatePolicy(db.Model):
                     return None
             data["validCiphers"] = [i[:POLICY_CIPH_MAXLEN] for i in data.get("validCiphers", [])][:POLICY_MAX_ARRAY_SIZE]
         
-        ##
+        ## handle policy domains
         if isinstance(data.get("domains"), str):
             data["domains"] = [data["domains"][:POLICY_DOMA_MAXLEN]]
         elif not isinstance(data.get("domains", []), list):
@@ -165,13 +165,13 @@ class CertificatePolicy(db.Model):
                     return None
             data["domains"] = [i[:POLICY_DOMA_MAXLEN] for i in data.get("domains", [])][:POLICY_MAX_ARRAY_SIZE]
         
-        ##
+        ## handle certificate lifespan
         if not isinstance(data.get("minCertificateLifespan", 0), int):
             return None
         elif data.get("minCertificateLifespan", 0) < 0:
             return None
         
-        ##
+        ## handle certificate remaining lifespan
         if not isinstance(data.get("minCertificateDaysLeft", 0), int):
             return None
         elif data.get("minCertificateDaysLeft", 0) < 0:
