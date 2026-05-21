@@ -104,7 +104,7 @@ function mapVisitToTableRow(visit: BackendVisit): TLSCertificateTransformed {
   };
 }
 
-
+// retrieves initial filter settings (status)
 const getInitialStatusFilter = () => {
   const params = new URLSearchParams(window.location.search);
   const status = params.get("status");

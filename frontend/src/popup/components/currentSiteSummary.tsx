@@ -74,6 +74,7 @@ const cardStyle: React.CSSProperties = {
     boxShadow: "0 4px 6px rgba(0, 0, 0, 0.47)",
 };
 
+
 const headerStyle: React.CSSProperties = {
     display: "flex",
     justifyContent: "center",
@@ -81,7 +82,8 @@ const headerStyle: React.CSSProperties = {
     marginBottom: 10
 };
 
-
+// reference: ChatGPT4o - assisted in creating the column box and row box containers
+// prompt: how do i make my containers stack vertically or side by side horizontally
 const gridStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: "110px 1fr",

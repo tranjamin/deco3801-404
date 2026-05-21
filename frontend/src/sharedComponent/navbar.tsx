@@ -4,6 +4,8 @@ type Props = {
     active: "report" | "settings" | "policies";
 };
 
+// reference: Chatgpt4o - used to create initial function to navigate to specific page
+// prompt: how to create a function that would allow me to select a specific active page
 export default function Navbar({ active }: Props) {
 
     // function that navigates based on which header is clicked

@@ -14,10 +14,12 @@ type Props = {
     setSearchQuery: (value: string) => void;
 };
 
-// filterStatus, 
+
 export default function TableFilters({sortBy, filters, searchQuery, setSortBy, setFilters, setSearchQuery}: Props) {
 
     // handles back to default screen when clicked outside the popup/dropdown
+    // reference: ChatGPT4o - used to create a popup menu for menus
+    // prompt: how to create a menu to show and hide in typescript react
     const sortRef = useRef<HTMLDivElement>(null);
     const filterRef = useRef<HTMLDivElement>(null);
     const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -33,6 +35,8 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
     }, []);
 
     // handles checkbox for filters
+    // reference: ChatGPT4o
+    // prompt: how to create checkbox filters
     const handleCheckboxChange = (category: "status" | "protocol", value: string) => {
         setFilters(prev => {
             const current = prev[category];
@@ -55,6 +59,7 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
             <div style={gridContainer}>
                 
                 {/* search */}
+                {/* reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input */}
                 <div style={searchWrapperStyle}>
                     <input 
                         type="text"
@@ -73,6 +78,7 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
                 
 
                 {/* sort by */}
+                {/* reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/optgroup */}
                 <div style={{paddingTop: "4px"}} ref={sortRef}>
                     <label style={{fontSize: "16px"}}>
                         Sort By:
@@ -112,14 +118,14 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
                     >
                         <img src="/filter.svg" width={20} height={20}/>
                     </button> { showFilterMenu && (
-                        <div style={popupStyle}>
-                            
+                        <div style={popupStyle}>       
                             <div style={filterRowStyle}>
                                 {/* protocol */}
                                 <div style={filterColumnStyle}>
                                     <strong>Protocol</strong>
                                     {["TLS 1.0", "TLS 1.1", "TLS 1.2", "TLS 1.3", "QUIC"].map((protocol) => (
                                         <label key={protocol} style={checkboxLabelStyle}>
+                                            {/* reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox */}
                                             <input 
                                                 type="checkbox"
                                                 style={{ transform: "scale(1.4)", marginRight: "6px" }}
@@ -138,6 +144,7 @@ export default function TableFilters({sortBy, filters, searchQuery, setSortBy, s
                                     <strong>Status</strong>
                                     {["ok", "warning", "expired"].map((status) => (
                                         <label key={status} style={checkboxLabelStyle}>
+                                            {/* reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox */}
                                             <input
                                                 type="checkbox"
                                                 style={{ transform: "scale(1.4)", marginRight: "6px" }}

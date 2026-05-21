@@ -49,3 +49,22 @@ pip install -r requirements.txt
 python -m flask --app backend run # to deploy with flask
 python -m gunicorn backend:app # to deploy with gunicorn (linux only)
 ```
+
+
+
+Policy Import/Export Format:
+```sh
+{
+    "description": "My Example Policy",
+    "protocols": ["TLS 1.2", "QUIC"],
+    "subjects": ["UQ", "The University of Queensland", "Blackboard"],
+    "issuers": ["Amazon RSA 2048 M04", "Let's Encrypt", "DigiCert"],
+    "issuedAfter": 50,
+    "validFor": 10,
+    "transparencyCompliance": True,
+}
+```
+
+## Credit
+
+* Icons were obtained from https://www.svgrepo.com

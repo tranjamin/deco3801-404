@@ -11,6 +11,7 @@ type Props = {
 export default function ReportTable({ data }: Props) {
     return (
         <div style={containerStyle}>
+            {/* reference: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/table */}
             <table style={tableStyle}>
                 <thead>
                     <tr>
@@ -37,8 +38,6 @@ export default function ReportTable({ data }: Props) {
                             } else {
                                 rowStyle = { backgroundColor: "#83ff8d"}
                             }
-
-                            // insert if statement for red background due to incorrect policies (mismatching policies)
 
                             return (
                                 <tr key={cert.id} style={rowStyle}>
@@ -76,7 +75,7 @@ const containerStyle: React.CSSProperties = {
     padding: "10px",
     overflowX: "auto", // Enable horizontal scroll
     overflowY: "auto", // Enables vertical scroll
-    height: "450px", // Set preferred limit here
+    height: "450px",
 };
 
 
@@ -95,7 +94,7 @@ const cellStyle: React.CSSProperties = {
 
 const headerCellStyle: React.CSSProperties = {
     ...cellStyle,
-    position: "sticky",
+    position: "sticky", // reference: https://www.w3schools.com/css/css_positioning_sticky.asp
     top: "-11px",
     backgroundColor: "#ffffff",
     zIndex: 10,

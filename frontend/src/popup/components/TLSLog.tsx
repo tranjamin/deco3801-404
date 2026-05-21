@@ -37,7 +37,6 @@ export function TLSLog({ stats, onOpenOK, onOpenWarning, onOpenExpired } : Props
                 >
                     <img src="/check.svg" width={24} height={24} />
                     <p style={{ margin: 5 }}>{stats.ok}</p>
-                    {/* instead of number, function to grab total number */}
                 </div>
 
                 <div
