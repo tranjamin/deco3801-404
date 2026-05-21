@@ -9,7 +9,6 @@ from app.models.utils import Flags, CertificateTransparencyCompliance, Protocols
 from typing import Dict, Any, Tuple
 import time
 import re
-import math
 
 def evaluate_against_policy(cert: TLSCertificate, policy: CertificatePolicy) -> Tuple[int, Dict[str, Any]]:
     """

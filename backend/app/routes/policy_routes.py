@@ -1,10 +1,9 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from typing import List, Dict, Any, Literal
+from typing import List, Dict, Any
 
 from app import db
 from app.models.policy import CertificatePolicy
-from app.models.utils import Protocols
 from app.models.user import User
 
 # represents this collection of endpoints
@@ -32,7 +31,7 @@ def get_all():
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
 
-
+    # get the certificate
     certs: List[CertificatePolicy] = CertificatePolicy.query.filter(
         CertificatePolicy.user_id == user_id
     ) # type: ignore
@@ -60,6 +59,7 @@ def get_one(policy_id: int):
     # get the policy by id
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
+    # handle missing user or policy, or unauthorised user
     if (user is None) or (policy is None) or (policy.user_id != user_id):
         return jsonify({"message": "Policy not found"}), 404
 
@@ -116,16 +116,22 @@ def create():
         On success: A JSON containing the parsed certificate policy data in the format specified by :class:`CertificatePolicy` `.to_dict()`, Error code 201
         On failure: {"error": "Request cannot be formatted as a certificate policy"}, 400 if the request is formatted incorrectly
     """
+
+
     data: Dict[str, Any] | None= request.get_json(force=True, silent=True)
     
+    # handle missing data
     if data is None:
         return jsonify({"error": "Request cannot be formatted as a certificate policy"}), 400
     
+    # create a policy
     policy: CertificatePolicy | None = CertificatePolicy.from_dict(data)
 
+    # handle badly formatted data
     if policy is None:
         return jsonify({"error": "Request cannot be formatted as a certificate policy"}), 400
 
+    # assign policy to user
     user_id: int = int(get_jwt_identity())
     policy.user_id = user_id
     
@@ -152,11 +158,14 @@ def delete(policy_id: int):
     user_id: int = int(get_jwt_identity())
     user: User | None = User.query.get(user_id)
     
+    # handle user missing
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
 
+    # get the policy
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
+    # handle missing policy
     if policy is None or policy.user_id != user_id:
         return jsonify({"message": "Policy does not exist"}), 404 
     
@@ -184,22 +193,27 @@ def update_policy(policy_id: int):
     user_id: int = int(get_jwt_identity())
     user: User | None = User.query.get(user_id)
 
+    # handle missing user
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
 
+    # get the policy
     policy: CertificatePolicy | None = CertificatePolicy.query.get(policy_id)
 
+    # handle missing policy or unauthorised user
     if policy is None or (policy.user_id != user_id):
         return jsonify({"message": "Policy does not exist"}), 404 
 
+    # get the updated policy
     data: Dict[str, Any] | None = request.get_json(force=True, silent=True)
     if data is None:
         return jsonify({"message": "Invalid new data. Policy will not be updated."}), 400
-    
+
     new_policy: CertificatePolicy | None = CertificatePolicy.from_dict(data)
     if new_policy is None:
         return jsonify({"message": "Invalid new data. Policy will not be updated."}), 400
     
+    # update fields one by one, except for the user
     policy.description = new_policy.description
     policy.name = new_policy.name
     policy.valid_protocols = new_policy.valid_protocols

@@ -35,6 +35,7 @@ def get_all():
     if user is None:
         return jsonify({"message": "User does not exist"}), 404 
     
+    # get the certificate
     certs: List[TLSCertificate] = TLSCertificate.query.filter(
         TLSCertificate.user_id == user_id
     ) # type: ignore
@@ -121,7 +122,7 @@ def create():
         if domain_match:
             applicable_policies.append(policy)
 
-    # silently continue if there are no policies which match
+    # silently continue if there are no policies which match, this is okay
     if not len(applicable_policies):
         print(f"No policies... continuing")
         
@@ -133,22 +134,23 @@ def create():
         TLSCertificate.user_id == cert.user_id,
         TLSCertificate.subject_name == cert.subject_name,
         TLSCertificate.san_list == cert.san_list,
-    ) # type: ignore
+    )
+    
+    updated_certificate : bool = False # whether a certificate has been updated
+    returned_cert: TLSCertificate = cert # the certificate to return to the user
 
-    # update the first certificate found
-    # also delete older certificates, which may be artifacts of concurrency
-    updated_certificate : bool = False
-    returned_cert: TLSCertificate = cert
-        
+    # attempt to find a certificate with a matching domain    
     for duplicate_cert in existing_certificates:
         if not updated_certificate and cert.domain_name() == duplicate_cert.domain_name():
-            print(f"Found a certificate with domain {cert.domain_name()}, subject name {cert.subject_name} and a san list {cert.san_list}")
+            # update the first matching certificate found
             updated_certificate = True
             duplicate_cert.update_certificate(cert)
             returned_cert = duplicate_cert
         elif updated_certificate and cert.domain_name() == duplicate_cert.domain_name():
+            # delete all other matching certificates after a match has been found
             db.session.delete(duplicate_cert)
 
+    # create a new certificate if no duplicate has been found
     if not updated_certificate:
         db.session.add(cert) 
 

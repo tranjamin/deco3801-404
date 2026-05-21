@@ -1,5 +1,4 @@
 # type: ignore
-from re import L
 
 from flask.testing import FlaskCliRunner, FlaskClient
 import pytest

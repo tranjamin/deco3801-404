@@ -35,19 +35,23 @@ def evaluation_route():
     if user is None:
         return jsonify({"message": "User not found"}), 404
     
-    # .get_json handles any errors
     data: Dict[str, Any] | None= request.get_json(force=True, silent=True)
+
+    # handle any bad data
     if data is None or data.get("certificate_id") is None or data.get("policy_id") is None:
         return jsonify({"message": "Bad data request"}), 400
         
+    # get the certificate and policy
     cert: TLSCertificate | None = TLSCertificate.query.get(data.get("certificate_id"))
     policy: CertificatePolicy | None= CertificatePolicy.query.get(data.get("policy_id"))
 
+    # handle missing data/unauthorised users
     if cert is None or cert.user_id != user_id:
         return jsonify({"message": "Certificate not found"}), 404
     if policy is None or policy.user_id != user_id:
         return jsonify({"message": "Policy not found"}), 404
     
+    # evaluate certificate
     return_json: Dict[str, Any]
     _, return_json = evaluate_against_policy(cert, policy)
     

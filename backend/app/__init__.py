@@ -5,7 +5,7 @@ from flask_cors import CORS
 import sqlalchemy
 import os
 from datetime import timedelta
-# import psycopg2
+import psycopg2
 from dotenv import load_dotenv
 
 db: SQLAlchemy = SQLAlchemy()
@@ -50,6 +50,7 @@ def create_app(test=False):
     from app.routes.evaluation_routes import evaluation_bp 
     from app.routes.auth_routes import auth_bp   
     from app.routes.report_routes import report_bp
+    
     # initialise database schema
     with app.app_context():
         db.create_all()

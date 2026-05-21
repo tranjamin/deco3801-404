@@ -40,11 +40,13 @@ class Flags(enum.Enum):
     @classmethod
     @functools.cache
     def lookup_str2int(cls) -> dict[str, int]:
+        """creates a lookup table mapping flag strings to bit positions"""
         return {cls[x].value[1] : cls[x].value[0] for x in cls.__members__}
 
     @classmethod
     @functools.cache
     def lookup_int2str(cls) -> dict[int, str]:
+        """creates a lookup table mapping flag bit positions to strings"""
         return {cls[x].value[0] : cls[x].value[1] for x in cls.__members__}
     
     @staticmethod
@@ -86,11 +88,13 @@ class Protocols(enum.Enum):
     @classmethod
     @functools.cache
     def lookup_str2int(cls) -> dict[str, int]:
+        """creates a lookup table mapping protocol strings to bit positions"""
         return {cls[x].value[1] : cls[x].value[0] for x in cls.__members__}
 
     @classmethod
     @functools.cache
     def lookup_int2str(cls) -> dict[int, str]:
+        """creates a lookup table mapping protocol bit positions to strings"""
         return {cls[x].value[0] : cls[x].value[1] for x in cls.__members__}
     
     @staticmethod
